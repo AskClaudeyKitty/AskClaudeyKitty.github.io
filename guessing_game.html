@@ -141,6 +141,8 @@
             display: none;
         }
         .reset:hover { background: #38a169; }
+
+        /* Top button row - responsive to prevent overlap */
         .mute-btn {
             position: fixed;
             top: 10px;
@@ -151,56 +153,63 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .mute-btn:hover { background: rgba(255,255,255,0.3); }
         .settings-btn {
             position: fixed;
             top: 10px;
-            right: 70px;
+            right: 60px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .settings-btn:hover { background: rgba(255,255,255,0.3); }
         .saves-btn {
             position: fixed;
             top: 10px;
-            right: 130px;
+            right: 115px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .saves-btn:hover { background: rgba(255,255,255,0.3); }
-        .achievements-btn {
-            position: fixed;
-            top: 10px;
-            right: 250px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-        }
-        .achievements-btn:hover { background: rgba(255,255,255,0.3); }
         .shop-btn {
             position: fixed;
             top: 10px;
-            right: 190px;
+            right: 170px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .shop-btn:hover { background: rgba(255,255,255,0.3); }
+        .achievements-btn {
+            position: fixed;
+            top: 10px;
+            right: 225px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+        .achievements-btn:hover { background: rgba(255,255,255,0.3); }
+
+        /* Side buttons */
         .hint-btn {
             position: fixed;
             top: 50%;
@@ -212,12 +221,13 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .hint-btn:hover { background: rgba(255,255,255,0.3); }
         .daily-btn {
             position: fixed;
             top: 50%;
-            left: 80px;
+            left: 60px;
             transform: translateY(-50%);
             background: rgba(255,255,255,0.2);
             border: none;
@@ -225,8 +235,25 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
+            z-index: 1000;
         }
         .daily-btn:hover { background: rgba(255,255,255,0.3); }
+
+        /* Responsive adjustments for small screens */
+        @media (max-width: 600px) {
+            .mute-btn { right: 5px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .settings-btn { right: 50px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .saves-btn { right: 100px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .shop-btn { right: 150px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .achievements-btn { right: 200px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .hint-btn { left: 5px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+            .daily-btn { left: 50px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+        }
+        @media (max-width: 400px) {
+            .achievements-btn { top: 45px; right: 5px; }
+            .shop-btn { top: 10px; right: 5px; }
+            .saves-btn { display: none; }
+        }
 
         /* Coin Balance Display */
         .coin-display {
@@ -1564,8 +1591,8 @@
             const tones = {
                 red: 261.63,
                 blue: 329.63,
-                green: 329.63,
-                yellow: 392
+                green: 392.00,
+                yellow: 440.00
             };
 
             const oscillator = audioCtx.createOscillator();
@@ -1633,11 +1660,15 @@
         // =====================================================
         // CONFETTI SYSTEM
         // =====================================================
+        function resizeConfettiCanvas(canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
         function launchConfetti() {
             const canvas = document.getElementById('confetti-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            resizeConfettiCanvas(canvas);
 
             // Create particles
             for (let i = 0; i < 100; i++) {
@@ -1695,7 +1726,7 @@
         // =====================================================
         function getTodayString() {
             const d = new Date();
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
         }
 
         function seededRandom(seed) {
@@ -2331,6 +2362,11 @@
 
         function reset() {
             playClick();
+            stopTimer();
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             secret = generateSecretNumber();
             attempts = 0;
             gameStartTime = null;
@@ -2343,7 +2379,6 @@
             document.getElementById('guess').max = difficultySettings[difficulty].max;
             const maxNum = difficultySettings[difficulty].max;
             document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + maxNum + '.';
-            stopTimer();
             if (timedMode) {
                 document.getElementById('timer').textContent = timerDuration;
             }
@@ -2403,6 +2438,9 @@
             if (!canFlip) return;
             if (card.classList.contains('flipped')) return;
             if (card.classList.contains('matched')) return;
+
+            // Prevent race condition - ignore clicks if 2 cards already flipped
+            if (flippedCards.length >= 2) return;
 
             playClick();
             card.classList.add('flipped');
@@ -3709,6 +3747,12 @@
         updateStatsDashboard();
         updateAchievementsDisplay();
         updateAchievementProgress();
+
+        // Confetti canvas resize handler
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('confetti-canvas');
+            resizeConfettiCanvas(canvas);
+        });
     </script>
 </body>
 </html>
