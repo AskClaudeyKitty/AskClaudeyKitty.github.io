@@ -1,0 +1,3714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number</title>
+    <style>
+        :root {
+            --bg-primary: #f7faf7;
+            --bg-secondary: #ffffff;
+            --text-primary: #2d3748;
+            --text-secondary: #4a5568;
+            --accent: #48bb78;
+            --accent-hover: #38a169;
+            --gradient-start: #667eea;
+            --gradient-end: #764ba2;
+            --card-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --border-color: #e2e8f0;
+            --shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --accent: #68d391;
+            --accent-hover: #48bb78;
+            --gradient-start: #2d3748;
+            --gradient-end: #1a202c;
+            --card-bg: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            --border-color: #4a5568;
+            --shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        [data-theme="neon"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a2e;
+            --text-primary: #00ff88;
+            --text-secondary: #00d4ff;
+            --accent: #ff00ff;
+            --accent-hover: #ff00aa;
+            --gradient-start: #0a0a0a;
+            --gradient-end: #16213e;
+            --card-bg: linear-gradient(135deg, #ff00ff 0%, #00ff88 100%);
+            --border-color: #ff00ff;
+            --shadow: 0 0 30px rgba(255,0,255,0.5);
+        }
+
+        [data-theme="retro"] {
+            --bg-primary: #f4e4ba;
+            --bg-secondary: #f0d890;
+            --text-primary: #5c4033;
+            --text-secondary: #8b5a2b;
+            --accent: #c64d12;
+            --accent-hover: #a3350b;
+            --gradient-start: #c64d12;
+            --gradient-end: #e8a33c;
+            --card-bg: linear-gradient(135deg, #c64d12 0%, #e8a33c 100%);
+            --border-color: #8b5a2b;
+            --shadow: 4px 4px 0 #5c4033;
+        }
+
+        [data-theme="ocean"] {
+            --bg-primary: #e0f2fe;
+            --bg-secondary: #f0f9ff;
+            --text-primary: #0c4a6e;
+            --text-secondary: #0369a1;
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --gradient-start: #0ea5e9;
+            --gradient-end: #06b6d4;
+            --card-bg: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            --border-color: #7dd3fc;
+            --shadow: 0 10px 40px rgba(14,165,233,0.3);
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            transition: background 0.3s ease;
+        }
+        .game {
+            background: var(--bg-secondary);
+            padding: 2rem 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        h1 { margin-top: 0; }
+        input {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            width: 140px;
+            text-align: center;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.3rem;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        button {
+            font-size: 1.2rem;
+            padding: 0.5rem 1.5rem;
+            margin-left: 0.5rem;
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            transition: background 0.2s ease;
+        }
+        button:hover { background: var(--accent-hover); }
+        .message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            min-height: 1.5rem;
+        }
+        .win { color: #48bb78; }
+        .high { color: #f56565; }
+        .low { color: #ed8936; }
+        .close { color: #9f7aea; }
+        .kinda { color: #4299e1; }
+        .reset {
+            background: #48bb78;
+            margin-top: 1rem;
+            display: none;
+        }
+        .reset:hover { background: #38a169; }
+        .mute-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .mute-btn:hover { background: rgba(255,255,255,0.3); }
+        .settings-btn {
+            position: fixed;
+            top: 10px;
+            right: 70px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .settings-btn:hover { background: rgba(255,255,255,0.3); }
+        .saves-btn {
+            position: fixed;
+            top: 10px;
+            right: 130px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .saves-btn:hover { background: rgba(255,255,255,0.3); }
+        .achievements-btn {
+            position: fixed;
+            top: 10px;
+            right: 250px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .achievements-btn:hover { background: rgba(255,255,255,0.3); }
+        .shop-btn {
+            position: fixed;
+            top: 10px;
+            right: 190px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .shop-btn:hover { background: rgba(255,255,255,0.3); }
+        .hint-btn {
+            position: fixed;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .hint-btn:hover { background: rgba(255,255,255,0.3); }
+        .daily-btn {
+            position: fixed;
+            top: 50%;
+            left: 80px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .daily-btn:hover { background: rgba(255,255,255,0.3); }
+
+        /* Coin Balance Display */
+        .coin-display {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #f6e05e;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        .coin-display:hover { background: rgba(255,255,255,0.3); }
+
+        /* Button Styles */
+        .btn-default button, .btn-default input[type="button"], .btn-default input[type="submit"] {
+            border-radius: 0.5rem;
+        }
+        .btn-rounded button, .btn-rounded input[type="button"], .btn-rounded input[type="submit"] {
+            border-radius: 2rem;
+        }
+        .btn-square button, .btn-square input[type="button"], .btn-square input[type="submit"] {
+            border-radius: 0.25rem;
+        }
+        .btn-neon button, .btn-neon input[type="button"], .btn-neon input[type="submit"] {
+            border-radius: 0.5rem;
+            box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+        }
+
+        .achievement {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            text-align: left;
+            opacity: 0.4;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .achievement.unlocked {
+            opacity: 1;
+            background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+        }
+        .achievement-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        .memory-card {
+            width: 80px;
+            height: 80px;
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+        }
+        .memory-card:hover {
+            transform: scale(1.05);
+        }
+        .memory-card.flipped {
+            background: var(--bg-secondary);
+            border: 3px solid var(--accent);
+        }
+        .memory-card.matched {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            cursor: default;
+        }
+        .memory-card.matched:hover {
+            transform: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            min-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .slider-container {
+            margin: 1.5rem 0;
+        }
+        .slider {
+            width: 100%;
+            font-size: 1.2rem;
+        }
+        .close-modal {
+            background: var(--accent);
+            margin-top: 1rem;
+        }
+        select {
+            padding: 0.3rem;
+            border-radius: 0.3rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            text-align: left;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .stats-item {
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 0.3rem;
+        }
+        .stats-value {
+            font-weight: bold;
+            color: var(--accent);
+        }
+        .streak-fire {
+            font-size: 1.5rem;
+            animation: pulse 0.5s ease infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .daily-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            text-align: left;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .setting-row select {
+            flex: 1;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body data-theme="default">
+    <canvas id="confetti-canvas"></canvas>
+
+    <button class="achievements-btn" onclick="openAchievements()">🏆</button>
+    <button class="shop-btn" onclick="openShop()">🛒</button>
+    <button class="saves-btn" onclick="openSaves()">💾</button>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    <button class="mute-btn" onclick="toggleMute()">🔊</button>
+    <button class="hint-btn" onclick="showHint()">💡</button>
+    <button class="daily-btn" onclick="openDailyChallenge()">📅</button>
+    <div class="coin-display">🪙 <span id="coin-balance-display">0</span></div>
+
+    <div class="modal" id="welcome-modal">
+        <div class="modal-content">
+            <h2>👋 Welcome!</h2>
+            <p>Click the ⚙️ <strong>Settings</strong> button to switch games, change options, and see your stats!</p>
+            <p>🎯 <strong>Guess the Number</strong> - Classic number guessing game!</p>
+            <p>🧠 <strong>Memory Match</strong> - Find all the pairs!</p>
+            <p>📅 <strong>Daily Challenge</strong> - A new puzzle every day!</p>
+            <p>Use the 💾 <strong>Saves</strong> button to save/load your stats!</p>
+            <p>Use the 🏆 <strong>Achievements</strong> button to view your unlocked achievements!</p>
+            <p>Use the 🔊 <strong>Mute</strong> button to toggle sound on/off.</p>
+            <button class="close-modal" onclick="closeWelcome()">Got it!</button>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <h2>⚙️ Settings</h2>
+
+            <div class="section-title">🎮 Game Mode</div>
+            <select id="game-mode" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" onchange="switchGame()">
+                <option value="guess">🎯 Guess the Number</option>
+                <option value="memory">🧠 Memory Match</option>
+                <option value="lucky7">🎰 Lucky 7</option>
+                <option value="rps">✊✋✌ Rock Paper Scissors</option>
+                <option value="simon">🎵 Simon Says</option>
+            </select>
+
+            <div class="section-title">⚡ Difficulty</div>
+            <select id="difficulty" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" onchange="changeDifficulty()">
+                <option value="easy">🟢 Easy (1-50, 6x4 grid)</option>
+                <option value="normal" selected>🔵 Normal (1-100, 4x4 grid)</option>
+                <option value="hard">🔴 Hard (1-200, 6x6 grid)</option>
+            </select>
+
+            <div class="section-title">🎨 Theme</div>
+            <select id="theme-select" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" onchange="changeTheme()">
+                <option value="default">✨ Default</option>
+                <option value="dark">🌙 Dark</option>
+                <option value="neon">💜 Neon</option>
+                <option value="retro">🕹️ Retro</option>
+                <option value="ocean">🌊 Ocean</option>
+            </select>
+
+            <div class="section-title">🔊 Sound Pack</div>
+            <select id="sound-pack" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" onchange="changeSoundPack()">
+                <option value="default">🎵 Default</option>
+                <option value="8bit">👾 8-Bit</option>
+                <option value="piano">🎹 Piano</option>
+                <option value="scifi">🚀 Sci-Fi</option>
+            </select>
+
+            <div class="section-title">🎊 Confetti</div>
+            <select id="confetti-theme" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" onchange="changeConfettiTheme()">
+                <option value="rainbow">🌈 Rainbow</option>
+                <option value="gold">🏆 Gold</option>
+                <option value="red">❤️ Red</option>
+                <option value="blue">💙 Blue</option>
+                <option value="green">💚 Green</option>
+                <option value="purple">💜 Purple</option>
+                <option value="pink">🩷 Pink</option>
+                <option value="fire">🔥 Fire</option>
+                <option value="ocean">🌊 Ocean</option>
+                <option value="monochrome">⬛ Monochrome</option>
+            </select>
+
+            <div class="section-title">✨ Visual Effects</div>
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>Button Style:</strong>
+                    <select id="button-style" style="width: 100%; margin-top: 0.3rem; padding: 0.3rem;" onchange="changeButtonStyle()">
+                        <option value="default">🔲 Default</option>
+                        <option value="rounded">⭕ Rounded</option>
+                        <option value="square">⬜ Square</option>
+                        <option value="neon">💡 Neon Glow</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section-title">⏱️ Timed Mode</div>
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="timed-mode" style="width: auto; margin-right: 0.5rem;" onchange="toggleTimedMode()">
+                    <strong>Enable Timed Mode</strong>
+                </label>
+                <select id="timer-duration" style="width: 100%; margin-top: 0.5rem; padding: 0.3rem;" onchange="updateTimerDuration()">
+                    <option value="5">5 seconds (Insane!)</option>
+                    <option value="15">15 seconds (Hard)</option>
+                    <option value="30" selected>30 seconds (Normal)</option>
+                </select>
+            </div>
+
+            <div class="section-title">📊 Statistics Dashboard</div>
+            <div class="stats-grid">
+                <div class="stats-item">Total Games: <span class="stats-value" id="stat-total">0</span></div>
+                <div class="stats-item">Win Rate: <span class="stats-value" id="stat-winrate">0%</span></div>
+                <div class="stats-item">Avg Guesses: <span class="stats-value" id="stat-avg">0</span></div>
+                <div class="stats-item">Best Time: <span class="stats-value" id="stat-best-time">--</span></div>
+                <div class="stats-item">Play Time: <span class="stats-value" id="stat-playtime">0m</span></div>
+                <div class="stats-item">Current Streak: <span class="stats-value" id="stat-streak">0</span></div>
+                <div class="stats-item">Daily Streak: <span class="stats-value" id="stat-daily-streak">0</span></div>
+                <div class="stats-item">Best Streak: <span class="stats-value" id="stat-best-streak">0</span></div>
+            </div>
+
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
+                <strong>📍 Hint Levels:</strong><br><br>
+                <span style="color: #9f7aea;">🔥 Within 2</span> — SO close!<br>
+                <span style="color: #4299e1;">🌡️ Within 3-10</span> — Getting warmer<br>
+                <span style="color: #ed8936;">🧊 11+ away</span> — Ice cold
+            </div>
+
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="original-music" style="width: auto; margin-right: 0.5rem;" onchange="toggleMusicMode()">
+                    <strong>🎵 Original ambient music (slow)</strong>
+                </label>
+            </div>
+
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="reverse-scroll" style="width: auto; margin-right: 0.5rem;" onchange="toggleReverseScroll()">
+                    <strong>🔄 Reverse Scroll (modals)</strong>
+                </label>
+            </div>
+
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
+                <strong>🔑 Developer Code:</strong><br><br>
+                <input type="text" id="dev-code-input" placeholder="Enter code..." style="width: 60%; padding: 0.3rem;">
+                <button onclick="checkDevCode()" style="font-size: 0.9rem; padding: 0.3rem 0.8rem; margin-left: 0.5rem;">Submit</button>
+                <div id="dev-code-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
+                <strong>🔓 Dev Panel:</strong><br><br>
+                <input type="text" id="dev-panel-input" placeholder="Enter code..." style="width: 60%; padding: 0.3rem;">
+                <button onclick="checkDevPanelCode()" style="font-size: 0.9rem; padding: 0.3rem 0.8rem; margin-left: 0.5rem;">Submit</button>
+                <div id="dev-panel-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <div id="developer-panel" style="display: none; text-align: left; padding: 1rem; background: var(--card-bg); border-radius: 0.5rem; color: white;">
+                <strong>👨‍💻 Developer Panel</strong><br><br>
+                <label style="display: block; margin-bottom: 0.5rem;">Wins: <input type="number" id="dev-wins" value="0" style="width: 70px; padding: 0.3rem; border: none;"> <button onclick="setWins()" style="background: #48bb78; border: none; padding: 0.3rem 0.8rem;">Set</button></label>
+                <label style="display: block;">Losses: <input type="number" id="dev-losses" value="0" style="width: 70px; padding: 0.3rem; border: none;"> <button onclick="setLosses()" style="background: #f56565; border: none; padding: 0.3rem 0.8rem;">Set</button></label>
+                <br><br>
+                <select id="achievement-select" style="padding: 0.3rem; width: 70%;">
+                    <option value="">Select achievement...</option>
+                    <option value="firstWin">First Win</option>
+                    <option value="firstLoss">First Loss</option>
+                    <option value="winStreak2">Hot Streak (2)</option>
+                    <option value="winStreak3">On Fire (3)</option>
+                    <option value="winStreak4">Unstoppable (4)</option>
+                    <option value="winStreak5">Legendary (5)</option>
+                    <option value="winStreak10">Godlike (10)</option>
+                    <option value="lossStreak2">Cold Streak (2)</option>
+                    <option value="lossStreak3">Freezing (3)</option>
+                    <option value="lossStreak4">Absolute Zero (4)</option>
+                    <option value="lossStreak5">Hopeless (5)</option>
+                    <option value="lossStreak10">Damned (10)</option>
+                    <option value="games100">Veteran (100 games)</option>
+                    <option value="perfectGame">Perfect Game</option>
+                    <option value="quickWin">Quick Win</option>
+                    <option value="efficientWin">Efficient Win</option>
+                    <option value="timedWin">Speed Demon</option>
+                    <option value="timed15">Fast Win (15s)</option>
+                    <option value="timed5">Insane Win (5s)</option>
+                    <option value="meme">The Meme</option>
+                    <option value="developer">Developer</option>
+                    <option value="memoryFirstWin">Memory Master</option>
+                    <option value="memoryPerfect">Perfect Memory</option>
+                    <option value="memoryUnder20">Quick Mind</option>
+                    <option value="memory10">Eidetic Memory</option>
+                    <option value="dailyStreak3">Daily Streak (3)</option>
+                    <option value="dailyStreak7">Weekly Warrior</option>
+                    <option value="dailyStreak30">Monthly Master</option>
+                    <option value="hardWin">Hard Mode Winner</option>
+                    <option value="hardMemory">Hard Memory Master</option>
+                    <option value="perfectDay">Perfect Day</option>
+                    <option value="jackpot">Jackpot!</option>
+                    <option value="impossible">Impossible</option>
+                    <option value="nosy">Nosy</option>
+                    <option value="luckyGuesses">Lucky Guesses</option>
+                    <option value="completionist">Completionist</option>
+                </select>
+                <button onclick="giveAchievement()" style="background: #f6e05e; color: #744210; border: none; padding: 0.5rem 1rem; margin-left: 0.5rem;">Give</button>
+                <br><br>
+                <strong>Quick Save/Load:</strong><br><br>
+                <input type="text" id="dev-save-name" placeholder="Save name..." style="padding: 0.3rem; width: 60%;">
+                <button onclick="quickSave()" style="background: #48bb78; border: none; padding: 0.3rem 1rem;">Save</button>
+                <br><br>
+                <select id="dev-save-select" style="padding: 0.3rem; width: 80%; max-width: 200px;">
+                    <option value="">Select save to load...</option>
+                </select>
+                <button onclick="quickLoad()" style="background: #4299e1; border: none; padding: 0.3rem 1rem; margin-left: 0.5rem;">Load</button>
+                <div id="dev-action-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+                <br><br>
+                <strong>🎊 Test Confetti:</strong><br><br>
+                <select id="test-confetti-select" style="padding: 0.3rem; width: 50%;">
+                    <option value="rainbow">🌈 Rainbow</option>
+                    <option value="gold">🏆 Gold</option>
+                    <option value="red">❤️ Red</option>
+                    <option value="blue">💙 Blue</option>
+                    <option value="green">💚 Green</option>
+                    <option value="purple">💜 Purple</option>
+                    <option value="pink">🩷 Pink</option>
+                    <option value="fire">🔥 Fire</option>
+                    <option value="ocean">🌊 Ocean</option>
+                    <option value="monochrome">⬛ Monochrome</option>
+                </select>
+                <button onclick="testConfetti()" style="background: #ed8936; border: none; padding: 0.3rem 1rem; margin-left: 0.5rem;">Spawn</button>
+                <br><br>
+                <strong>🪙 Give Coins:</strong><br><br>
+                <input type="number" id="dev-coins" value="10" style="width: 70px; padding: 0.3rem; border: none;">
+                <button onclick="giveCoins()" style="background: #f6e05e; border: none; padding: 0.3rem 1rem;">Add</button>
+                <span id="coin-balance" style="margin-left: 0.5rem; font-size: 0.9rem;">(Balance: 0)</span>
+                <br><br>
+                <strong>📋 Export Save:</strong><br><br>
+                <button onclick="exportSave()" style="background: #805ad5; border: none; padding: 0.3rem 1rem;">Copy Save to Clipboard</button>
+                <br><br>
+                <strong>📥 Import Save:</strong><br><br>
+                <textarea id="import-save-text" placeholder="Paste save data here..." style="width: 100%; height: 50px; padding: 0.3rem; border: none; resize: vertical;"></textarea>
+                <button onclick="importSave()" style="background: #4299e1; border: none; padding: 0.3rem 1rem;">Import</button>
+                <br><br>
+                <strong>🛒 Unlock All Shop:</strong><br><br>
+                <button onclick="unlockAllShop()" style="background: #9f7aea; border: none; padding: 0.3rem 1rem;">Unlock All Items Free</button>
+            </div>
+
+            <button class="close-modal" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
+
+    <div class="modal" id="daily-modal">
+        <div class="modal-content">
+            <h2>📅 Daily Challenge</h2>
+            <p id="daily-date"></p>
+            <p id="daily-target"></p>
+            <p id="daily-range"></p>
+            <p id="daily-status"></p>
+            <p id="daily-streak-display"></p>
+            <div id="daily-game-area">
+                <p><small>You have <strong id="daily-attempts-left">7</strong> attempts!</small></p>
+                <input type="number" id="daily-guess" min="1" max="100" autofocus>
+                <button onclick="makeDailyGuess()">Guess</button>
+                <div class="message" id="daily-message"></div>
+            </div>
+            <button class="close-modal" onclick="closeDailyChallenge()">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="shop-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>🛒 Shop</h2>
+            <p style="text-align: center; font-size: 1.2rem;">Your Coins: <strong id="shop-coins" style="color: #f6e05e;">0</strong> 🪙</p>
+
+            <div class="section-title">🔊 Sound Packs</div>
+            <div id="shop-sounds" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <div class="section-title">🎨 Themes</div>
+            <div id="shop-themes" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <div class="section-title">🎊 Confetti</div>
+            <div id="shop-confetti" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <div class="section-title">🎮 Games</div>
+            <div id="shop-games" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <div class="section-title">🔘 Button Styles</div>
+            <div id="shop-buttonStyles" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <button class="close-modal" onclick="closeShop()">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="saves-modal">
+        <div class="modal-content">
+            <h2>💾 Save / Load</h2>
+            <div id="save-section">
+                <input type="text" id="save-name" placeholder="Save name..." style="width: 70%; margin-bottom: 0.5rem;">
+                <br>
+                <button class="close-modal" onclick="saveGame()">Save</button>
+            </div>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
+            <div id="load-section">
+                <input type="text" id="load-name" placeholder="Save name to load..." style="padding: 0.3rem; width: 70%;">
+                <button class="close-modal" onclick="loadGame()" style="margin-left: 0.5rem;">Load</button>
+            </div>
+            <div id="save-message" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
+            <div>
+                <strong>📤 Export Save:</strong><br><br>
+                <button onclick="exportSave()" style="background: #805ad5; border: none; padding: 0.3rem 1rem;">Copy Save to Clipboard</button>
+            </div>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
+            <div>
+                <strong>📥 Import Save:</strong><br><br>
+                <textarea id="import-save-text-main" placeholder="Paste save data here..." style="width: 100%; height: 50px; padding: 0.3rem; border: 1px solid var(--border-color); resize: vertical;"></textarea>
+                <button onclick="importSaveFromMain()" style="background: #4299e1; border: none; padding: 0.3rem 1rem;">Import</button>
+                <span id="import-message-main" style="margin-left: 0.5rem;"></span>
+            </div>
+            <button class="close-modal" onclick="closeSaves()" style="background: #718096; margin-top: 1rem;">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="achievements-modal">
+        <div class="modal-content">
+            <h2>🏆 Achievements</h2>
+            <div id="achievements-list">
+                <div class="achievement" id="ach-first-win">
+                    <span class="achievement-icon">🎉</span>
+                    <strong>First Win</strong>
+                    <br><small>Win your first game!</small>
+                </div>
+                <div class="achievement" id="ach-first-loss">
+                    <span class="achievement-icon">💀</span>
+                    <strong>First Loss</strong>
+                    <br><small>Lose your first game...</small>
+                </div>
+                <div class="achievement" id="ach-win-streak-2">
+                    <span class="achievement-icon">🔥</span>
+                    <strong>Hot Streak (2)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-win-streak-2"></div></div>
+                    <div class="progress-text" id="progress-text-win-streak-2">0/2 wins</div>
+                </div>
+                <div class="achievement" id="ach-win-streak-3">
+                    <span class="achievement-icon">🔥🔥</span>
+                    <strong>On Fire (3)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-win-streak-3"></div></div>
+                    <div class="progress-text" id="progress-text-win-streak-3">0/3 wins</div>
+                </div>
+                <div class="achievement" id="ach-win-streak-4">
+                    <span class="achievement-icon">🔥🔥🔥</span>
+                    <strong>Unstoppable (4)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-win-streak-4"></div></div>
+                    <div class="progress-text" id="progress-text-win-streak-4">0/4 wins</div>
+                </div>
+                <div class="achievement" id="ach-win-streak-5">
+                    <span class="achievement-icon">🌟</span>
+                    <strong>Legendary (5)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-win-streak-5"></div></div>
+                    <div class="progress-text" id="progress-text-win-streak-5">0/5 wins</div>
+                </div>
+                <div class="achievement" id="ach-win-streak-10">
+                    <span class="achievement-icon">👑</span>
+                    <strong>Godlike (10)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-win-streak-10"></div></div>
+                    <div class="progress-text" id="progress-text-win-streak-10">0/10 wins</div>
+                </div>
+                <div class="achievement" id="ach-loss-streak-2">
+                    <span class="achievement-icon">🧊</span>
+                    <strong>Cold Streak (2)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-loss-streak-2"></div></div>
+                    <div class="progress-text" id="progress-text-loss-streak-2">0/2 losses</div>
+                </div>
+                <div class="achievement" id="ach-loss-streak-3">
+                    <span class="achievement-icon">🧊🧊</span>
+                    <strong>Freezing (3)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-loss-streak-3"></div></div>
+                    <div class="progress-text" id="progress-text-loss-streak-3">0/3 losses</div>
+                </div>
+                <div class="achievement" id="ach-loss-streak-4">
+                    <span class="achievement-icon">🧊🧊🧊</span>
+                    <strong>Absolute Zero (4)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-loss-streak-4"></div></div>
+                    <div class="progress-text" id="progress-text-loss-streak-4">0/4 losses</div>
+                </div>
+                <div class="achievement" id="ach-loss-streak-5">
+                    <span class="achievement-icon">❄️</span>
+                    <strong>Hopeless (5)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-loss-streak-5"></div></div>
+                    <div class="progress-text" id="progress-text-loss-streak-5">0/5 losses</div>
+                </div>
+                <div class="achievement" id="ach-loss-streak-10">
+                    <span class="achievement-icon">💀</span>
+                    <strong>Damned (10)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-loss-streak-10"></div></div>
+                    <div class="progress-text" id="progress-text-loss-streak-10">0/10 losses</div>
+                </div>
+                <div class="achievement" id="ach-100-games">
+                    <span class="achievement-icon">🎮</span>
+                    <strong>Veteran</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-games100"></div></div>
+                    <div class="progress-text" id="progress-text-games100">0/100 games</div>
+                </div>
+                <div class="achievement" id="ach-perfect-game">
+                    <span class="achievement-icon">💎</span>
+                    <strong>Perfect Game</strong>
+                    <br><small>Win on your first guess!</small>
+                </div>
+                <div class="achievement" id="ach-quick-win">
+                    <span class="achievement-icon">⚡</span>
+                    <strong>Quick Win</strong>
+                    <br><small>Win in 3 guesses or less!</small>
+                </div>
+                <div class="achievement" id="ach-efficient-win">
+                    <span class="achievement-icon">🎯</span>
+                    <strong>Efficient Win</strong>
+                    <br><small>Win in 4 guesses!</small>
+                </div>
+                <div class="achievement" id="ach-timed-win">
+                    <span class="achievement-icon">⏱️</span>
+                    <strong>Speed Demon</strong>
+                    <br><small>Win a timed game!</small>
+                </div>
+                <div class="achievement" id="ach-timed-15">
+                    <span class="achievement-icon">⚡</span>
+                    <strong>Fast Win</strong>
+                    <br><small>Win with 15 second timer!</small>
+                </div>
+                <div class="achievement" id="ach-timed-5">
+                    <span class="achievement-icon">🔥</span>
+                    <strong>Insane Win</strong>
+                    <br><small>Win with 5 second timer!</small>
+                </div>
+                <div class="achievement" id="ach-meme" style="display: none;">
+                    <span class="achievement-icon">😂</span>
+                    <strong>The Meme</strong>
+                    <br><small>Guess the forbidden number...</small>
+                </div>
+                <div class="achievement" id="ach-developer" style="display: none;">
+                    <span class="achievement-icon">👨‍💻</span>
+                    <strong>Developer</strong>
+                    <br><small>Enter the secret code...</small>
+                </div>
+                <div class="achievement" id="ach-memory-first-win">
+                    <span class="achievement-icon">🧠</span>
+                    <strong>Memory Master</strong>
+                    <br><small>Win your first Memory Match!</small>
+                </div>
+                <div class="achievement" id="ach-memory-perfect">
+                    <span class="achievement-icon">⭐</span>
+                    <strong>Perfect Memory</strong>
+                    <br><small>Win Memory Match in perfect moves!</small>
+                </div>
+                <div class="achievement" id="ach-memory-under-20">
+                    <span class="achievement-icon">🤩</span>
+                    <strong>Quick Mind</strong>
+                    <br><small>Win Memory Match in under 20 moves!</small>
+                </div>
+                <div class="achievement" id="ach-memory-10">
+                    <span class="achievement-icon">🚀</span>
+                    <strong>Eidetic Memory</strong>
+                    <br><small>Win Memory Match in 10 moves or less!</small>
+                </div>
+                <div class="achievement" id="ach-daily-streak-3">
+                    <span class="achievement-icon">📅</span>
+                    <strong>Daily Streak (3)</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-daily-streak-3"></div></div>
+                    <div class="progress-text" id="progress-text-daily-streak-3">0/3 days</div>
+                </div>
+                <div class="achievement" id="ach-daily-streak-7">
+                    <span class="achievement-icon">📅📅</span>
+                    <strong>Weekly Warrior</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-daily-streak-7"></div></div>
+                    <div class="progress-text" id="progress-text-daily-streak-7">0/7 days</div>
+                </div>
+                <div class="achievement" id="ach-daily-streak-30">
+                    <span class="achievement-icon">📅📅📅</span>
+                    <strong>Monthly Master</strong>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-daily-streak-30"></div></div>
+                    <div class="progress-text" id="progress-text-daily-streak-30">0/30 days</div>
+                </div>
+                <div class="achievement" id="ach-hard-win">
+                    <span class="achievement-icon">🔴</span>
+                    <strong>Hard Mode Winner</strong>
+                    <br><small>Win on Hard difficulty!</small>
+                </div>
+                <div class="achievement" id="ach-hard-memory">
+                    <span class="achievement-icon">🔴🧠</span>
+                    <strong>Hard Memory Master</strong>
+                    <br><small>Win 6x6 Memory Match!</small>
+                </div>
+                <div class="achievement" id="ach-perfect-day">
+                    <span class="achievement-icon">⭐</span>
+                    <strong>Perfect Day</strong>
+                    <br><small>Complete daily challenge in 1 guess!</small>
+                </div>
+                <div class="achievement" id="ach-jackpot" style="display: none;">
+                    <span class="achievement-icon">🎰</span>
+                    <strong>Jackpot!</strong>
+                    <br><small>Guess 777 during a game!</small>
+                </div>
+                <div class="achievement" id="ach-impossible">
+                    <span class="achievement-icon">💀</span>
+                    <strong>Impossible</strong>
+                    <br><small>15 win streak in Hard difficulty!</small>
+                </div>
+                <div class="achievement" id="ach-lucky-guesses">
+                    <span class="achievement-icon">🍀</span>
+                    <strong>Lucky Guesses</strong>
+                    <br><small>Win 3 games in a row with just 1 guess! Unlocks Simon Says!</small>
+                </div>
+                <div class="achievement" id="ach-completionist">
+                    <span class="achievement-icon">👑</span>
+                    <strong>Completionist</strong>
+                    <br><small>Unlock all other achievements!</small>
+                </div>
+                <div class="achievement" id="ach-nosy">
+                    <span class="achievement-icon">🕵️</span>
+                    <strong>Nosy</strong>
+                    <br><small>Find all secret achievements (The Meme, Developer, Jackpot)!</small>
+                </div>
+            </div>
+            <button class="close-modal" onclick="closeAchievements()">Close</button>
+        </div>
+    </div>
+
+    <div class="game" id="guessing-game">
+        <h1>🎯 Guess the Number!</h1>
+        <p id="game-description">I'm thinking of a number between 1 and 100.</p>
+        <p><small>Wins: <strong id="wins" style="color: #48bb78;">0</strong> | Losses: <strong id="losses" style="color: #f56565;">0</strong></small></p>
+        <p><small>Win Streak: <strong id="current-win-streak" style="color: #ed8936;">0</strong> 🔥 | Loss Streak: <strong id="current-loss-streak" style="color: #4299e1;">0</strong> 🧊</small></p>
+        <p><small>Difficulty: <strong id="current-difficulty">Normal</strong></small></p>
+        <p id="timer-display" style="display:none;"><small>⏱️ Time: <strong id="timer">30</strong>s</small></p>
+        <p><small>You have <strong id="attempts-left">7</strong> attempts remaining!</small></p>
+        <input type="number" id="guess" min="1" max="100" autofocus>
+        <button onclick="guess()">Guess</button>
+        <div class="message" id="message"></div>
+        <button class="reset" id="reset" onclick="reset()">Play Again</button>
+    </div>
+
+    <div class="game" id="memory-game" style="display: none;">
+        <h1>🧠 Memory Match!</h1>
+        <p>Find all the pairs!</p>
+        <p><small>Difficulty: <strong id="memory-difficulty">Normal</strong></small></p>
+        <p><small>Pairs Found: <strong id="pairs-found" style="color: #48bb78;">0</strong> / <strong id="total-pairs">8</strong></small></p>
+        <p><small>Moves: <strong id="memory-moves">0</strong></small></p>
+        <div id="memory-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 600px; margin: 0 auto;"></div>
+        <div class="message" id="memory-message" style="margin-top: 1rem;"></div>
+        <button class="reset" id="memory-reset" onclick="resetMemory()" style="margin-top: 1rem; display: none;">Play Again</button>
+    </div>
+
+    <div class="game" id="lucky7-game" style="display: none;">
+        <h1>🎰 Lucky 7!</h1>
+        <p>Spin for a number 1-100. Win big on 7s!</p>
+        <p><small>Your Coins: <strong id="lucky7-coins" style="color: #f6e05e;">0</strong> 🪙</small></p>
+        <button class="reset" onclick="spinLucky7()" style="padding: 1rem 2rem; font-size: 1.2rem; display: inline-block;">🎰 SPIN (10🪙)</button>
+        <div class="message" id="lucky7-message" style="margin-top: 1rem;"></div>
+        <div id="lucky7-result" style="font-size: 4rem; margin: 1rem 0; min-height: 60px;"></div>
+    </div>
+
+    <div class="game" id="rps-game" style="display: none;">
+        <h1>✊✋✌ Rock Paper Scissors!</h1>
+        <p>Best of 5 against the computer!</p>
+        <p><small>Score: <strong id="rps-player" style="color: #48bb78;">0</strong> - <strong id="rps-computer" style="color: #f56565;">0</strong></small></p>
+        <div style="display: flex; gap: 1rem; justify-content: center; margin: 1rem 0;">
+            <button onclick="playRPS('rock')" style="font-size: 3rem; padding: 1rem 2rem;">✊</button>
+            <button onclick="playRPS('paper')" style="font-size: 3rem; padding: 1rem 2rem;">✋</button>
+            <button onclick="playRPS('scissors')" style="font-size: 3rem; padding: 1rem 2rem;">✌</button>
+        </div>
+        <div id="rps-result" style="font-size: 3rem; margin: 1rem 0; min-height: 50px;"></div>
+        <button class="reset" id="rps-reset" onclick="resetRPS()" style="display: none;">Play Again</button>
+    </div>
+
+    <div class="game" id="simon-game" style="display: none;">
+        <h1>🎵 Simon Says!</h1>
+        <p>Watch the pattern, then repeat it!</p>
+        <p><small>Round: <strong id="simon-round">1</strong> | Score: <strong id="simon-score" style="color: #f6e05e;">0</strong></small></p>
+        <div style="display: flex; gap: 1rem; justify-content: center; margin: 2rem 0;">
+            <button id="simon-red" onclick="simonInput('red')" style="font-size: 3rem; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #e53e3e; background: #e53e3e; cursor: pointer;" disabled></button>
+            <button id="simon-blue" onclick="simonInput('blue')" style="font-size: 3rem; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #3182ce; background: #3182ce; cursor: pointer;" disabled></button>
+            <button id="simon-green" onclick="simonInput('green')" style="font-size: 3rem; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #38a169; background: #38a169; cursor: pointer;" disabled></button>
+            <button id="simon-yellow" onclick="simonInput('yellow')" style="font-size: 3rem; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #d69e2e; background: #d69e2e; cursor: pointer;" disabled></button>
+        </div>
+        <div id="simon-message" style="margin: 1rem;"></div>
+        <button id="simon-start" onclick="startSimonSays()" style="padding: 1rem 2rem; font-size: 1.2rem;">Start Game</button>
+    </div>
+
+    <script>
+        // =====================================================
+        // GLOBAL VARIABLES
+        // =====================================================
+        let currentGame = 'guess';
+
+        // Developer codes
+        const DEV_ACHIEVEMENT_CODE = '146';
+        const DEV_PANEL_CODE = '396967';
+        let developerModeUnlocked = false;
+
+        // Core game variables
+        let secret = 0;
+        let attempts = 0;
+
+        // Stats
+        let wins = 0;
+        let coins = 0; // Currency for shop (2 coins per win)
+        let losses = 0;
+        let winStreak = 0;
+        let lossStreak = 0;
+        let bestWinStreak = 0;
+        let gamesPlayed = 0;
+        let totalGuesses = 0;
+        let bestGuessTime = null;
+        let bestMemoryTime = null;
+        let totalPlayTime = 0; // in seconds
+
+        // Difficulty
+        let difficulty = 'normal'; // easy, normal, hard
+        let hardWinStreak = 0; // Tracks consecutive wins specifically on hard difficulty
+        const difficultySettings = {
+            easy: { max: 50, attempts: 10, memoryPairs: 6, memoryCols: 4 },
+            normal: { max: 100, attempts: 7, memoryPairs: 8, memoryCols: 4 },
+            hard: { max: 200, attempts: 8, memoryPairs: 18, memoryCols: 6 }
+        };
+
+        // Daily Challenge
+        let dailyChallengeNumber = null;
+        let dailyChallengeStreak = 0;
+        let dailyAttempts = 0;
+        let dailyCompleted = false;
+
+        // Theme
+        let currentTheme = 'default'; // default, dark, neon, retro, ocean
+
+        // Sound Pack
+        let currentSoundPack = 'default'; // default, 8bit, piano, sci-fi
+
+        // Confetti themes
+        let confettiTheme = 'rainbow';
+        const confettiThemes = {
+            rainbow: () => `hsl(${Math.random() * 360}, 70%, 50%)`,
+            gold: () => `hsl(${45 + Math.random() * 15}, 90%, ${50 + Math.random() * 20}%)`,
+            red: () => `hsl(${0 + Math.random() * 20}, 80%, ${45 + Math.random() * 20}%)`,
+            blue: () => `hsl(${200 + Math.random() * 40}, 80%, ${45 + Math.random() * 20}%)`,
+            green: () => `hsl(${100 + Math.random() * 40}, 70%, ${40 + Math.random() * 20}%)`,
+            purple: () => `hsl(${260 + Math.random() * 40}, 75%, ${45 + Math.random() * 20}%)`,
+            pink: () => `hsl(${320 + Math.random() * 40}, 80%, ${55 + Math.random() * 20}%)`,
+            fire: () => `hsl(${10 + Math.random() * 30}, 100%, ${50 + Math.random() * 30}%)`,
+            ocean: () => `hsl(${180 + Math.random() * 60}, 70%, ${45 + Math.random() * 25}%)`,
+            monochrome: () => `hsl(0, 0%, ${30 + Math.random() * 60}%)`
+        };
+
+        // Visual Effects Settings
+        let buttonStyle = 'default';
+
+        // Shop system
+        let ownedItems = {
+            sounds: ['default', 'piano'],
+            themes: ['default', 'dark'],
+            confetti: ['rainbow', 'monochrome'],
+            games: [],
+            buttonStyles: []
+        };
+
+        const shopItems = {
+            sounds: [
+                { id: '8bit', name: '8-Bit', price: 5, icon: '👾' },
+                { id: 'scifi', name: 'Sci-Fi', price: 10, icon: '🚀' }
+            ],
+            themes: [
+                { id: 'neon', name: 'Neon', price: 15, icon: '💜' },
+                { id: 'retro', name: 'Retro', price: 20, icon: '🕹️' },
+                { id: 'ocean', name: 'Ocean', price: 15, icon: '🌊' }
+            ],
+            confetti: [
+                { id: 'gold', name: 'Gold', price: 5, icon: '🏆' },
+                { id: 'red', name: 'Red', price: 3, icon: '❤️' },
+                { id: 'blue', name: 'Blue', price: 3, icon: '💙' },
+                { id: 'green', name: 'Green', price: 3, icon: '💚' },
+                { id: 'purple', name: 'Purple', price: 3, icon: '💜' },
+                { id: 'pink', name: 'Pink', price: 3, icon: '🩷' },
+                { id: 'fire', name: 'Fire', price: 8, icon: '🔥' },
+                { id: 'ocean', name: 'Ocean', price: 5, icon: '🌊' }
+            ],
+            games: [
+                { id: 'memory', name: 'Memory Match', price: 50, icon: '🧠' },
+                { id: 'lucky7', name: 'Lucky 7', price: 30, icon: '🎰' },
+                { id: 'rps', name: 'Rock Paper Scissors', price: 25, icon: '✊✋✌' }
+            ],
+            buttonStyles: [
+                { id: 'rounded', name: 'Rounded Buttons', price: 10, icon: '⭕' },
+                { id: 'square', name: 'Square Buttons', price: 8, icon: '⬜' },
+                { id: 'neon', name: 'Neon Glow Buttons', price: 15, icon: '💡' }
+            ]
+        };
+
+        // Timed mode
+        let timedMode = false;
+        let timerDuration = 30;
+        let timeLeft = 30;
+        let timerInterval = null;
+        let currentTimerDuration = 30;
+
+        // Reverse scroll
+        let reverseScroll = false;
+
+        // Game session tracking
+        let gameStartTime = null;
+        let isDailyChallenge = false;
+
+        // Achievements
+        let achievements = {
+            firstWin: false,
+            firstLoss: false,
+            winStreak2: false,
+            winStreak3: false,
+            winStreak4: false,
+            winStreak5: false,
+            winStreak10: false,
+            lossStreak2: false,
+            lossStreak3: false,
+            lossStreak4: false,
+            lossStreak5: false,
+            lossStreak10: false,
+            games100: false,
+            perfectGame: false,
+            quickWin: false,
+            efficientWin: false,
+            timedWin: false,
+            timed15: false,
+            timed5: false,
+            meme: false,
+            developer: false,
+            memoryFirstWin: false,
+            memoryPerfect: false,
+            memoryUnder20: false,
+            memory10: false,
+            completionist: false,
+            dailyStreak3: false,
+            dailyStreak7: false,
+            dailyStreak30: false,
+            hardWin: false,
+            hardMemory: false,
+            perfectDay: false,
+            jackpot: false,
+            impossible: false,
+            nosy: false,
+            luckyGuesses: false
+        };
+
+        // One-guess wins tracking
+        let oneGuessWinsInRow = 0;
+
+        // Memory Match game variables
+        const allMemoryEmojis = ['🎮', '🎲', '🎯', '🏆', '🎪', '🎨', '🎭', '🎬', '🎵', '🎸', '🎹', '🎺', '🎻', '🥁', '🎤', '🎧', '🎬', '📷'];
+        let memoryEmojis = [];
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let memoryMoves = 0;
+        let totalPairs = 8;
+        let canFlip = true;
+
+        // Confetti
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        // =====================================================
+        // AUDIO SYSTEM
+        // =====================================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let isMuted = false;
+        let ambientInterval = null;
+        let useOriginalMusic = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.querySelector('.mute-btn').textContent = isMuted ? '🔇' : '🔊';
+            if (isMuted && ambientInterval) {
+                clearInterval(ambientInterval);
+                ambientInterval = null;
+            } else if (!isMuted) {
+                startAmbient();
+            }
+        }
+
+        // Sound pack configurations
+        const soundPacks = {
+            default: {
+                type: 'sine',
+                volume: 0.1,
+                decay: 1.0,
+                clickType: 'square',
+                clickVolume: 0.05
+            },
+            '8bit': {
+                type: 'square',
+                volume: 0.08,
+                decay: 0.5,
+                clickType: 'square',
+                clickVolume: 0.06
+            },
+            piano: {
+                type: 'sine',
+                volume: 0.15,
+                decay: 1.5,
+                clickType: 'triangle',
+                clickVolume: 0.04
+            },
+            scifi: {
+                type: 'sawtooth',
+                volume: 0.08,
+                decay: 0.8,
+                clickType: 'sawtooth',
+                clickVolume: 0.05
+            }
+        };
+
+        function playTone(freq, duration) {
+            if (isMuted || !audioCtx) return;
+            const pack = soundPacks[currentSoundPack];
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = pack.type;
+            osc.frequency.value = freq;
+            const actualDuration = duration * pack.decay;
+            gain.gain.setValueAtTime(pack.volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + actualDuration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + actualDuration);
+        }
+
+        function playClick() {
+            initAudio();
+            const pack = soundPacks[currentSoundPack];
+            playToneWithPack(800, 0.05, pack.clickType, pack.clickVolume);
+        }
+
+        function playToneWithPack(freq, duration, type, volume) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playWin() {
+            initAudio();
+            const notes = [523, 659, 784, 1047]; // C E G C
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 0.3), i * 100);
+            });
+        }
+
+        function playLose() {
+            initAudio();
+            const trombone = [
+                { freq: 98, dur: 400 },
+                { freq: 87, dur: 450 },
+                { freq: 78, dur: 500 },
+                { freq: 73, dur: 550 },
+                { freq: 65, dur: 600 },
+                { freq: 58, dur: 2500 }
+            ];
+
+            let delay = 0;
+            trombone.forEach(note => {
+                setTimeout(() => {
+                    if (isMuted || !audioCtx) return;
+                    const pack = soundPacks[currentSoundPack];
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(note.freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + note.dur / 1000);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + note.dur / 1000);
+                }, delay);
+                delay += note.dur;
+            });
+        }
+
+        function startAmbient() {
+            if (isMuted || ambientInterval) return;
+            initAudio();
+
+            if (useOriginalMusic) {
+                const notes = [261, 329, 392, 523, 392, 329];
+                let noteIndex = 0;
+
+                ambientInterval = setInterval(() => {
+                    if (!isMuted) {
+                        playTone(notes[noteIndex], 0.5);
+                    }
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }, 2000);
+            } else {
+                const notes = [
+                    261, 329, 392, 523, 392, 329, 349, 440, 523, 659, 440, 349,
+                    293, 369, 440, 587, 440, 369, 261, 329, 392, 523, 698, 523,
+                    233, 293, 349, 466, 349, 293, 196, 246, 293, 392, 293, 246,
+                    220, 277, 329, 440, 329, 277, 220, 277, 329, 440, 523, 440,
+                    174, 220, 261, 349, 261, 220, 174, 220, 261, 349, 440, 349,
+                    392, 493, 587, 783, 587, 493, 392, 493, 587, 493, 392, 349,
+                    330, 415, 493, 659, 493, 415, 330, 415, 493, 415, 330, 293,
+                    277, 349, 415, 554, 415, 349, 277, 349, 415, 349, 277, 261
+                ];
+                let noteIndex = 0;
+
+                ambientInterval = setInterval(() => {
+                    if (!isMuted) {
+                        playTone(notes[noteIndex], 0.2);
+                    }
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }, 130);
+            }
+        }
+
+        function toggleMusicMode() {
+            playClick();
+            useOriginalMusic = document.getElementById('original-music').checked;
+            if (ambientInterval) {
+                clearInterval(ambientInterval);
+                ambientInterval = null;
+            }
+            if (!isMuted) {
+                startAmbient();
+            }
+        }
+
+        // =====================================================
+        // NEW GAMES
+        // =====================================================
+        // Lucky 7
+        function initLucky7() {
+            document.getElementById('lucky7-coins').textContent = coins;
+            document.getElementById('lucky7-message').textContent = '';
+            document.getElementById('lucky7-result').textContent = '';
+        }
+
+        function spinLucky7() {
+            playClick();
+            if (coins < 10) {
+                const message = document.getElementById('lucky7-message');
+                message.textContent = '❌ Not enough coins! You need 10 🪙 to spin.';
+                message.className = 'message high';
+                return;
+            }
+
+            coins -= 10;
+            document.getElementById('lucky7-coins').textContent = coins;
+            updateCoinDisplay();
+
+            const result = Math.floor(Math.random() * 100) + 1;
+            document.getElementById('lucky7-result').textContent = result;
+
+            const message = document.getElementById('lucky7-message');
+            const resultEl = document.getElementById('lucky7-result');
+
+            if (result === 7) {
+                message.textContent = '🎰🎰🎰 JACKPOT! 7! You won 500 coins!';
+                message.className = 'message win';
+                resultEl.style.color = '#f6e05e';
+                coins += 500;
+                document.getElementById('lucky7-coins').textContent = coins;
+                updateCoinDisplay();
+                playWin();
+                launchConfetti();
+            } else if (result % 7 === 0) {
+                const win = Math.floor(result / 7) * 5;
+                message.textContent = `🎉 It\'s a multiple of 7! You won ${win} coins!`;
+                message.className = 'message';
+                resultEl.style.color = '#48bb78';
+                coins += win;
+                document.getElementById('lucky7-coins').textContent = coins;
+                updateCoinDisplay();
+                playWin();
+            } else {
+                message.textContent = 'Try again! Win on 7s or multiples of 7!';
+                message.className = 'message';
+                resultEl.style.color = '#718096';
+                playLose();
+            }
+        }
+
+        // Rock Paper Scissors
+        let rpsPlayerScore = 0;
+        let rpsComputerScore = 0;
+        let rpsRound = 0;
+
+        function initRPS() {
+            rpsPlayerScore = 0;
+            rpsComputerScore = 0;
+            rpsRound = 0;
+            document.getElementById('rps-player').textContent = '0';
+            document.getElementById('rps-computer').textContent = '0';
+            document.getElementById('rps-result').textContent = '✊✋✌';
+            document.getElementById('rps-result').style.color = '#718096';
+            document.getElementById('rps-reset').style.display = 'none';
+        }
+
+        function playRPS(playerChoice) {
+            playClick();
+            const choices = ['rock', 'paper', 'scissors'];
+            const computerChoice = choices[Math.floor(Math.random() * 3)];
+
+            let result = '';
+            let resultEmoji = '';
+
+            if (playerChoice === computerChoice) {
+                result = 'It\'s a tie!';
+                resultEmoji = '🤝';
+            } else if (
+                (playerChoice === 'rock' && computerChoice === 'scissors') ||
+                (playerChoice === 'paper' && computerChoice === 'rock') ||
+                (playerChoice === 'scissors' && computerChoice === 'paper')
+            ) {
+                result = 'You win this round!';
+                resultEmoji = '🎉';
+                rpsPlayerScore++;
+                playWin();
+            } else {
+                result = 'Computer wins this round!';
+                resultEmoji = '😢';
+                rpsComputerScore++;
+                playLose();
+            }
+
+            const emojis = { rock: '✊', paper: '✋', scissors: '✌' };
+            document.getElementById('rps-result').textContent = `${emojis[playerChoice]} vs ${emojis[computerChoice]} - ${resultEmoji}`;
+            document.getElementById('rps-player').textContent = rpsPlayerScore;
+            document.getElementById('rps-computer').textContent = rpsComputerScore;
+
+            rpsRound++;
+
+            if (rpsPlayerScore >= 3 || rpsComputerScore >= 3) {
+                document.getElementById('rps-reset').style.display = 'inline-block';
+                if (rpsPlayerScore >= 3) {
+                    document.getElementById('rps-result').textContent += ' 🏆 YOU WIN!';
+                    document.getElementById('rps-result').style.color = '#48bb78';
+                    coins += 5;
+                    launchConfetti();
+                } else {
+                    document.getElementById('rps-result').textContent += ' 💀 YOU LOSE!';
+                    document.getElementById('rps-result').style.color = '#f56565';
+                }
+            }
+        }
+
+        function resetRPS() {
+            playClick();
+            initRPS();
+        }
+
+        // Simon Says
+        let simonSequence = [];
+        let simonPlayerSequence = [];
+        let simonRound = 1;
+        let simonScore = 0;
+        let simonPlaying = false;
+        let simonCanInput = false;
+
+        function initSimonSays() {
+            simonSequence = [];
+            simonPlayerSequence = [];
+            simonRound = 1;
+            simonScore = 0;
+            simonPlaying = false;
+            simonCanInput = false;
+            document.getElementById('simon-round').textContent = '1';
+            document.getElementById('simon-score').textContent = '0';
+            document.getElementById('simon-message').textContent = 'Press Start to play!';
+            document.getElementById('simon-start').style.display = 'inline-block';
+            simonEnableButtons(false);
+        }
+
+        function startSimonSays() {
+            playClick();
+            document.getElementById('simon-start').style.display = 'none';
+            simonSequence = [];
+            simonPlayerSequence = [];
+            simonRound = 1;
+            simonScore = 0;
+            simonPlaying = true;
+            document.getElementById('simon-round').textContent = simonRound;
+            document.getElementById('simon-score').textContent = simonScore;
+            addToSimonSequence();
+        }
+
+        function addToSimonSequence() {
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            simonSequence.push(colors[Math.floor(Math.random() * 4)]);
+            playSimonSequence();
+        }
+
+        function playSimonSequence() {
+            simonCanInput = false;
+            simonEnableButtons(false);
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= simonSequence.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        simonCanInput = true;
+                        simonEnableButtons(true);
+                        document.getElementById('simon-message').textContent = 'Your turn! Repeat the pattern!';
+                    }, 500);
+                    return;
+                }
+                flashButton(simonSequence[i]);
+                i++;
+            }, 800);
+        }
+
+        function flashButton(color) {
+            const btn = document.getElementById('simon-' + color);
+            btn.style.filter = 'brightness(1.5)';
+            btn.style.transform = 'scale(1.1)';
+            playSimonTone(color);
+
+            setTimeout(() => {
+                btn.style.filter = '';
+                btn.style.transform = '';
+            }, 400);
+        }
+
+        function playSimonTone(color) {
+            if (isMuted) return;
+
+            const tones = {
+                red: 261.63,
+                blue: 329.63,
+                green: 329.63,
+                yellow: 392
+            };
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = tones[color];
+            gainNode.gain.value = 0.1;
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+            setTimeout(() => oscillator.stop(), 300);
+        }
+
+        function simonInput(color) {
+            if (!simonCanInput || !simonPlaying) return;
+
+            flashButton(color);
+            simonPlayerSequence.push(color);
+
+            const index = simonPlayerSequence.length - 1;
+            if (simonPlayerSequence[index] !== simonSequence[index]) {
+                // Wrong!
+                document.getElementById('simon-message').textContent = `❌ Wrong! Round ${simonRound} - Score: ${simonScore}`;
+                document.getElementById('simon-message').style.color = '#f56565';
+                playLose();
+                simonCanInput = false;
+                simonEnableButtons(false);
+                document.getElementById('simon-start').style.display = 'inline-block';
+                simonPlaying = false;
+                return;
+            }
+
+            if (simonPlayerSequence.length === simonSequence.length) {
+                // Correct! Next round
+                simonScore++;
+                document.getElementById('simon-score').textContent = simonScore;
+                simonRound++;
+                document.getElementById('simon-round').textContent = simonRound;
+                document.getElementById('simon-message').textContent = '✅ Correct! Get ready...';
+                document.getElementById('simon-message').style.color = '#48bb78';
+                simonPlayerSequence = [];
+                simonCanInput = false;
+                simonEnableButtons(false);
+                playClick();
+
+                setTimeout(() => {
+                    document.getElementById('simon-message').textContent = 'Watch carefully!';
+                    addToSimonSequence();
+                }, 1500);
+            }
+        }
+
+        function simonEnableButtons(enabled) {
+            document.getElementById('simon-red').disabled = !enabled;
+            document.getElementById('simon-blue').disabled = !enabled;
+            document.getElementById('simon-green').disabled = !enabled;
+            document.getElementById('simon-yellow').disabled = !enabled;
+        }
+
+        // =====================================================
+        // CONFETTI SYSTEM
+        // =====================================================
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Create particles
+            for (let i = 0; i < 100; i++) {
+                const colorFunc = confettiThemes[confettiTheme] || confettiThemes.rainbow;
+                confettiParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    speedX: Math.random() * 4 - 2,
+                    speedY: Math.random() * 3 + 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5,
+                    color: colorFunc()
+                });
+            }
+
+            if (!confettiAnimationId) {
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            confettiParticles.forEach((p, index) => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+
+                // Remove particles that fall off screen
+                if (p.y > canvas.height) {
+                    confettiParticles.splice(index, 1);
+                }
+            });
+
+            if (confettiParticles.length > 0) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
+            } else {
+                confettiAnimationId = null;
+            }
+        }
+
+        // =====================================================
+        // DAILY CHALLENGE
+        // =====================================================
+        function getTodayString() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function seededRandom(seed) {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        function generateDailyNumber() {
+            const today = getTodayString();
+            let seed = 0;
+            for (let i = 0; i < today.length; i++) {
+                seed += today.charCodeAt(i);
+            }
+
+            // Generate number based on difficulty
+            const settings = difficultySettings[difficulty];
+            let random = seededRandom(seed);
+            let result = Math.floor(random * settings.max) + 1;
+
+            // Never generate 67 - skip it and wrap if needed
+            if (result >= 67) result++;
+            if (result > settings.max) result = 1;
+
+            return result;
+        }
+
+        function openDailyChallenge() {
+            playClick();
+            isDailyChallenge = true;
+
+            const today = getTodayString();
+            dailyChallengeNumber = generateDailyNumber();
+
+            // Load daily completion status
+            const dailyKey = 'dailyChallenge_' + today;
+            dailyCompleted = localStorage.getItem(dailyKey) === 'true';
+
+            // Load streak
+            const lastDate = localStorage.getItem('lastDailyChallengeDate');
+            const todayDate = new Date(today);
+            const lastDateObj = lastDate ? new Date(lastDate) : null;
+
+            // Check if streak should continue
+            if (lastDate) {
+                const diffDays = Math.floor((todayDate - lastDateObj) / (1000 * 60 * 60 * 24));
+                if (diffDays > 1) {
+                    // Streak broken
+                    dailyChallengeStreak = 0;
+                }
+            }
+
+            dailyChallengeStreak = parseInt(localStorage.getItem('dailyChallengeStreak') || '0');
+            dailyAttempts = 0;
+
+            // Update UI
+            document.getElementById('daily-date').textContent = '📅 ' + today;
+            document.getElementById('daily-target').textContent = dailyCompleted ? '✅ Completed!' : '🎯 Find today\'s number!';
+            document.getElementById('daily-range').textContent = 'Range: 1-' + difficultySettings[difficulty].max;
+            document.getElementById('daily-status').textContent = dailyCompleted ? 'Come back tomorrow for a new challenge!' : 'Good luck!';
+            document.getElementById('daily-streak-display').innerHTML = dailyChallengeStreak > 0 ?
+                '🔥 Current Streak: <span class="streak-fire">' + dailyChallengeStreak + '</span>' : 'Start your streak today!';
+
+            document.getElementById('daily-attempts-left').textContent = difficultySettings[difficulty].attempts;
+            document.getElementById('daily-message').textContent = '';
+            document.getElementById('daily-message').className = 'message';
+            document.getElementById('daily-guess').disabled = dailyCompleted;
+            document.getElementById('daily-guess').value = '';
+            document.getElementById('daily-guess').max = difficultySettings[difficulty].max;
+
+            document.getElementById('daily-modal').style.display = 'flex';
+        }
+
+        function closeDailyChallenge() {
+            playClick();
+            isDailyChallenge = false;
+            document.getElementById('daily-modal').style.display = 'none';
+        }
+
+        function makeDailyGuess() {
+            const input = document.getElementById('daily-guess');
+            const message = document.getElementById('daily-message');
+            const guess = parseInt(input.value);
+            const maxAttempts = difficultySettings[difficulty].attempts;
+
+            playClick();
+
+            if (isNaN(guess) || guess < 1 || guess > difficultySettings[difficulty].max) {
+                message.textContent = 'Enter a number between 1 and ' + difficultySettings[difficulty].max + '!';
+                message.className = 'message';
+                return;
+            }
+
+            dailyAttempts++;
+            document.getElementById('daily-attempts-left').textContent = maxAttempts - dailyAttempts;
+
+            if (guess < dailyChallengeNumber) {
+                if (dailyChallengeNumber - guess <= 2) {
+                    message.textContent = 'Too low... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (dailyChallengeNumber - guess <= 10) {
+                    message.textContent = 'Too low... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too low! Try again.';
+                    message.className = 'message low';
+                }
+            } else if (guess > dailyChallengeNumber) {
+                if (guess - dailyChallengeNumber <= 2) {
+                    message.textContent = 'Too high... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (guess - dailyChallengeNumber <= 10) {
+                    message.textContent = 'Too high... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too high! Try again.';
+                    message.className = 'message high';
+                }
+            } else {
+                // Win!
+                message.textContent = '🎉 You found today\'s number in ' + dailyAttempts + ' tries!';
+                message.className = 'message win';
+                input.disabled = true;
+
+                // Mark as completed
+                const today = getTodayString();
+                localStorage.setItem('dailyChallenge_' + today, 'true');
+
+                // Update streak
+                const lastDate = localStorage.getItem('lastDailyChallengeDate');
+                if (lastDate !== today) {
+                    dailyChallengeStreak++;
+                    localStorage.setItem('dailyChallengeStreak', dailyChallengeStreak);
+                    localStorage.setItem('lastDailyChallengeDate', today);
+                }
+
+                // Achievements
+                if (dailyAttempts === 1) unlockAchievement('perfectDay');
+                if (dailyChallengeStreak >= 3) unlockAchievement('dailyStreak3');
+                if (dailyChallengeStreak >= 7) unlockAchievement('dailyStreak7');
+                if (dailyChallengeStreak >= 30) unlockAchievement('dailyStreak30');
+
+                document.getElementById('daily-streak-display').innerHTML =
+                    '🔥 Current Streak: <span class="streak-fire">' + dailyChallengeStreak + '</span>';
+
+                launchConfetti();
+                playWin();
+                return;
+            }
+
+            if (dailyAttempts >= maxAttempts) {
+                message.textContent = '💀 Out of attempts! The number was ' + dailyChallengeNumber;
+                message.className = 'message high';
+                input.disabled = true;
+                playLose();
+            }
+
+            input.value = '';
+            input.focus();
+        }
+
+        // =====================================================
+        // THEME SYSTEM
+        // =====================================================
+        function changeTheme() {
+            playClick();
+            const theme = document.getElementById('theme-select').value;
+            currentTheme = theme;
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'default';
+            currentTheme = savedTheme;
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('theme-select').value = savedTheme;
+        }
+
+        // =====================================================
+        // SOUND PACK SYSTEM
+        // =====================================================
+        function changeSoundPack() {
+            playClick();
+            currentSoundPack = document.getElementById('sound-pack').value;
+            localStorage.setItem('soundPack', currentSoundPack);
+        }
+
+        function loadSoundPack() {
+            const savedPack = localStorage.getItem('soundPack') || 'default';
+            currentSoundPack = savedPack;
+            document.getElementById('sound-pack').value = savedPack;
+        }
+
+        // =====================================================
+        // CONFETTI THEME SYSTEM
+        // =====================================================
+        function changeConfettiTheme() {
+            playClick();
+            confettiTheme = document.getElementById('confetti-theme').value;
+            localStorage.setItem('confettiTheme', confettiTheme);
+        }
+
+        function loadConfettiTheme() {
+            const savedTheme = localStorage.getItem('confettiTheme') || 'rainbow';
+            confettiTheme = savedTheme;
+            document.getElementById('confetti-theme').value = savedTheme;
+        }
+
+        // =====================================================
+        // DIFFICULTY SYSTEM
+        // =====================================================
+        function changeDifficulty() {
+            playClick();
+            const oldDifficulty = difficulty;
+            difficulty = document.getElementById('difficulty').value;
+
+            // Reset hard win streak if switching away from hard
+            if (oldDifficulty === 'hard' && difficulty !== 'hard') {
+                hardWinStreak = 0;
+            }
+
+            // Update UI
+            const difficultyNames = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+            document.getElementById('current-difficulty').textContent = difficultyNames[difficulty];
+            document.getElementById('memory-difficulty').textContent = difficultyNames[difficulty];
+
+            // Update game description with correct range
+            const maxNum = difficultySettings[difficulty].max;
+            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + maxNum + '.';
+
+            // Reset current game with new difficulty
+            if (currentGame === 'guess') {
+                reset();
+            } else {
+                resetMemory();
+            }
+        }
+
+        function loadDifficulty() {
+            const savedDifficulty = localStorage.getItem('difficulty') || 'normal';
+            difficulty = savedDifficulty;
+            document.getElementById('difficulty').value = savedDifficulty;
+            const difficultyNames = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+            document.getElementById('current-difficulty').textContent = difficultyNames[difficulty];
+            document.getElementById('memory-difficulty').textContent = difficultyNames[difficulty];
+        }
+
+        // =====================================================
+        // STATISTICS
+        // =====================================================
+        function formatTime(seconds) {
+            if (seconds < 60) return seconds + 's';
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return m + 'm ' + s + 's';
+        }
+
+        function updateStatsDashboard() {
+            const total = wins + losses;
+            const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+            const avgGuesses = wins > 0 ? Math.round(totalGuesses / wins) : 0;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-winrate').textContent = winRate + '%';
+            document.getElementById('stat-avg').textContent = avgGuesses;
+            document.getElementById('stat-best-time').textContent = bestGuessTime ? formatTime(bestGuessTime) : '--';
+            document.getElementById('stat-playtime').textContent = formatTime(totalPlayTime);
+            document.getElementById('stat-streak').textContent = winStreak;
+            document.getElementById('stat-daily-streak').textContent = dailyChallengeStreak;
+            document.getElementById('stat-best-streak').textContent = bestWinStreak;
+        }
+
+        function updateAchievementProgress() {
+            // Win streak progress
+            updateProgressBar('win-streak-2', winStreak, 2);
+            updateProgressBar('win-streak-3', winStreak, 3);
+            updateProgressBar('win-streak-4', winStreak, 4);
+            updateProgressBar('win-streak-5', winStreak, 5);
+            updateProgressBar('win-streak-10', winStreak, 10);
+
+            // Loss streak progress
+            updateProgressBar('loss-streak-2', lossStreak, 2);
+            updateProgressBar('loss-streak-3', lossStreak, 3);
+            updateProgressBar('loss-streak-4', lossStreak, 4);
+            updateProgressBar('loss-streak-5', lossStreak, 5);
+            updateProgressBar('loss-streak-10', lossStreak, 10);
+
+            // Games played progress
+            updateProgressBar('games100', gamesPlayed, 100);
+
+            // Daily streak progress
+            updateProgressBar('daily-streak-3', dailyChallengeStreak, 3);
+            updateProgressBar('daily-streak-7', dailyChallengeStreak, 7);
+            updateProgressBar('daily-streak-30', dailyChallengeStreak, 30);
+        }
+
+        function updateProgressBar(id, current, max) {
+            const percent = Math.min(100, Math.round((current / max) * 100));
+            const fill = document.getElementById('progress-' + id);
+            const text = document.getElementById('progress-text-' + id);
+
+            if (fill) fill.style.width = percent + '%';
+            if (text) text.textContent = current + '/' + max;
+        }
+
+        // =====================================================
+        // GAME FUNCTIONS
+        // =====================================================
+        function updateWinsLosses() {
+            document.getElementById('wins').textContent = wins;
+            document.getElementById('losses').textContent = losses;
+            document.getElementById('current-win-streak').textContent = winStreak;
+            document.getElementById('current-loss-streak').textContent = lossStreak;
+        }
+
+        function generateSecretNumber() {
+            const settings = difficultySettings[difficulty];
+            let result = Math.floor(Math.random() * settings.max) + 1;
+            // Never generate 67 - skip it and wrap if needed
+            if (result >= 67) result++;
+            if (result > settings.max) result = 1;
+            return result;
+        }
+
+        function getDifficultyAttempts() {
+            return difficultySettings[difficulty].attempts;
+        }
+
+        function startTimer() {
+            if (!timedMode) return;
+            currentTimerDuration = timerDuration;
+            timeLeft = timerDuration;
+            document.getElementById('timer-display').style.display = 'block';
+            document.getElementById('timer').textContent = timeLeft;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    endGame(false, true); // time's up
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function endGame(won, timeout = false) {
+            const message = document.getElementById('message');
+            const input = document.getElementById('guess');
+
+            // Calculate game time
+            const gameEndTime = Date.now();
+            const gameTime = gameStartTime ? Math.floor((gameEndTime - gameStartTime) / 1000) : 0;
+            totalPlayTime += gameTime;
+
+            if (won) {
+                wins++;
+                coins += 2;
+                updateCoinDisplay();
+                winStreak++;
+                if (winStreak > bestWinStreak) bestWinStreak = winStreak;
+                lossStreak = 0;
+                gamesPlayed++;
+                totalGuesses += attempts;
+
+                // Track one-guess wins for Lucky Guesses achievement
+                if (attempts === 1) {
+                    oneGuessWinsInRow++;
+                    if (oneGuessWinsInRow >= 3) {
+                        unlockAchievement('luckyGuesses');
+                    }
+                } else {
+                    oneGuessWinsInRow = 0;
+                }
+
+                // Track best time
+                if (!bestGuessTime || gameTime < bestGuessTime) {
+                    bestGuessTime = gameTime;
+                }
+
+                // Add to leaderboard
+
+                // Difficulty achievements
+                if (difficulty === 'hard') {
+                    unlockAchievement('hardWin');
+                    hardWinStreak++;
+                    if (hardWinStreak >= 15) unlockAchievement('impossible');
+                }
+
+                const ratingList = ratings[attempts] || ratings.default;
+                const rating = ratingList[Math.floor(Math.random() * ratingList.length)];
+                message.textContent = `🎉 ${rating}`;
+                message.className = 'message win';
+
+                unlockAchievement('firstWin');
+                if (winStreak >= 2) unlockAchievement('winStreak2');
+                if (winStreak >= 3) unlockAchievement('winStreak3');
+                if (winStreak >= 4) unlockAchievement('winStreak4');
+                if (winStreak >= 5) unlockAchievement('winStreak5');
+                if (winStreak >= 10) unlockAchievement('winStreak10');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+                if (attempts === 1) unlockAchievement('perfectGame');
+                if (attempts <= 3) unlockAchievement('quickWin');
+                if (attempts === 4) unlockAchievement('efficientWin');
+                if (timedMode) {
+                    unlockAchievement('timedWin');
+                    if (currentTimerDuration === 15) unlockAchievement('timed15');
+                    if (currentTimerDuration === 5) unlockAchievement('timed5');
+                }
+
+                stopTimer();
+                playWin();
+                launchConfetti();
+            } else {
+                losses++;
+                lossStreak++;
+                winStreak = 0;
+                oneGuessWinsInRow = 0; // Reset lucky guesses streak on loss
+                if (difficulty === 'hard') hardWinStreak = 0;
+                gamesPlayed++;
+
+                if (timeout) {
+                    message.textContent = '⏰ Time\'s up! The number was ' + secret;
+                } else {
+                    const uncompliment = uncompliments[Math.floor(Math.random() * uncompliments.length)];
+                    message.textContent = `💀 Game over! The number was ${secret}. ${uncompliment}`;
+                }
+                message.className = 'message high';
+
+                unlockAchievement('firstLoss');
+                if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                if (lossStreak >= 10) unlockAchievement('lossStreak10');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+
+                stopTimer();
+                playLose();
+            }
+
+            updateWinsLosses();
+            updateStatsDashboard();
+            updateAchievementProgress();
+
+            document.getElementById('reset').style.display = 'inline-block';
+            input.disabled = true;
+            input.value = '';
+        }
+
+        const ratings = {
+            1: [
+                "🏆 GODLIKE! Perfect guess!",
+                "👑 LEGENDARY! First try!",
+                "🔥 UNSTOPPABLE! One shot!"
+            ],
+            2: [
+                "🎯 Excellent! Just 2 tries!",
+                "⚡ Fantastic! Sharp skills!",
+                "🚀 Amazing! Almost perfect!"
+            ],
+            3: [
+                "😊 Great job! 3 attempts!",
+                "👍 Well done! Nice work!",
+                "✨ Brilliant! Keep it up!"
+            ],
+            4: [
+                "🙂 Pretty good! 4 tries!",
+                "👀 Not bad! Solid effort!",
+                "😃 Decent! You're improving!"
+            ],
+            5: [
+                "🤡 5 attempts? My grandma's faster!",
+                "🧠 A rock could do better...",
+                "📉 That was painfully average!"
+            ],
+            6: [
+                "🦕 You call that guessing? Embarrassing!",
+                "🧟 6 tries? Your brain is on life support!",
+                "🪦 I've seen house plants with better intuition!"
+            ],
+            7: [
+                "💀 7 attempts? Pure torture to watch!",
+                "🦋 You had ONE job... and struggled!",
+                "⚰️ Barely scraped by! Tragically bad!"
+            ],
+            8: [
+                "🪦 That was rough... 8 tries!",
+                "💀 Barely made it!",
+                "🧟 Brain at 1%..."
+            ],
+            9: [
+                "⚰️ Almost buried this game...",
+                "🦇 Negative tactical awareness...",
+                "🧩 My goldfish does better..."
+            ],
+            10: [
+                "🚮 Absolute garbage performance!",
+                "📉 You couldn't hit water falling out of a boat!",
+                "🤡 Please never play again..."
+            ],
+            default: [
+                "💀 You had all those chances...",
+                "🪦 R.I.P. your guessing career...",
+                "🚮 That performance was unacceptable..."
+            ]
+        };
+
+        const uncompliments = [
+            "🤡 Actually terrible at this.",
+            "📉 My goldfish guesses better.",
+            "🧠 A rock could do better.",
+            "💀 You had 7 chances and blew them all.",
+            "🚮 That performance was garbage.",
+            "🦋 Did you even try?",
+            "🪦 Your guessing game is dead on arrival.",
+            "🥶 Zero tactical awareness.",
+            "🔋 Your brain is at 1%.",
+            "⚰️ Bury this game and never play again.",
+            "📉 Negative IQ plays.",
+            "🎯 You couldn't hit water if you fell out of a boat."
+        ];
+
+        function guess() {
+            const input = document.getElementById('guess');
+            const message = document.getElementById('message');
+            const attemptsLeft = document.getElementById('attempts-left');
+            const guessVal = parseInt(input.value);
+            const maxVal = difficultySettings[difficulty].max;
+
+            playClick();
+
+            // Start timer on first guess
+            if (attempts === 0 && timedMode && !timerInterval) {
+                startTimer();
+            }
+
+            // Start game time tracking
+            if (attempts === 0) {
+                gameStartTime = Date.now();
+            }
+
+            if (isNaN(guessVal) || guessVal < 1 || (guessVal > maxVal && guessVal !== 777 && guessVal !== 67)) {
+                message.textContent = 'Enter a number between 1 and ' + maxVal + '!';
+                message.className = 'message';
+                return;
+            }
+
+            // The meme - guessing 67 makes you lose instantly!
+            if (guessVal === 67) {
+                message.innerHTML = '😂 IT\'S 67!<br>Instant loss... classic.';
+                message.className = 'message high';
+                document.getElementById('reset').style.display = 'inline-block';
+                input.disabled = true;
+                input.value = '';
+
+                losses++;
+                lossStreak++;
+                winStreak = 0;
+                if (difficulty === 'hard') hardWinStreak = 0;
+                gamesPlayed++;
+                updateWinsLosses();
+                updateStatsDashboard();
+                unlockAchievement('meme');
+                unlockAchievement('firstLoss');
+                if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                if (lossStreak >= 10) unlockAchievement('lossStreak10');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+
+                stopTimer();
+                playLose();
+                return;
+            }
+
+            // The jackpot - guessing 777 unlocks an achievement!
+            if (guessVal === 777) {
+                message.innerHTML = '🎰 JACKPOT!<br>You hit 777! (Too bad that\'s not the answer...)';
+                message.className = 'message high';
+                unlockAchievement('jackpot');
+                playClick();
+                // Continue with normal game flow - it's just a wrong guess
+            }
+
+            attempts++;
+            const currentMaxAttempts = getDifficultyAttempts();
+            attemptsLeft.textContent = currentMaxAttempts - attempts;
+
+            if (guessVal < secret) {
+                if (secret - guessVal <= 2) {
+                    message.textContent = 'Too low... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (secret - guessVal <= 10) {
+                    message.textContent = 'Too low... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too low! Try again.';
+                    message.className = 'message low';
+                }
+            } else if (guessVal > secret) {
+                if (guessVal - secret <= 2) {
+                    message.textContent = 'Too high... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (guessVal - secret <= 10) {
+                    message.textContent = 'Too high... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too high! Try again.';
+                    message.className = 'message high';
+                }
+            } else {
+                endGame(true);
+                return;
+            }
+
+            if (attempts >= currentMaxAttempts) {
+                endGame(false);
+                return;
+            }
+
+            input.value = '';
+            input.focus();
+        }
+
+        function reset() {
+            playClick();
+            secret = generateSecretNumber();
+            attempts = 0;
+            gameStartTime = null;
+            document.getElementById('message').textContent = '';
+            document.getElementById('message').className = 'message';
+            document.getElementById('reset').style.display = 'none';
+            document.getElementById('attempts-left').textContent = getDifficultyAttempts();
+            document.getElementById('guess').disabled = false;
+            document.getElementById('guess').focus();
+            document.getElementById('guess').max = difficultySettings[difficulty].max;
+            const maxNum = difficultySettings[difficulty].max;
+            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + maxNum + '.';
+            stopTimer();
+            if (timedMode) {
+                document.getElementById('timer').textContent = timerDuration;
+            }
+        }
+
+        // =====================================================
+        // MEMORY MATCH GAME
+        // =====================================================
+        function initMemoryGame() {
+            memoryCards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            memoryMoves = 0;
+            canFlip = true;
+            gameStartTime = Date.now();
+
+            const settings = difficultySettings[difficulty];
+            totalPairs = settings.memoryPairs;
+            const cols = settings.memoryCols;
+
+            // Select emojis based on pairs needed
+            memoryEmojis = allMemoryEmojis.slice(0, totalPairs);
+
+            // Create pairs
+            const pairs = [...memoryEmojis, ...memoryEmojis];
+            // Shuffle
+            for (let i = pairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+            }
+
+            // Create grid
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+            pairs.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.textContent = '?';
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+                memoryCards.push(card);
+            });
+
+            document.getElementById('pairs-found').textContent = '0';
+            document.getElementById('total-pairs').textContent = totalPairs;
+            document.getElementById('memory-moves').textContent = '0';
+            document.getElementById('memory-message').textContent = '';
+            document.getElementById('memory-message').className = 'message';
+            document.getElementById('memory-reset').style.display = 'none';
+        }
+
+        function flipCard(card) {
+            if (!canFlip) return;
+            if (card.classList.contains('flipped')) return;
+            if (card.classList.contains('matched')) return;
+
+            playClick();
+            card.classList.add('flipped');
+            card.textContent = card.dataset.emoji;
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                memoryMoves++;
+                document.getElementById('memory-moves').textContent = memoryMoves;
+
+                const [card1, card2] = flippedCards;
+
+                if (card1.dataset.emoji === card2.dataset.emoji) {
+                    // Match!
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        matchedPairs++;
+                        document.getElementById('pairs-found').textContent = matchedPairs;
+                        flippedCards = [];
+                        canFlip = true;
+
+                        if (matchedPairs === totalPairs) {
+                            // Win!
+                            const gameTime = Math.floor((Date.now() - gameStartTime) / 1000);
+                            totalPlayTime += gameTime;
+
+                            // Track best memory time
+                            if (!bestMemoryTime || gameTime < bestMemoryTime) {
+                                bestMemoryTime = gameTime;
+                            }
+
+                            // Add to leaderboard
+
+                            const message = document.getElementById('memory-message');
+                            message.textContent = '🎉 You won in ' + memoryMoves + ' moves!';
+                            message.className = 'message win';
+                            document.getElementById('memory-reset').style.display = 'inline-block';
+
+                            // Achievements
+                            unlockAchievement('memoryFirstWin');
+                            if (difficulty === 'hard') unlockAchievement('hardMemory');
+                            if (memoryMoves === totalPairs) unlockAchievement('memoryPerfect');
+                            if (memoryMoves < 20) unlockAchievement('memoryUnder20');
+                            if (memoryMoves <= 10) unlockAchievement('memory10');
+
+                            gamesPlayed++;
+                            if (gamesPlayed >= 100) unlockAchievement('games100');
+
+                            updateStatsDashboard();
+                            updateAchievementProgress();
+
+                            playWin();
+                            launchConfetti();
+                        }
+                    }, 500);
+                } else {
+                    // No match
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        card1.textContent = '?';
+                        card2.textContent = '?';
+                        flippedCards = [];
+                        canFlip = true;
+                    }, 1000);
+                }
+            }
+        }
+
+        function resetMemory() {
+            playClick();
+            initMemoryGame();
+        }
+
+        // =====================================================
+        // GAME SWITCHING
+        // =====================================================
+        function switchGame() {
+            playClick();
+            const mode = document.getElementById('game-mode').value;
+            currentGame = mode;
+
+            // Hide all games first
+            document.getElementById('guessing-game').style.display = 'none';
+            document.getElementById('memory-game').style.display = 'none';
+            const rpsGame = document.getElementById('rps-game');
+            if (rpsGame) rpsGame.style.display = 'none';
+            const lucky7Game = document.getElementById('lucky7-game');
+            if (lucky7Game) lucky7Game.style.display = 'none';
+            const simonGame = document.getElementById('simon-game');
+            if (simonGame) simonGame.style.display = 'none';
+
+            if (mode === 'guess') {
+                document.getElementById('guessing-game').style.display = 'block';
+            } else if (mode === 'memory') {
+                if (!ownedItems.games.includes('memory')) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Memory Match is locked! Buy it in the shop for 50 🪙';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('memory-game').style.display = 'block';
+                initMemoryGame();
+            } else if (mode === 'lucky7') {
+                if (!ownedItems.games.includes('lucky7')) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Lucky 7 is locked! Buy it in the shop for 30 🪙';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('lucky7-game').style.display = 'block';
+                initLucky7();
+            } else if (mode === 'rps') {
+                if (!ownedItems.games.includes('rps')) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Rock Paper Scissors is locked! Buy it in the shop for 25 🪙';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('rps-game').style.display = 'block';
+                initRPS();
+            } else if (mode === 'simon') {
+                if (!achievements.luckyGuesses) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Simon Says is locked! Win 3 games in 1 guess to unlock!';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('simon-game').style.display = 'block';
+                initSimonSays();
+            }
+        }
+
+        // =====================================================
+        // SETTINGS
+        // =====================================================
+        function openSettings() {
+            playClick();
+            updateStatsDashboard();
+            updateAchievementProgress();
+            updateSettingsDropdowns();
+            updateCoinBalance();
+            if (developerModeUnlocked) {
+                document.getElementById('developer-panel').style.display = 'block';
+                updateDevSaveList();
+            }
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            playClick();
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        function toggleTimedMode() {
+            playClick();
+            timedMode = document.getElementById('timed-mode').checked;
+            if (timedMode) {
+                timerDuration = parseInt(document.getElementById('timer-duration').value);
+                document.getElementById('timer-display').style.display = 'block';
+                document.getElementById('timer').textContent = timerDuration;
+            } else {
+                document.getElementById('timer-display').style.display = 'none';
+                stopTimer();
+            }
+        }
+
+        function updateTimerDuration() {
+            playClick();
+            timerDuration = parseInt(document.getElementById('timer-duration').value);
+            if (timedMode) {
+                document.getElementById('timer').textContent = timerDuration;
+            }
+        }
+
+        function toggleReverseScroll() {
+            playClick();
+            reverseScroll = document.getElementById('reverse-scroll').checked;
+        }
+
+        function toggleCustomButtons() {
+            playClick();
+            const enabled = document.getElementById('custom-buttons').checked;
+            document.getElementById('button-style-options').style.display = enabled ? 'block' : 'none';
+            localStorage.setItem('customButtons', enabled);
+            if (!enabled) {
+                document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon');
+            } else {
+                changeButtonStyle();
+            }
+        }
+
+        function changeButtonStyle() {
+            playClick();
+            const style = document.getElementById('button-style').value;
+            buttonStyle = style;
+            document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon');
+            if (style !== 'default') {
+                document.body.classList.add('btn-' + style);
+            }
+        }
+
+        function loadVisualEffects() {
+            buttonStyle = 'default';
+            document.getElementById('button-style').value = buttonStyle;
+        }
+
+        function updateCoinDisplay() {
+            document.getElementById('coin-balance-display').textContent = coins;
+        }
+
+        // =====================================================
+        // SHOP SYSTEM
+        // =====================================================
+        function openShop() {
+            playClick();
+            updateShopDisplay();
+            document.getElementById('shop-modal').style.display = 'flex';
+        }
+
+        function closeShop() {
+            playClick();
+            document.getElementById('shop-modal').style.display = 'none';
+        }
+
+        function updateShopDisplay() {
+            // Show current coin balance
+            document.getElementById('shop-coins').textContent = coins;
+
+            // Render shop items
+            renderShopCategory('sounds', shopItems.sounds, 'sounds');
+            renderShopCategory('themes', shopItems.themes, 'themes');
+            renderShopCategory('confetti', shopItems.confetti, 'confetti');
+            renderShopCategory('games', shopItems.games, 'games');
+            renderShopCategory('buttonStyles', shopItems.buttonStyles, 'buttonStyles');
+        }
+
+        function renderShopCategory(containerId, items, category) {
+            const container = document.getElementById('shop-' + containerId);
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const owned = ownedItems[category].includes(item.id);
+                const canAfford = coins >= item.price;
+
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    background: var(--bg-primary);
+                    padding: 0.8rem;
+                    border-radius: 0.5rem;
+                    text-align: center;
+                    cursor: ${owned ? 'default' : (canAfford ? 'pointer' : 'not-allowed')};
+                    opacity: ${owned ? 0.6 : (canAfford ? 1 : 0.5)};
+                    border: 2px solid ${owned ? '#48bb78' : 'transparent'};
+                `;
+
+                if (owned) {
+                    div.innerHTML = `
+                        <div style="font-size: 2rem;">${item.icon}</div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: #48bb78;">✓ Owned</small>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div style="font-size: 2rem;">${item.icon}</div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: #f6e05e;">${item.price} 🪙</small>
+                    `;
+                    div.onclick = () => buyItem(category, item.id, item.price);
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        function buyItem(category, itemId, price) {
+            playClick();
+            if (ownedItems[category].includes(itemId)) {
+                return;
+            }
+            if (coins < price) {
+                return;
+            }
+
+            // Deduct coins
+            coins -= price;
+            ownedItems[category].push(itemId);
+            updateCoinDisplay();
+            updateShopDisplay();
+
+            // Update settings dropdowns to include new item
+            updateSettingsDropdowns();
+        }
+
+        function updateSettingsDropdowns() {
+            // Update theme dropdown
+            const themeSelect = document.getElementById('theme-select');
+            const currentTheme = themeSelect.value;
+            themeSelect.innerHTML = '';
+
+            const allThemes = [
+                { id: 'default', name: '✨ Default', free: true },
+                { id: 'dark', name: '🌙 Dark', free: true },
+                { id: 'neon', name: '💜 Neon', free: false },
+                { id: 'retro', name: '🕹️ Retro', free: false },
+                { id: 'ocean', name: '🌊 Ocean', free: false }
+            ];
+
+            allThemes.forEach(theme => {
+                if (theme.free || ownedItems.themes.includes(theme.id)) {
+                    const option = document.createElement('option');
+                    option.value = theme.id;
+                    option.textContent = theme.name;
+                    themeSelect.appendChild(option);
+                }
+            });
+            themeSelect.value = currentTheme;
+
+            // Update sound pack dropdown
+            const soundSelect = document.getElementById('sound-pack');
+            const currentSound = soundSelect.value;
+            soundSelect.innerHTML = '';
+
+            const allSounds = [
+                { id: 'default', name: '🎵 Default', free: true },
+                { id: 'piano', name: '🎹 Piano', free: true },
+                { id: '8bit', name: '👾 8-Bit', free: false },
+                { id: 'scifi', name: '🚀 Sci-Fi', free: false }
+            ];
+
+            allSounds.forEach(sound => {
+                if (sound.free || ownedItems.sounds.includes(sound.id)) {
+                    const option = document.createElement('option');
+                    option.value = sound.id;
+                    option.textContent = sound.name;
+                    soundSelect.appendChild(option);
+                }
+            });
+            soundSelect.value = currentSound;
+
+            // Update confetti dropdown
+            const confettiSelect = document.getElementById('confetti-theme');
+            const currentConfetti = confettiSelect.value;
+            confettiSelect.innerHTML = '';
+
+            const allConfetti = [
+                { id: 'rainbow', name: '🌈 Rainbow', free: true },
+                { id: 'monochrome', name: '⬛ Monochrome', free: true },
+                { id: 'gold', name: '🏆 Gold', free: false },
+                { id: 'red', name: '❤️ Red', free: false },
+                { id: 'blue', name: '💙 Blue', free: false },
+                { id: 'green', name: '💚 Green', free: false },
+                { id: 'purple', name: '💜 Purple', free: false },
+                { id: 'pink', name: '🩷 Pink', free: false },
+                { id: 'fire', name: '🔥 Fire', free: false },
+                { id: 'ocean', name: '🌊 Ocean', free: false }
+            ];
+
+            allConfetti.forEach(c => {
+                if (c.free || ownedItems.confetti.includes(c.id)) {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = c.name;
+                    confettiSelect.appendChild(option);
+                }
+            });
+            confettiSelect.value = currentConfetti;
+
+            // Update button style dropdown
+            const buttonStyleSelect = document.getElementById('button-style');
+            const currentButtonStyle = buttonStyleSelect.value;
+            buttonStyleSelect.innerHTML = '<option value="default">🔲 Default</option>';
+
+            const allButtonStyles = [
+                { id: 'rounded', name: '⭕ Rounded' },
+                { id: 'square', name: '⬜ Square' },
+                { id: 'neon', name: '💡 Neon Glow' }
+            ];
+
+            allButtonStyles.forEach(style => {
+                if (ownedItems.buttonStyles.includes(style.id)) {
+                    const option = document.createElement('option');
+                    option.value = style.id;
+                    option.textContent = style.name;
+                    buttonStyleSelect.appendChild(option);
+                }
+            });
+            buttonStyleSelect.value = currentButtonStyle;
+        }
+
+        function saveShopData() {
+            const data = {
+                items: ownedItems,
+                coins: coins
+            };
+            localStorage.setItem('shopData', JSON.stringify(data));
+        }
+
+        function loadShopData() {
+            const saved = localStorage.getItem('shopData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                ownedItems = data.items || ownedItems;
+                coins = data.coins || 0;
+                // Ensure buttonStyles exists for old saves
+                if (!ownedItems.buttonStyles) ownedItems.buttonStyles = [];
+            }
+        }
+
+        // =====================================================
+        // ACHIEVEMENTS
+        // =====================================================
+        function openAchievements() {
+            playClick();
+            updateAchievementsDisplay();
+            updateAchievementProgress();
+            document.getElementById('achievements-modal').style.display = 'flex';
+        }
+
+        function closeAchievements() {
+            playClick();
+            document.getElementById('achievements-modal').style.display = 'none';
+        }
+
+        function updateAchievementsDisplay() {
+            const achList = [
+                ['firstWin', 'ach-first-win'],
+                ['firstLoss', 'ach-first-loss'],
+                ['winStreak2', 'ach-win-streak-2'],
+                ['winStreak3', 'ach-win-streak-3'],
+                ['winStreak4', 'ach-win-streak-4'],
+                ['winStreak5', 'ach-win-streak-5'],
+                ['winStreak10', 'ach-win-streak-10'],
+                ['lossStreak2', 'ach-loss-streak-2'],
+                ['lossStreak3', 'ach-loss-streak-3'],
+                ['lossStreak4', 'ach-loss-streak-4'],
+                ['lossStreak5', 'ach-loss-streak-5'],
+                ['lossStreak10', 'ach-loss-streak-10'],
+                ['games100', 'ach-100-games'],
+                ['perfectGame', 'ach-perfect-game'],
+                ['quickWin', 'ach-quick-win'],
+                ['efficientWin', 'ach-efficient-win'],
+                ['timedWin', 'ach-timed-win'],
+                ['timed15', 'ach-timed-15'],
+                ['timed5', 'ach-timed-5'],
+                ['meme', 'ach-meme'],
+                ['developer', 'ach-developer'],
+                ['memoryFirstWin', 'ach-memory-first-win'],
+                ['memoryPerfect', 'ach-memory-perfect'],
+                ['memoryUnder20', 'ach-memory-under-20'],
+                ['memory10', 'ach-memory-10'],
+                ['dailyStreak3', 'ach-daily-streak-3'],
+                ['dailyStreak7', 'ach-daily-streak-7'],
+                ['dailyStreak30', 'ach-daily-streak-30'],
+                ['hardWin', 'ach-hard-win'],
+                ['hardMemory', 'ach-hard-memory'],
+                ['perfectDay', 'ach-perfect-day'],
+                ['jackpot', 'ach-jackpot'],
+                ['impossible', 'ach-impossible'],
+                ['luckyGuesses', 'ach-lucky-guesses'],
+                ['completionist', 'ach-completionist'],
+                ['nosy', 'ach-nosy']
+            ];
+            achList.forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (achievements[key]) {
+                        el.classList.add('unlocked');
+                        el.style.display = 'block';
+                    } else {
+                        el.classList.remove('unlocked');
+                        // Hide secret achievements (meme, developer, jackpot) when not unlocked
+                        if (key === 'meme' || key === 'developer' || key === 'jackpot') {
+                            el.style.display = 'none';
+                        }
+                    }
+                }
+            });
+        }
+
+        function unlockAchievement(ach) {
+            if (achievements[ach]) return;
+            achievements[ach] = true;
+            updateAchievementsDisplay();
+
+            const achNames = {
+                firstWin: 'First Win',
+                firstLoss: 'First Loss',
+                winStreak2: 'Hot Streak (2)',
+                winStreak3: 'On Fire (3)',
+                winStreak4: 'Unstoppable (4)',
+                winStreak5: 'Legendary (5)',
+                winStreak10: 'Godlike (10)',
+                lossStreak2: 'Cold Streak (2)',
+                lossStreak3: 'Freezing (3)',
+                lossStreak4: 'Absolute Zero (4)',
+                lossStreak5: 'Hopeless (5)',
+                lossStreak10: 'Damned (10)',
+                games100: 'Veteran',
+                perfectGame: 'Perfect Game',
+                quickWin: 'Quick Win',
+                efficientWin: 'Efficient Win',
+                timedWin: 'Speed Demon',
+                timed15: 'Fast Win',
+                timed5: 'Insane Win',
+                meme: 'The Meme',
+                developer: 'Developer',
+                memoryFirstWin: 'Memory Master',
+                memoryPerfect: 'Perfect Memory',
+                memoryUnder20: 'Quick Mind',
+                memory10: 'Eidetic Memory',
+                dailyStreak3: 'Daily Streak (3)',
+                dailyStreak7: 'Weekly Warrior',
+                dailyStreak30: 'Monthly Master',
+                hardWin: 'Hard Mode Winner',
+                hardMemory: 'Hard Memory Master',
+                perfectDay: 'Perfect Day',
+                jackpot: 'Jackpot!',
+                impossible: 'Impossible',
+                completionist: 'Completionist',
+                nosy: 'Nosy',
+                luckyGuesses: 'Lucky Guesses'
+            };
+
+            const achMsg = document.createElement('div');
+            achMsg.className = 'achievement-notification';
+            achMsg.dataset.achievement = ach;
+            achMsg.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%); padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap; transition: left 0.3s ease;';
+            achMsg.textContent = '🏆 ' + achNames[ach] + '!';
+            document.body.appendChild(achMsg);
+
+            repositionAchievementNotifications();
+
+            setTimeout(() => {
+                achMsg.remove();
+                repositionAchievementNotifications();
+            }, 3000);
+
+            // Check for Completionist
+            if (ach !== 'completionist') {
+                const allAchs = ['firstWin', 'firstLoss', 'winStreak2', 'winStreak3', 'winStreak4', 'winStreak5', 'winStreak10',
+                    'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'lossStreak10', 'games100', 'perfectGame',
+                    'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5',
+                    'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10', 'dailyStreak3',
+                    'dailyStreak7', 'dailyStreak30', 'hardWin', 'hardMemory', 'perfectDay', 'impossible', 'luckyGuesses'];
+                const allUnlocked = allAchs.every(a => achievements[a]);
+                if (allUnlocked && !achievements.completionist) {
+                    setTimeout(() => unlockAchievement('completionist'), 500);
+                }
+            }
+
+            // Check for Nosy (all secret achievements)
+            if (ach !== 'nosy') {
+                const secretAchs = ['meme', 'developer', 'jackpot'];
+                const allSecrets = secretAchs.every(a => achievements[a]);
+                if (allSecrets && !achievements.nosy) {
+                    setTimeout(() => unlockAchievement('nosy'), 500);
+                }
+            }
+        }
+
+        function repositionAchievementNotifications() {
+            const notes = document.querySelectorAll('.achievement-notification');
+            const spacing = 220;
+            const totalWidth = (notes.length - 1) * spacing;
+            const startX = -totalWidth / 2;
+
+            notes.forEach((note, i) => {
+                const offset = startX + (i * spacing);
+                note.style.left = 'calc(50% + ' + offset + 'px)';
+            });
+        }
+
+        // =====================================================
+        // SAVE/LOAD
+        // =====================================================
+        function openSaves() {
+            playClick();
+            document.getElementById('saves-modal').style.display = 'flex';
+            document.getElementById('save-message').textContent = '';
+        }
+
+        function closeSaves() {
+            playClick();
+            document.getElementById('saves-modal').style.display = 'none';
+        }
+
+        function saveGame() {
+            playClick();
+            const name = document.getElementById('save-name').value.trim();
+            const messageEl = document.getElementById('save-message');
+
+            if (!name) {
+                messageEl.textContent = '❌ Please enter a save name!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            const saveData = {
+                wins: wins,
+                losses: losses,
+                winStreak: winStreak,
+                lossStreak: lossStreak,
+                bestWinStreak: bestWinStreak,
+                hardWinStreak: hardWinStreak,
+                gamesPlayed: gamesPlayed,
+                totalGuesses: totalGuesses,
+                bestGuessTime: bestGuessTime,
+                bestMemoryTime: bestMemoryTime,
+                totalPlayTime: totalPlayTime,
+                achievements: achievements,
+                reverseScroll: reverseScroll,
+                shopItems: ownedItems,
+                coins: coins
+            };
+
+            localStorage.setItem('guessingGame_' + name, JSON.stringify(saveData));
+            messageEl.textContent = '✅ Saved successfully!';
+            messageEl.style.color = '#48bb78';
+            document.getElementById('save-name').value = '';
+        }
+
+        function loadGame() {
+            playClick();
+            const name = document.getElementById('load-name').value.trim();
+            const messageEl = document.getElementById('save-message');
+
+            if (!name) {
+                messageEl.textContent = '❌ Please enter a save name!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            const savedData = localStorage.getItem('guessingGame_' + name);
+
+            if (!savedData) {
+                messageEl.textContent = '❌ Save not found!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            let data;
+            try {
+                data = JSON.parse(savedData);
+            } catch (e) {
+                messageEl.textContent = '❌ Corrupted save file!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+            loadGameData(data);
+
+            messageEl.textContent = '✅ Loaded successfully!';
+            messageEl.style.color = '#48bb78';
+            document.getElementById('load-name').value = '';
+
+            const loadMsg = document.createElement('div');
+            loadMsg.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #48bb78; color: white; padding: 1rem 2rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000;';
+            loadMsg.textContent = '✅ Loaded successfully!';
+            document.body.appendChild(loadMsg);
+            setTimeout(() => loadMsg.remove(), 2000);
+        }
+
+        function loadGameData(data) {
+            wins = data.wins || 0;
+            losses = data.losses || 0;
+            winStreak = data.winStreak || 0;
+            lossStreak = data.lossStreak || 0;
+            bestWinStreak = data.bestWinStreak || 0;
+            hardWinStreak = data.hardWinStreak || 0;
+            gamesPlayed = data.gamesPlayed || 0;
+            totalGuesses = data.totalGuesses || 0;
+            bestGuessTime = data.bestGuessTime || null;
+            bestMemoryTime = data.bestMemoryTime || null;
+            totalPlayTime = data.totalPlayTime || 0;
+
+            // Merge saved achievements with current achievement structure (handles missing fields)
+            if (data.achievements) {
+                for (const key in achievements) {
+                    if (key in data.achievements && data.achievements[key]) {
+                        achievements[key] = true;
+                    }
+                }
+            }
+
+            reverseScroll = data.reverseScroll || false;
+
+            // Load coins (2 per win) if not saved in old saves
+            coins = data.coins !== undefined ? data.coins : (data.wins || 0) * 2;
+
+            // Load shop items
+            if (data.shopItems) {
+                ownedItems = data.shopItems;
+                saveShopData();
+                updateSettingsDropdowns();
+            }
+
+            // Note: Settings (timedMode, timerDuration, difficulty, theme, soundPack)
+            // are NOT loaded - they reset to defaults each session
+            // But reverseScroll IS saved and loaded
+            // Developer mode does NOT persist - you must re-enter the code each session
+
+            document.getElementById('reverse-scroll').checked = reverseScroll;
+
+            updateWinsLosses();
+            updateStatsDashboard();
+            updateAchievementsDisplay();
+            updateAchievementProgress();
+
+            // Check for achievements that should be unlocked with current stats
+            if (wins > 0 && !achievements.firstWin) unlockAchievement('firstWin');
+            if (losses > 0 && !achievements.firstLoss) unlockAchievement('firstLoss');
+            if (winStreak >= 2 && !achievements.winStreak2) unlockAchievement('winStreak2');
+            if (winStreak >= 3 && !achievements.winStreak3) unlockAchievement('winStreak3');
+            if (winStreak >= 4 && !achievements.winStreak4) unlockAchievement('winStreak4');
+            if (winStreak >= 5 && !achievements.winStreak5) unlockAchievement('winStreak5');
+            if (winStreak >= 10 && !achievements.winStreak10) unlockAchievement('winStreak10');
+            if (lossStreak >= 2 && !achievements.lossStreak2) unlockAchievement('lossStreak2');
+            if (lossStreak >= 3 && !achievements.lossStreak3) unlockAchievement('lossStreak3');
+            if (lossStreak >= 4 && !achievements.lossStreak4) unlockAchievement('lossStreak4');
+            if (lossStreak >= 5 && !achievements.lossStreak5) unlockAchievement('lossStreak5');
+            if (lossStreak >= 10 && !achievements.lossStreak10) unlockAchievement('lossStreak10');
+            if (gamesPlayed >= 100 && !achievements.games100) unlockAchievement('games100');
+        }
+
+        // =====================================================
+        // DEVELOPER FUNCTIONS
+        // =====================================================
+        function checkDevCode() {
+            playClick();
+            const input = document.getElementById('dev-code-input');
+            const messageEl = document.getElementById('dev-code-message');
+            const code = input.value.trim();
+
+            if (code === DEV_ACHIEVEMENT_CODE) {
+                if (!achievements.developer) {
+                    achievements.developer = true;
+                    updateAchievementsDisplay();
+                    unlockAchievement('developer');
+                    messageEl.textContent = '🎉 Developer achievement unlocked!';
+                    messageEl.style.color = '#48bb78';
+                    input.value = '';
+                } else {
+                    messageEl.textContent = 'Already unlocked!';
+                    messageEl.style.color = '#f6e05e';
+                }
+            } else if (code !== '') {
+                messageEl.textContent = '❌ Wrong code!';
+                messageEl.style.color = '#f56565';
+            } else {
+                messageEl.textContent = '';
+            }
+        }
+
+        function checkDevPanelCode() {
+            playClick();
+            const input = document.getElementById('dev-panel-input');
+            const messageEl = document.getElementById('dev-panel-message');
+            const code = input.value.trim();
+
+            if (code === DEV_PANEL_CODE) {
+                if (achievements.developer) {
+                    developerModeUnlocked = true;
+                    messageEl.textContent = '🔓 Developer panel unlocked!';
+                    messageEl.style.color = '#48bb78';
+                    document.getElementById('developer-panel').style.display = 'block';
+                    updateDevSaveList();
+                    input.value = '';
+                } else {
+                    messageEl.textContent = '❌ Unlock the Developer achievement first!';
+                    messageEl.style.color = '#f56565';
+                }
+            } else if (code !== '') {
+                messageEl.textContent = '❌ Wrong code!';
+                messageEl.style.color = '#f56565';
+            } else {
+                messageEl.textContent = '';
+            }
+        }
+
+        function quickSave() {
+            playClick();
+            const name = document.getElementById('dev-save-name').value.trim();
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!name) {
+                msgEl.textContent = '❌ Enter a save name!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            const saveData = {
+                wins: wins,
+                losses: losses,
+                winStreak: winStreak,
+                lossStreak: lossStreak,
+                bestWinStreak: bestWinStreak,
+                hardWinStreak: hardWinStreak,
+                gamesPlayed: gamesPlayed,
+                totalGuesses: totalGuesses,
+                bestGuessTime: bestGuessTime,
+                bestMemoryTime: bestMemoryTime,
+                totalPlayTime: totalPlayTime,
+                achievements: achievements,
+                reverseScroll: reverseScroll,
+                shopItems: ownedItems,
+                coins: coins
+            };
+
+            localStorage.setItem('quickSave_' + name, JSON.stringify(saveData));
+            msgEl.textContent = '✅ Saved as "' + name + '"!';
+            document.getElementById('dev-save-name').value = '';
+            setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            updateDevSaveList();
+        }
+
+        function quickLoad() {
+            playClick();
+            const select = document.getElementById('dev-save-select');
+            const name = select.value;
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!name) {
+                msgEl.textContent = '❌ Select a save first!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            const dataStr = localStorage.getItem('quickSave_' + name);
+            if (!dataStr) {
+                msgEl.textContent = '❌ Save not found!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            let data;
+            try {
+                data = JSON.parse(dataStr);
+            } catch (e) {
+                msgEl.textContent = '❌ Corrupted save file!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+            loadGameData(data);
+
+            msgEl.textContent = '✅ Loaded "' + name + '"!';
+            select.value = '';
+            setTimeout(() => { msgEl.textContent = ''; }, 2000);
+        }
+
+        function updateDevSaveList() {
+            const select = document.getElementById('dev-save-select');
+            select.innerHTML = '<option value="">Select save to load...</option>';
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('quickSave_')) {
+                    const name = key.replace('quickSave_', '');
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                }
+            }
+        }
+
+        function setWins() {
+            playClick();
+            const input = document.getElementById('dev-wins');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val >= 0) {
+                const oldWins = wins;
+                const diff = val - oldWins;
+                wins = val;
+
+                // Adjust win streak proportionally
+                winStreak = winStreak + diff;
+                // Bound between 0 and wins
+                winStreak = Math.max(0, Math.min(winStreak, wins));
+
+                if (wins > bestWinStreak) bestWinStreak = wins;
+                if (diff > 0) lossStreak = 0; // Reset loss streak when adding wins
+
+                // Also update gamesPlayed (but not for Veteran achievement via dev panel)
+                gamesPlayed = wins + losses;
+
+                if (diff > 0) unlockAchievement('firstWin');
+                if (winStreak >= 2) unlockAchievement('winStreak2');
+                if (winStreak >= 3) unlockAchievement('winStreak3');
+                if (winStreak >= 4) unlockAchievement('winStreak4');
+                if (winStreak >= 5) unlockAchievement('winStreak5');
+                if (winStreak >= 10) unlockAchievement('winStreak10');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+
+                updateWinsLosses();
+                updateStatsDashboard();
+                updateAchievementProgress();
+                document.getElementById('dev-wins').value = wins;
+                const msgEl = document.getElementById('dev-action-message');
+                msgEl.textContent = '✅ Wins set to ' + wins + '!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            }
+        }
+
+        function setLosses() {
+            playClick();
+            const input = document.getElementById('dev-losses');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val >= 0) {
+                const oldLosses = losses;
+                const diff = val - oldLosses;
+                losses = val;
+
+                // Adjust loss streak proportionally
+                lossStreak = lossStreak + diff;
+                // Bound between 0 and losses
+                lossStreak = Math.max(0, Math.min(lossStreak, losses));
+
+                if (diff > 0) winStreak = 0; // Reset win streak when adding losses
+
+                // Also update gamesPlayed (but not for Veteran achievement via dev panel)
+                gamesPlayed = wins + losses;
+
+                if (diff > 0) unlockAchievement('firstLoss');
+                if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                if (lossStreak >= 10) unlockAchievement('lossStreak10');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+
+                updateWinsLosses();
+                updateStatsDashboard();
+                updateAchievementProgress();
+                document.getElementById('dev-losses').value = losses;
+                const msgEl = document.getElementById('dev-action-message');
+                msgEl.textContent = '✅ Losses set to ' + losses + '!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            }
+        }
+
+        function giveAchievement() {
+            playClick();
+            const select = document.getElementById('achievement-select');
+            const ach = select.value;
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!ach) {
+                msgEl.textContent = '❌ Select an achievement first!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            // If giving Completionist, unlock all other achievements first
+            if (ach === 'completionist') {
+                for (const key in achievements) {
+                    if (key !== 'completionist' && key !== 'nosy') {
+                        achievements[key] = true;
+                    }
+                }
+                updateAchievementsDisplay();
+            }
+
+            unlockAchievement(ach);
+            select.value = '';
+        }
+
+        function testConfetti() {
+            const select = document.getElementById('test-confetti-select');
+            const theme = select.value;
+            const originalTheme = confettiTheme;
+
+            // Temporarily set theme for this test
+            confettiTheme = theme;
+            launchConfetti();
+
+            // Restore original theme after launching
+            confettiTheme = originalTheme;
+        }
+
+        function giveCoins() {
+            const input = document.getElementById('dev-coins');
+            const amount = parseInt(input.value);
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!isNaN(amount) && amount > 0) {
+                coins += amount;
+                updateCoinDisplay();
+                updateCoinBalance();
+                msgEl.textContent = '✅ Added ' + amount + ' coins!';
+                msgEl.style.color = '#48bb78';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            } else {
+                msgEl.textContent = '❌ Enter a valid amount!';
+                msgEl.style.color = '#f56565';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            }
+        }
+
+        function updateCoinBalance() {
+            document.getElementById('coin-balance').textContent = '(Balance: ' + coins + ')';
+        }
+
+        function exportSave() {
+            playClick();
+            const saveData = {
+                coins: coins,
+                wins: wins,
+                losses: losses,
+                winStreak: winStreak,
+                lossStreak: lossStreak,
+                bestWinStreak: bestWinStreak,
+                gamesPlayed: gamesPlayed,
+                totalGuesses: totalGuesses,
+                bestGuessTime: bestGuessTime,
+                bestMemoryTime: bestMemoryTime,
+                totalPlayTime: totalPlayTime,
+                difficulty: difficulty,
+                hardWinStreak: hardWinStreak,
+                dailyChallengeStreak: dailyChallengeStreak,
+                currentTheme: currentTheme,
+                currentSoundPack: currentSoundPack,
+                confettiTheme: confettiTheme,
+                buttonStyle: buttonStyle,
+                ownedItems: ownedItems,
+                achievements: achievements
+            };
+            const encoded = btoa(JSON.stringify(saveData));
+            navigator.clipboard.writeText(encoded).then(() => {
+                const msgEl = document.getElementById('dev-action-message');
+                msgEl.textContent = '✅ Save copied to clipboard!';
+                msgEl.style.color = '#48bb78';
+                setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            }).catch(() => {
+                alert('Save data:\n\n' + encoded + '\n\nCopy this text to import later!');
+            });
+        }
+
+        function importSave() {
+            playClick();
+            const input = document.getElementById('import-save-text').value.trim();
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!input) {
+                msgEl.textContent = '❌ Paste save data first!';
+                msgEl.style.color = '#f56565';
+                return;
+            }
+
+            try {
+                const decoded = atob(input);
+                const data = JSON.parse(decoded);
+
+                // Load all the data
+                coins = data.coins || 0;
+                wins = data.wins || 0;
+                losses = data.losses || 0;
+                winStreak = data.winStreak || 0;
+                lossStreak = data.lossStreak || 0;
+                bestWinStreak = data.bestWinStreak || 0;
+                gamesPlayed = data.gamesPlayed || 0;
+                totalGuesses = data.totalGuesses || 0;
+                bestGuessTime = data.bestGuessTime || null;
+                bestMemoryTime = data.bestMemoryTime || null;
+                totalPlayTime = data.totalPlayTime || 0;
+                difficulty = data.difficulty || 'normal';
+                hardWinStreak = data.hardWinStreak || 0;
+                dailyChallengeStreak = data.dailyChallengeStreak || 0;
+                currentTheme = data.currentTheme || 'default';
+                currentSoundPack = data.currentSoundPack || 'default';
+                confettiTheme = data.confettiTheme || 'rainbow';
+                buttonStyle = data.buttonStyle || 'default';
+                ownedItems = data.ownedItems || ownedItems;
+
+                // Merge achievements
+                if (data.achievements) {
+                    for (const key in data.achievements) {
+                        if (data.achievements[key] && key in achievements) {
+                            achievements[key] = true;
+                        }
+                    }
+                }
+
+                // Update UI
+                updateWinsLosses();
+                updateStatsDashboard();
+                updateAchievementProgress();
+                updateAchievementsDisplay();
+                updateCoinDisplay();
+                updateCoinBalance();
+                updateSettingsDropdowns();
+                changeTheme();
+                changeSoundPack();
+                loadVisualEffects();
+
+                document.getElementById('import-save-text').value = '';
+                msgEl.textContent = '✅ Save imported successfully!';
+                msgEl.style.color = '#48bb78';
+                setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            } catch (e) {
+                msgEl.textContent = '❌ Invalid save data!';
+                msgEl.style.color = '#f56565';
+                setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            }
+        }
+
+        function importSaveFromMain() {
+            playClick();
+            const input = document.getElementById('import-save-text-main').value.trim();
+            const msgEl = document.getElementById('import-message-main');
+
+            if (!input) {
+                msgEl.textContent = '❌ Paste save data first!';
+                msgEl.style.color = '#f56565';
+                return;
+            }
+
+            try {
+                const decoded = atob(input);
+                const data = JSON.parse(decoded);
+
+                // Load all the data
+                coins = data.coins || 0;
+                wins = data.wins || 0;
+                losses = data.losses || 0;
+                winStreak = data.winStreak || 0;
+                lossStreak = data.lossStreak || 0;
+                bestWinStreak = data.bestWinStreak || 0;
+                gamesPlayed = data.gamesPlayed || 0;
+                totalGuesses = data.totalGuesses || 0;
+                bestGuessTime = data.bestGuessTime || null;
+                bestMemoryTime = data.bestMemoryTime || null;
+                totalPlayTime = data.totalPlayTime || 0;
+                difficulty = data.difficulty || 'normal';
+                hardWinStreak = data.hardWinStreak || 0;
+                dailyChallengeStreak = data.dailyChallengeStreak || 0;
+                currentTheme = data.currentTheme || 'default';
+                currentSoundPack = data.currentSoundPack || 'default';
+                confettiTheme = data.confettiTheme || 'rainbow';
+                buttonStyle = data.buttonStyle || 'default';
+                ownedItems = data.ownedItems || ownedItems;
+
+                // Merge achievements
+                if (data.achievements) {
+                    for (const key in data.achievements) {
+                        if (data.achievements[key] && key in achievements) {
+                            achievements[key] = true;
+                        }
+                    }
+                }
+
+                // Update UI
+                updateWinsLosses();
+                updateStatsDashboard();
+                updateAchievementProgress();
+                updateAchievementsDisplay();
+                updateCoinDisplay();
+                updateCoinBalance();
+                updateSettingsDropdowns();
+                changeTheme();
+                changeSoundPack();
+                loadVisualEffects();
+
+                document.getElementById('import-save-text-main').value = '';
+                msgEl.textContent = '✅ Save imported successfully!';
+                msgEl.style.color = '#48bb78';
+                setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            } catch (e) {
+                msgEl.textContent = '❌ Invalid save data!';
+                msgEl.style.color = '#f56565';
+                setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            }
+        }
+
+        function unlockAllShop() {
+            playClick();
+            const msgEl = document.getElementById('dev-action-message');
+
+            // Unlock all sounds
+            ownedItems.sounds = ['default', 'piano', '8bit', 'scifi'];
+            // Unlock all themes
+            ownedItems.themes = ['default', 'dark', 'neon', 'retro', 'ocean'];
+            // Unlock all confetti
+            ownedItems.confetti = ['rainbow', 'gold', 'red', 'blue', 'green', 'purple', 'pink', 'fire', 'ocean', 'monochrome'];
+            // Unlock all games
+            ownedItems.games = ['memory', 'lucky7', 'rps'];
+            // Unlock all button styles
+            ownedItems.buttonStyles = ['rounded', 'square', 'neon'];
+
+            updateSettingsDropdowns();
+            saveShopData();
+
+            msgEl.textContent = '✅ All shop items unlocked!';
+            msgEl.style.color = '#9f7aea';
+            setTimeout(() => { msgEl.textContent = ''; }, 3000);
+        }
+
+        // =====================================================
+        // HINT SYSTEM
+        // =====================================================
+        function showHint() {
+            playClick();
+            const settings = difficultySettings[difficulty];
+            const mid = Math.floor(settings.max / 2);
+            const hintMsg = document.createElement('div');
+            hintMsg.style.cssText = 'position: fixed; top: 20%; left: 10px; transform: translateY(-50%); background: rgba(255,255,255,0.95); padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 200px;';
+            hintMsg.innerHTML = '💡 Start at <strong>' + mid + '</strong>!<br><small>Then narrow it down by half each time.</small>';
+            document.body.appendChild(hintMsg);
+            setTimeout(() => {
+                hintMsg.remove();
+            }, 4000);
+        }
+
+        // =====================================================
+        // EVENT LISTENERS
+        // =====================================================
+        document.addEventListener('wheel', (e) => {
+            if (reverseScroll) {
+                const modalContent = e.target.closest('.modal-content');
+                if (modalContent) {
+                    e.preventDefault();
+                    modalContent.scrollTop -= e.deltaY;
+                }
+            }
+        }, { passive: false });
+
+        document.getElementById('saves-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'saves-modal') closeSaves();
+        });
+
+        document.getElementById('achievements-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'achievements-modal') closeAchievements();
+        });
+
+        document.getElementById('settings-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'settings-modal') closeSettings();
+        });
+
+        document.getElementById('shop-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'shop-modal') closeShop();
+        });
+
+        document.getElementById('welcome-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'welcome-modal') closeWelcome();
+        });
+
+        document.getElementById('daily-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'daily-modal') closeDailyChallenge();
+        });
+
+        document.getElementById('daily-guess').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') makeDailyGuess();
+        });
+
+        document.getElementById('guess').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') guess();
+        });
+
+        function closeWelcome() {
+            playClick();
+            document.getElementById('welcome-modal').style.display = 'none';
+        }
+
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
+        document.getElementById('welcome-modal').style.display = 'flex';
+
+        document.addEventListener('click', () => {
+            initAudio();
+            startAmbient();
+        }, { once: true });
+
+        // Load daily challenge streak from localStorage
+        dailyChallengeStreak = parseInt(localStorage.getItem('dailyChallengeStreak') || '0');
+
+        // Load confetti theme
+        loadConfettiTheme();
+
+        // Load visual effects settings
+        loadVisualEffects();
+
+        // Update dropdowns with default owned items
+        updateSettingsDropdowns();
+
+        // Initialize coin display
+        updateCoinDisplay();
+
+        // Initialize game
+        secret = generateSecretNumber();
+        document.getElementById('guess').max = difficultySettings[difficulty].max;
+        document.getElementById('attempts-left').textContent = getDifficultyAttempts();
+
+        updateWinsLosses();
+        updateStatsDashboard();
+        updateAchievementsDisplay();
+        updateAchievementProgress();
+    </script>
+</body>
+</html>
