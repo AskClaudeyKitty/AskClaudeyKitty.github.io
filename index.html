@@ -25,6 +25,12 @@
             margin-top: 0;
             color: #2d3748;
         }
+        .game-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
         a {
             display: inline-block;
             padding: 1rem 2rem;
@@ -38,6 +44,18 @@
         a:hover {
             background: #38a169;
         }
+        a:nth-child(2) {
+            background: #e53e3e;
+        }
+        a:nth-child(2):hover {
+            background: #c53030;
+        }
+        a:nth-child(3) {
+            background: #805ad5;
+        }
+        a:nth-child(3):hover {
+            background: #6b46c1;
+        }
     </style>
 </head>
 <body>
@@ -45,6 +63,8 @@
         <h1>🎮 Game Collection</h1>
         <p>Welcome to the game hub!</p>
         <a href="guessing_game.html">Play Guessing Game</a>
+        <a href="explosion-button.html">Explosion Button</a>
+        <a href="explosion-button-webgl.html">Explosion Button (WebGL)</a>
     </div>
 </body>
 </html>
