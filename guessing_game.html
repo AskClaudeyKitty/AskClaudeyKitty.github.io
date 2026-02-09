@@ -1752,20 +1752,26 @@
             }
 
             dailyChallengeStreak = parseInt(localStorage.getItem('dailyChallengeStreak') || '0');
-            dailyAttempts = 0;
+
+            // Load today's attempts from localStorage (don't reset on reopen!)
+            const storedAttempts = localStorage.getItem('dailyAttempts_' + today);
+            dailyAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
+            const maxAttempts = difficultySettings[difficulty].attempts;
+            const outOfAttempts = dailyAttempts >= maxAttempts;
 
             // Update UI
             document.getElementById('daily-date').textContent = '📅 ' + today;
             document.getElementById('daily-target').textContent = dailyCompleted ? '✅ Completed!' : '🎯 Find today\'s number!';
             document.getElementById('daily-range').textContent = 'Range: 1-' + difficultySettings[difficulty].max;
-            document.getElementById('daily-status').textContent = dailyCompleted ? 'Come back tomorrow for a new challenge!' : 'Good luck!';
+            document.getElementById('daily-status').textContent = dailyCompleted ? 'Come back tomorrow for a new challenge!' :
+                (outOfAttempts ? '💀 Out of attempts! Come back tomorrow.' : 'Good luck!');
             document.getElementById('daily-streak-display').innerHTML = dailyChallengeStreak > 0 ?
                 '🔥 Current Streak: <span class="streak-fire">' + dailyChallengeStreak + '</span>' : 'Start your streak today!';
 
-            document.getElementById('daily-attempts-left').textContent = difficultySettings[difficulty].attempts;
+            document.getElementById('daily-attempts-left').textContent = Math.max(0, maxAttempts - dailyAttempts);
             document.getElementById('daily-message').textContent = '';
             document.getElementById('daily-message').className = 'message';
-            document.getElementById('daily-guess').disabled = dailyCompleted;
+            document.getElementById('daily-guess').disabled = dailyCompleted || outOfAttempts;
             document.getElementById('daily-guess').value = '';
             document.getElementById('daily-guess').max = difficultySettings[difficulty].max;
 
@@ -1792,8 +1798,20 @@
                 return;
             }
 
+            // Check if already used all attempts
+            if (dailyAttempts >= maxAttempts) {
+                message.textContent = '💀 No attempts left! Come back tomorrow.';
+                message.className = 'message high';
+                input.disabled = true;
+                return;
+            }
+
             dailyAttempts++;
             document.getElementById('daily-attempts-left').textContent = maxAttempts - dailyAttempts;
+
+            // Save attempts to localStorage so they persist on modal reopen
+            const today = getTodayString();
+            localStorage.setItem('dailyAttempts_' + today, dailyAttempts.toString());
 
             if (guess < dailyChallengeNumber) {
                 if (dailyChallengeNumber - guess <= 2) {
