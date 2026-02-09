@@ -141,8 +141,6 @@
             display: none;
         }
         .reset:hover { background: #38a169; }
-
-        /* Top button row - responsive to prevent overlap */
         .mute-btn {
             position: fixed;
             top: 10px;
@@ -153,63 +151,56 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .mute-btn:hover { background: rgba(255,255,255,0.3); }
         .settings-btn {
             position: fixed;
             top: 10px;
-            right: 60px;
+            right: 70px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .settings-btn:hover { background: rgba(255,255,255,0.3); }
         .saves-btn {
             position: fixed;
             top: 10px;
-            right: 115px;
+            right: 130px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .saves-btn:hover { background: rgba(255,255,255,0.3); }
-        .shop-btn {
-            position: fixed;
-            top: 10px;
-            right: 170px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            z-index: 1000;
-        }
-        .shop-btn:hover { background: rgba(255,255,255,0.3); }
         .achievements-btn {
             position: fixed;
             top: 10px;
-            right: 225px;
+            right: 250px;
             background: rgba(255,255,255,0.2);
             border: none;
             padding: 0.5rem 1rem;
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .achievements-btn:hover { background: rgba(255,255,255,0.3); }
-
-        /* Side buttons */
+        .shop-btn {
+            position: fixed;
+            top: 10px;
+            right: 190px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .shop-btn:hover { background: rgba(255,255,255,0.3); }
         .hint-btn {
             position: fixed;
             top: 50%;
@@ -221,13 +212,12 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .hint-btn:hover { background: rgba(255,255,255,0.3); }
         .daily-btn {
             position: fixed;
             top: 50%;
-            left: 60px;
+            left: 80px;
             transform: translateY(-50%);
             background: rgba(255,255,255,0.2);
             border: none;
@@ -235,25 +225,8 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 1rem;
-            z-index: 1000;
         }
         .daily-btn:hover { background: rgba(255,255,255,0.3); }
-
-        /* Responsive adjustments for small screens */
-        @media (max-width: 600px) {
-            .mute-btn { right: 5px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .settings-btn { right: 50px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .saves-btn { right: 100px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .shop-btn { right: 150px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .achievements-btn { right: 200px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .hint-btn { left: 5px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-            .daily-btn { left: 50px; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-        }
-        @media (max-width: 400px) {
-            .achievements-btn { top: 45px; right: 5px; }
-            .shop-btn { top: 10px; right: 5px; }
-            .saves-btn { display: none; }
-        }
 
         /* Coin Balance Display */
         .coin-display {
