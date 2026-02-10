@@ -692,6 +692,55 @@
                 </select>
                 <button onclick="giveAchievement()" style="background: #f6e05e; color: #744210; border: none; padding: 0.5rem 1rem; margin-left: 0.5rem;">Give</button>
                 <br><br>
+                <strong>Unlock Shop Items:</strong><br><br>
+                <select id="shop-item-select" style="padding: 0.3rem; width: 70%;">
+                    <option value="">Select item...</option>
+                    <optgroup label="🔊 Sounds">
+                        <option value="sounds:8bit">8-Bit</option>
+                        <option value="sounds:scifi">Sci-Fi</option>
+                        <option value="sounds:nature">Nature</option>
+                        <option value="sounds:arcade">Retro Arcade</option>
+                        <option value="sounds:orchestral">Orchestral</option>
+                    </optgroup>
+                    <optgroup label="🎨 Themes">
+                        <option value="themes:neon">Neon</option>
+                        <option value="themes:retro">Retro</option>
+                        <option value="themes:ocean">Ocean</option>
+                    </optgroup>
+                    <optgroup label="🎊 Confetti">
+                        <option value="confetti:gold">Gold</option>
+                        <option value="confetti:red">Red</option>
+                        <option value="confetti:blue">Blue</option>
+                        <option value="confetti:green">Green</option>
+                        <option value="confetti:purple">Purple</option>
+                        <option value="confetti:pink">Pink</option>
+                        <option value="confetti:fire">Fire</option>
+                        <option value="confetti:ocean">Ocean</option>
+                    </optgroup>
+                    <optgroup label="🎮 Games">
+                        <option value="games:memory">Memory Match</option>
+                        <option value="games:lucky7">Lucky 7</option>
+                        <option value="games:rps">Rock Paper Scissors</option>
+                    </optgroup>
+                    <optgroup label="🔘 Button Styles">
+                        <option value="buttonStyles:rounded">Rounded Buttons</option>
+                        <option value="buttonStyles:square">Square Buttons</option>
+                        <option value="buttonStyles:neon">Neon Glow Buttons</option>
+                    </optgroup>
+                    <optgroup label="🔢 Number Skins">
+                        <option value="numberSkins:emoji">Emoji Numbers</option>
+                        <option value="numberSkins:roman">Roman Numerals</option>
+                        <option value="numberSkins:binary">Binary Code</option>
+                        <option value="numberSkins:words">Number Words</option>
+                    </optgroup>
+                    <optgroup label="🎨 Backgrounds">
+                        <option value="backgrounds:particles">Floating Particles</option>
+                        <option value="backgrounds:waves">Animated Waves</option>
+                        <option value="backgrounds:stars">Twinkling Stars</option>
+                    </optgroup>
+                </select>
+                <button onclick="unlockShopItem()" style="background: #805ad5; border: none; padding: 0.5rem 1rem; margin-left: 0.5rem;">Unlock</button>
+                <br><br>
                 <strong>Quick Save/Load:</strong><br><br>
                 <input type="text" id="dev-save-name" placeholder="Save name..." style="padding: 0.3rem; width: 60%;">
                 <button onclick="quickSave()" style="background: #48bb78; border: none; padding: 0.3rem 1rem;">Save</button>
@@ -3843,6 +3892,43 @@
             }
 
             unlockAchievement(ach);
+            select.value = '';
+        }
+
+        function unlockShopItem() {
+            playClick();
+            const select = document.getElementById('shop-item-select');
+            const itemValue = select.value;
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!itemValue) {
+                msgEl.textContent = '❌ Select an item first!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            const [category, itemId] = itemValue.split(':');
+
+            if (!ownedItems[category]) {
+                msgEl.textContent = '❌ Invalid category!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            if (ownedItems[category].includes(itemId)) {
+                msgEl.textContent = '⚠️ Item already owned!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            // Add the item to owned items
+            ownedItems[category].push(itemId);
+            saveShopData();
+            updateShopDisplay();
+            updateSettingsDropdowns();
+
+            msgEl.textContent = `✅ Unlocked ${itemId} from ${category}!`;
+            setTimeout(() => { msgEl.textContent = ''; }, 2000);
             select.value = '';
         }
 
