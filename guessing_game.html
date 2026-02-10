@@ -227,6 +227,19 @@
             font-size: 1rem;
         }
         .daily-btn:hover { background: rgba(255,255,255,0.3); }
+        .history-btn {
+            position: fixed;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .history-btn:hover { background: rgba(255,255,255,0.3); }
 
         /* Coin Balance Display */
         .coin-display {
@@ -387,6 +400,20 @@
             from { transform: scale(1); }
             to { transform: scale(1.1); }
         }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.7; }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-10px) translateX(-10px); }
+            75% { transform: translateY(-30px) translateX(5px); }
+        }
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
         .daily-badge {
             display: inline-block;
             background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
@@ -403,6 +430,35 @@
             height: 100%;
             pointer-events: none;
             z-index: 9999;
+        }
+        #background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float 15s ease-in-out infinite;
+        }
+        .bg-wave {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            opacity: 0.1;
+        }
+        .bg-star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
         }
         .section-title {
             font-weight: bold;
@@ -426,6 +482,7 @@
 </head>
 <body data-theme="default">
     <canvas id="confetti-canvas"></canvas>
+    <div id="background-effects"></div>
 
     <button class="achievements-btn" onclick="openAchievements()">🏆</button>
     <button class="shop-btn" onclick="openShop()">🛒</button>
@@ -434,6 +491,7 @@
     <button class="mute-btn" onclick="toggleMute()">🔊</button>
     <button class="hint-btn" onclick="showHint()">💡</button>
     <button class="daily-btn" onclick="openDailyChallenge()">📅</button>
+    <button class="history-btn" onclick="openGameHistory()">📜</button>
     <div class="coin-display">🪙 <span id="coin-balance-display">0</span></div>
 
     <div class="modal" id="welcome-modal">
@@ -512,6 +570,20 @@
                         <option value="neon">💡 Neon Glow</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="section-title">🔢 Number Skin</div>
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
+                <select id="number-skin" style="width: 100%; padding: 0.3rem;" onchange="changeNumberSkin()">
+                    <option value="default">🔢 Default Numbers</option>
+                </select>
+            </div>
+
+            <div class="section-title">🎨 Animated Background</div>
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
+                <select id="background-select" style="width: 100%; padding: 0.3rem;" onchange="changeBackground()">
+                    <option value="default">🚫 None</option>
+                </select>
             </div>
 
             <div class="section-title">⏱️ Timed Mode</div>
@@ -703,6 +775,12 @@
             <div class="section-title">🔘 Button Styles</div>
             <div id="shop-buttonStyles" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
 
+            <div class="section-title">🔢 Number Skins</div>
+            <div id="shop-numberSkins" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
+            <div class="section-title">🎨 Animated Backgrounds</div>
+            <div id="shop-backgrounds" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+
             <button class="close-modal" onclick="closeShop()">Close</button>
         </div>
     </div>
@@ -734,6 +812,15 @@
                 <span id="import-message-main" style="margin-left: 0.5rem;"></span>
             </div>
             <button class="close-modal" onclick="closeSaves()" style="background: #718096; margin-top: 1rem;">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="history-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>📜 Game History</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Your last 10 games</p>
+            <div id="game-history-list" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="close-modal" onclick="closeGameHistory()" style="background: #718096; margin-top: 1rem;">Close</button>
         </div>
     </div>
 
@@ -925,6 +1012,11 @@
                     <strong>Lucky Guesses</strong>
                     <br><small>Win 3 games in a row with just 1 guess! Unlocks Simon Says!</small>
                 </div>
+                <div class="achievement" id="ach-perfectionist">
+                    <span class="achievement-icon">⭐</span>
+                    <strong>Perfectionist</strong>
+                    <br><small>Win at least once in every game mode!</small>
+                </div>
                 <div class="achievement" id="ach-completionist">
                     <span class="achievement-icon">👑</span>
                     <strong>Completionist</strong>
@@ -1074,13 +1166,21 @@
             themes: ['default', 'dark'],
             confetti: ['rainbow', 'monochrome'],
             games: [],
-            buttonStyles: []
+            buttonStyles: [],
+            numberSkins: ['default'],
+            backgrounds: ['default']
         };
+
+        let currentNumberSkin = 'default';
+        let currentBackground = 'default';
 
         const shopItems = {
             sounds: [
                 { id: '8bit', name: '8-Bit', price: 5, icon: '👾' },
-                { id: 'scifi', name: 'Sci-Fi', price: 10, icon: '🚀' }
+                { id: 'scifi', name: 'Sci-Fi', price: 10, icon: '🚀' },
+                { id: 'nature', name: 'Nature', price: 15, icon: '🌿' },
+                { id: 'arcade', name: 'Retro Arcade', price: 20, icon: '🕹️' },
+                { id: 'orchestral', name: 'Orchestral', price: 25, icon: '🎻' }
             ],
             themes: [
                 { id: 'neon', name: 'Neon', price: 15, icon: '💜' },
@@ -1106,6 +1206,17 @@
                 { id: 'rounded', name: 'Rounded Buttons', price: 10, icon: '⭕' },
                 { id: 'square', name: 'Square Buttons', price: 8, icon: '⬜' },
                 { id: 'neon', name: 'Neon Glow Buttons', price: 15, icon: '💡' }
+            ],
+            numberSkins: [
+                { id: 'emoji', name: 'Emoji Numbers', price: 20, icon: '😀' },
+                { id: 'roman', name: 'Roman Numerals', price: 15, icon: '🏛️' },
+                { id: 'binary', name: 'Binary Code', price: 25, icon: '💻' },
+                { id: 'words', name: 'Number Words', price: 10, icon: '📝' }
+            ],
+            backgrounds: [
+                { id: 'particles', name: 'Floating Particles', price: 30, icon: '✨' },
+                { id: 'waves', name: 'Animated Waves', price: 25, icon: '🌊' },
+                { id: 'stars', name: 'Twinkling Stars', price: 20, icon: '⭐' }
             ]
         };
 
@@ -1122,6 +1233,19 @@
         // Game session tracking
         let gameStartTime = null;
         let isDailyChallenge = false;
+
+        // Track wins per game mode for Perfectionist achievement
+        let gameModeWins = {
+            guess: false,
+            memory: false,
+            lucky7: false,
+            rps: false,
+            simon: false
+        };
+
+        // Game History - track last 10 games
+        let gameHistory = [];
+        const MAX_HISTORY = 10;
 
         // Achievements
         let achievements = {
@@ -1160,7 +1284,8 @@
             jackpot: false,
             impossible: false,
             nosy: false,
-            luckyGuesses: false
+            luckyGuesses: false,
+            perfectionist: false
         };
 
         // One-guess wins tracking
@@ -1234,6 +1359,27 @@
                 volume: 0.08,
                 decay: 0.8,
                 clickType: 'sawtooth',
+                clickVolume: 0.05
+            },
+            nature: {
+                type: 'sine',
+                volume: 0.12,
+                decay: 2.0,
+                clickType: 'sine',
+                clickVolume: 0.03
+            },
+            arcade: {
+                type: 'square',
+                volume: 0.1,
+                decay: 0.3,
+                clickType: 'square',
+                clickVolume: 0.08
+            },
+            orchestral: {
+                type: 'triangle',
+                volume: 0.15,
+                decay: 1.8,
+                clickType: 'triangle',
                 clickVolume: 0.05
             }
         };
@@ -1397,6 +1543,7 @@
                 coins += 500;
                 document.getElementById('lucky7-coins').textContent = coins;
                 updateCoinDisplay();
+                trackGameModeWin('lucky7');
                 playWin();
                 launchConfetti();
             } else if (result % 7 === 0) {
@@ -1407,6 +1554,7 @@
                 coins += win;
                 document.getElementById('lucky7-coins').textContent = coins;
                 updateCoinDisplay();
+                trackGameModeWin('lucky7');
                 playWin();
             } else {
                 message.textContent = 'Try again! Win on 7s or multiples of 7!';
@@ -1472,6 +1620,7 @@
                     document.getElementById('rps-result').textContent += ' 🏆 YOU WIN!';
                     document.getElementById('rps-result').style.color = '#48bb78';
                     coins += 5;
+                    trackGameModeWin('rps');
                     launchConfetti();
                 } else {
                     document.getElementById('rps-result').textContent += ' 💀 YOU LOSE!';
@@ -1607,6 +1756,10 @@
                 // Correct! Next round
                 simonScore++;
                 document.getElementById('simon-score').textContent = simonScore;
+                // Track first successful round as a "win" for Perfectionist
+                if (simonScore === 1) {
+                    trackGameModeWin('simon');
+                }
                 simonRound++;
                 document.getElementById('simon-round').textContent = simonRound;
                 document.getElementById('simon-message').textContent = '✅ Correct! Get ready...';
@@ -2120,6 +2273,7 @@
                 message.className = 'message win';
 
                 unlockAchievement('firstWin');
+                trackGameModeWin('guess');
                 if (winStreak >= 2) unlockAchievement('winStreak2');
                 if (winStreak >= 3) unlockAchievement('winStreak3');
                 if (winStreak >= 4) unlockAchievement('winStreak4');
@@ -2138,6 +2292,9 @@
                 stopTimer();
                 playWin();
                 launchConfetti();
+
+                // Record game in history
+                recordGame('guess', 'win', `${attempts} attempts`);
             } else {
                 losses++;
                 lossStreak++;
@@ -2164,6 +2321,9 @@
 
                 stopTimer();
                 playLose();
+
+                // Record game in history
+                recordGame('guess', 'loss', `${attempts} attempts - Number was ${secret}`);
             }
 
             updateWinsLosses();
@@ -2474,6 +2634,7 @@
 
                             // Achievements
                             unlockAchievement('memoryFirstWin');
+                            trackGameModeWin('memory');
                             if (difficulty === 'hard') unlockAchievement('hardMemory');
                             if (memoryMoves === totalPairs) unlockAchievement('memoryPerfect');
                             if (memoryMoves < 20) unlockAchievement('memoryUnder20');
@@ -2644,9 +2805,130 @@
             }
         }
 
+        // =====================================================
+        // NUMBER SKIN SYSTEM
+        // =====================================================
+        function changeNumberSkin() {
+            playClick();
+            currentNumberSkin = document.getElementById('number-skin').value;
+            localStorage.setItem('numberSkin', currentNumberSkin);
+        }
+
+        function loadNumberSkin() {
+            const saved = localStorage.getItem('numberSkin') || 'default';
+            currentNumberSkin = saved;
+        }
+
+        function formatNumber(num) {
+            switch(currentNumberSkin) {
+                case 'emoji':
+                    return numberToEmoji(num);
+                case 'roman':
+                    return numberToRoman(num);
+                case 'binary':
+                    return numberToBinary(num);
+                case 'words':
+                    return numberToWords(num);
+                default:
+                    return num.toString();
+            }
+        }
+
+        function numberToEmoji(num) {
+            const emojiNumbers = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+            return num.toString().split('').map(d => emojiNumbers[parseInt(d)] || d).join('');
+        }
+
+        function numberToRoman(num) {
+            if (num < 1 || num > 3999) return num.toString();
+            const roman = { M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1 };
+            let result = '';
+            for (let key in roman) {
+                while (num >= roman[key]) {
+                    result += key;
+                    num -= roman[key];
+                }
+            }
+            return result;
+        }
+
+        function numberToBinary(num) {
+            return num.toString(2);
+        }
+
+        function numberToWords(num) {
+            const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+            const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+            if (num < 20) return ones[num] || num.toString();
+            if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? '-' + ones[num % 10] : '');
+            if (num < 1000) return ones[Math.floor(num / 100)] + ' hundred' + (num % 100 ? ' ' + numberToWords(num % 100) : '');
+            return num.toString();
+        }
+
         function loadVisualEffects() {
             buttonStyle = 'default';
             document.getElementById('button-style').value = buttonStyle;
+        }
+
+        // =====================================================
+        // BACKGROUND ANIMATION SYSTEM
+        // =====================================================
+        function changeBackground() {
+            playClick();
+            currentBackground = document.getElementById('background-select').value;
+            localStorage.setItem('background', currentBackground);
+            applyBackground(currentBackground);
+        }
+
+        function loadBackground() {
+            const saved = localStorage.getItem('background') || 'default';
+            currentBackground = saved;
+            const select = document.getElementById('background-select');
+            if (select) select.value = saved;
+            applyBackground(currentBackground);
+        }
+
+        function applyBackground(bg) {
+            const container = document.getElementById('background-effects');
+            container.innerHTML = '';
+
+            if (bg === 'default') return;
+
+            if (bg === 'particles') {
+                for (let i = 0; i < 20; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'bg-particle';
+                    particle.style.width = Math.random() * 20 + 10 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.background = `hsla(${Math.random() * 360}, 70%, 60%, 0.3)`;
+                    particle.style.animationDelay = Math.random() * 5 + 's';
+                    particle.style.animationDuration = Math.random() * 10 + 10 + 's';
+                    container.appendChild(particle);
+                }
+            } else if (bg === 'waves') {
+                for (let i = 0; i < 3; i++) {
+                    const wave = document.createElement('div');
+                    wave.className = 'bg-wave';
+                    wave.style.bottom = (i * 30) + '%';
+                    wave.style.background = `linear-gradient(90deg, transparent, hsla(${200 + i * 20}, 70%, 60%, 0.3), transparent)`;
+                    wave.style.animation = `wave ${8 + i * 2}s ease-in-out infinite`;
+                    wave.style.animationDelay = i * 2 + 's';
+                    container.appendChild(wave);
+                }
+            } else if (bg === 'stars') {
+                for (let i = 0; i < 50; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'bg-star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.animationDelay = Math.random() * 3 + 's';
+                    container.appendChild(star);
+                }
+            }
         }
 
         function updateCoinDisplay() {
@@ -2677,6 +2959,8 @@
             renderShopCategory('confetti', shopItems.confetti, 'confetti');
             renderShopCategory('games', shopItems.games, 'games');
             renderShopCategory('buttonStyles', shopItems.buttonStyles, 'buttonStyles');
+            renderShopCategory('numberSkins', shopItems.numberSkins, 'numberSkins');
+            renderShopCategory('backgrounds', shopItems.backgrounds, 'backgrounds');
         }
 
         function renderShopCategory(containerId, items, category) {
@@ -2769,7 +3053,10 @@
                 { id: 'default', name: '🎵 Default', free: true },
                 { id: 'piano', name: '🎹 Piano', free: true },
                 { id: '8bit', name: '👾 8-Bit', free: false },
-                { id: 'scifi', name: '🚀 Sci-Fi', free: false }
+                { id: 'scifi', name: '🚀 Sci-Fi', free: false },
+                { id: 'nature', name: '🌿 Nature', free: false },
+                { id: 'arcade', name: '🕹️ Retro Arcade', free: false },
+                { id: 'orchestral', name: '🎻 Orchestral', free: false }
             ];
 
             allSounds.forEach(sound => {
@@ -2830,6 +3117,53 @@
                 }
             });
             buttonStyleSelect.value = currentButtonStyle;
+
+            // Update number skin dropdown
+            const numberSkinSelect = document.getElementById('number-skin');
+            if (numberSkinSelect) {
+                const currentNumberSkinLocal = numberSkinSelect.value;
+                numberSkinSelect.innerHTML = '<option value="default">🔢 Default Numbers</option>';
+
+                const allNumberSkins = [
+                    { id: 'emoji', name: '😀 Emoji Numbers' },
+                    { id: 'roman', name: '🏛️ Roman Numerals' },
+                    { id: 'binary', name: '💻 Binary Code' },
+                    { id: 'words', name: '📝 Number Words' }
+                ];
+
+                allNumberSkins.forEach(skin => {
+                    if (ownedItems.numberSkins.includes(skin.id)) {
+                        const option = document.createElement('option');
+                        option.value = skin.id;
+                        option.textContent = skin.name;
+                        numberSkinSelect.appendChild(option);
+                    }
+                });
+                numberSkinSelect.value = currentNumberSkinLocal;
+            }
+
+            // Update background dropdown
+            const backgroundSelect = document.getElementById('background-select');
+            if (backgroundSelect) {
+                const currentBackgroundLocal = backgroundSelect.value;
+                backgroundSelect.innerHTML = '<option value="default">🚫 None</option>';
+
+                const allBackgrounds = [
+                    { id: 'particles', name: '✨ Floating Particles' },
+                    { id: 'waves', name: '🌊 Animated Waves' },
+                    { id: 'stars', name: '⭐ Twinkling Stars' }
+                ];
+
+                allBackgrounds.forEach(bg => {
+                    if (ownedItems.backgrounds.includes(bg.id)) {
+                        const option = document.createElement('option');
+                        option.value = bg.id;
+                        option.textContent = bg.name;
+                        backgroundSelect.appendChild(option);
+                    }
+                });
+                backgroundSelect.value = currentBackgroundLocal;
+            }
         }
 
         function saveShopData() {
@@ -2902,6 +3236,7 @@
                 ['jackpot', 'ach-jackpot'],
                 ['impossible', 'ach-impossible'],
                 ['luckyGuesses', 'ach-lucky-guesses'],
+                ['perfectionist', 'ach-perfectionist'],
                 ['completionist', 'ach-completionist'],
                 ['nosy', 'ach-nosy']
             ];
@@ -2921,6 +3256,97 @@
                 }
             });
         }
+
+        function trackGameModeWin(mode) {
+            gameModeWins[mode] = true;
+            saveGameModeWins();
+
+            // Check for Perfectionist achievement (win all game modes)
+            const allModesWon = Object.values(gameModeWins).every(won => won);
+            if (allModesWon && !achievements.perfectionist) {
+                unlockAchievement('perfectionist');
+            }
+        }
+
+        function saveGameModeWins() {
+            localStorage.setItem('gameModeWins', JSON.stringify(gameModeWins));
+        }
+
+        function loadGameModeWins() {
+            const saved = localStorage.getItem('gameModeWins');
+            if (saved) {
+                gameModeWins = JSON.parse(saved);
+            }
+        }
+
+        // =====================================================
+        // GAME HISTORY
+        // =====================================================
+        function recordGame(mode, result, details) {
+            const gameRecord = {
+                mode: mode,
+                result: result, // 'win' or 'loss'
+                details: details,
+                timestamp: new Date().toISOString()
+            };
+
+            gameHistory.unshift(gameRecord);
+            if (gameHistory.length > MAX_HISTORY) {
+                gameHistory = gameHistory.slice(0, MAX_HISTORY);
+            }
+
+            localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+            updateGameHistoryDisplay();
+        }
+
+        function loadGameHistory() {
+            const saved = localStorage.getItem('gameHistory');
+            if (saved) {
+                gameHistory = JSON.parse(saved);
+            }
+        }
+
+        function updateGameHistoryDisplay() {
+            const historyContainer = document.getElementById('game-history-list');
+            if (!historyContainer) return;
+
+            if (gameHistory.length === 0) {
+                historyContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No games played yet!</p>';
+                return;
+            }
+
+            historyContainer.innerHTML = gameHistory.map((game, index) => {
+                const modeNames = {
+                    guess: '🎯 Guess the Number',
+                    memory: '🧠 Memory Match',
+                    lucky7: '🎰 Lucky 7',
+                    rps: '✊✋✌ Rock Paper Scissors',
+                    simon: '🎵 Simon Says'
+                };
+
+                const resultIcon = game.result === 'win' ? '✅' : '❌';
+                const resultColor = game.result === 'win' ? '#48bb78' : '#f56565';
+                const date = new Date(game.timestamp);
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                        <div>
+                            <div style="font-weight: bold; margin-bottom: 0.25rem;">${modeNames[game.mode] || game.mode}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary);">${game.details}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; color: ${resultColor};">${resultIcon}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =====================================================
+        // END GAME HISTORY
+        // =====================================================
 
         function unlockAchievement(ach) {
             if (achievements[ach]) return;
@@ -2963,7 +3389,8 @@
                 impossible: 'Impossible',
                 completionist: 'Completionist',
                 nosy: 'Nosy',
-                luckyGuesses: 'Lucky Guesses'
+                luckyGuesses: 'Lucky Guesses',
+                perfectionist: 'Perfectionist'
             };
 
             const achMsg = document.createElement('div');
@@ -2986,7 +3413,7 @@
                     'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'lossStreak10', 'games100', 'perfectGame',
                     'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5',
                     'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10', 'dailyStreak3',
-                    'dailyStreak7', 'dailyStreak30', 'hardWin', 'hardMemory', 'perfectDay', 'impossible', 'luckyGuesses'];
+                    'dailyStreak7', 'dailyStreak30', 'hardWin', 'hardMemory', 'perfectDay', 'impossible', 'luckyGuesses', 'perfectionist'];
                 const allUnlocked = allAchs.every(a => achievements[a]);
                 if (allUnlocked && !achievements.completionist) {
                     setTimeout(() => unlockAchievement('completionist'), 500);
@@ -3027,6 +3454,17 @@
         function closeSaves() {
             playClick();
             document.getElementById('saves-modal').style.display = 'none';
+        }
+
+        function openGameHistory() {
+            playClick();
+            updateGameHistoryDisplay();
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        function closeGameHistory() {
+            playClick();
+            document.getElementById('history-modal').style.display = 'none';
         }
 
         function saveGame() {
@@ -3691,6 +4129,10 @@
             if (e.target.id === 'daily-modal') closeDailyChallenge();
         });
 
+        document.getElementById('history-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'history-modal') closeGameHistory();
+        });
+
         document.getElementById('daily-guess').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') makeDailyGuess();
         });
@@ -3717,11 +4159,23 @@
         // Load daily challenge streak from localStorage
         dailyChallengeStreak = parseInt(localStorage.getItem('dailyChallengeStreak') || '0');
 
+        // Load game mode wins for Perfectionist achievement
+        loadGameModeWins();
+
+        // Load game history
+        loadGameHistory();
+
         // Load confetti theme
         loadConfettiTheme();
 
         // Load visual effects settings
         loadVisualEffects();
+
+        // Load number skin
+        loadNumberSkin();
+
+        // Load background
+        loadBackground();
 
         // Update dropdowns with default owned items
         updateSettingsDropdowns();
