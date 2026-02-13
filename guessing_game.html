@@ -2099,7 +2099,7 @@
 
             // Update game description with correct range
             const maxNum = difficultySettings[difficulty].max;
-            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + maxNum + '.';
+            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + formatNumber(maxNum) + '.';
 
             // Reset current game with new difficulty
             if (currentGame === 'guess') {
