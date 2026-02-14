@@ -1923,7 +1923,7 @@
             document.getElementById('daily-streak-display').innerHTML = dailyChallengeStreak > 0 ?
                 '🔥 Current Streak: <span class="streak-fire">' + dailyChallengeStreak + '</span>' : 'Start your streak today!';
 
-            document.getElementById('daily-attempts-left').textContent = Math.max(0, maxAttempts - dailyAttempts);
+            document.getElementById('daily-attempts-left').textContent = formatNumber(Math.max(0, maxAttempts - dailyAttempts));
             document.getElementById('daily-message').textContent = '';
             document.getElementById('daily-message').className = 'message';
             document.getElementById('daily-guess').disabled = dailyCompleted || outOfAttempts;
@@ -1962,7 +1962,7 @@
             }
 
             dailyAttempts++;
-            document.getElementById('daily-attempts-left').textContent = maxAttempts - dailyAttempts;
+            document.getElementById('daily-attempts-left').textContent = formatNumber(maxAttempts - dailyAttempts);
 
             // Save attempts to localStorage so they persist on modal reopen
             const today = getTodayString();
@@ -2182,10 +2182,10 @@
         // GAME FUNCTIONS
         // =====================================================
         function updateWinsLosses() {
-            document.getElementById('wins').textContent = wins;
-            document.getElementById('losses').textContent = losses;
-            document.getElementById('current-win-streak').textContent = winStreak;
-            document.getElementById('current-loss-streak').textContent = lossStreak;
+            document.getElementById('wins').textContent = formatNumber(wins);
+            document.getElementById('losses').textContent = formatNumber(losses);
+            document.getElementById('current-win-streak').textContent = formatNumber(winStreak);
+            document.getElementById('current-loss-streak').textContent = formatNumber(lossStreak);
         }
 
         function generateSecretNumber() {
@@ -2475,7 +2475,7 @@
 
             attempts++;
             const currentMaxAttempts = getDifficultyAttempts();
-            attemptsLeft.textContent = currentMaxAttempts - attempts;
+            attemptsLeft.textContent = formatNumber(currentMaxAttempts - attempts);
 
             if (guessVal < secret) {
                 if (secret - guessVal <= 2) {
@@ -2526,12 +2526,12 @@
             document.getElementById('message').textContent = '';
             document.getElementById('message').className = 'message';
             document.getElementById('reset').style.display = 'none';
-            document.getElementById('attempts-left').textContent = getDifficultyAttempts();
+            document.getElementById('attempts-left').textContent = formatNumber(getDifficultyAttempts());
             document.getElementById('guess').disabled = false;
             document.getElementById('guess').focus();
             document.getElementById('guess').max = difficultySettings[difficulty].max;
             const maxNum = difficultySettings[difficulty].max;
-            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + maxNum + '.';
+            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + formatNumber(maxNum) + '.';
             if (timedMode) {
                 document.getElementById('timer').textContent = timerDuration;
             }
@@ -2897,6 +2897,7 @@
         }
 
         function numberToWords(num) {
+            if (num === 0) return 'zero';
             const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
                 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
             const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
