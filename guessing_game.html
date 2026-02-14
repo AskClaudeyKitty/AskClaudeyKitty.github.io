@@ -407,8 +407,9 @@
             75% { transform: translateY(-30px) translateX(5px); }
         }
         @keyframes wave {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100vw); }
+            0% { transform: translateX(-50%); }
+            50% { transform: translateX(0%); }
+            100% { transform: translateX(50%); }
         }
         @keyframes twinkle {
             0%, 100% { opacity: 0.3; transform: scale(0.8); }
@@ -2021,7 +2022,7 @@
             }
 
             if (dailyAttempts >= maxAttempts) {
-                message.textContent = '💀 Out of attempts! The number was ' + dailyChallengeNumber;
+                message.textContent = '💀 Out of attempts! The number was ' + formatNumber(dailyChallengeNumber);
                 message.className = 'message high';
                 input.disabled = true;
                 playLose();
@@ -2304,10 +2305,10 @@
                 gamesPlayed++;
 
                 if (timeout) {
-                    message.textContent = '⏰ Time\'s up! The number was ' + secret;
+                    message.textContent = '⏰ Time\'s up! The number was ' + formatNumber(secret);
                 } else {
                     const uncompliment = uncompliments[Math.floor(Math.random() * uncompliments.length)];
-                    message.textContent = `💀 Game over! The number was ${secret}. ${uncompliment}`;
+                    message.textContent = `💀 Game over! The number was ${formatNumber(secret)}. ${uncompliment}`;
                 }
                 message.className = 'message high';
 
@@ -2913,10 +2914,22 @@
                 for (let i = 0; i < 3; i++) {
                     const wave = document.createElement('div');
                     wave.className = 'bg-wave';
-                    wave.style.bottom = (i * 30) + '%';
-                    wave.style.background = `linear-gradient(90deg, transparent, hsla(${200 + i * 20}, 70%, 60%, 0.3), transparent)`;
-                    wave.style.animation = `wave ${8 + i * 2}s ease-in-out infinite`;
-                    wave.style.animationDelay = i * 2 + 's';
+                    wave.style.cssText = `
+                        position: fixed;
+                        left: -50%;
+                        width: 200%;
+                        height: ${100 + i * 20}px;
+                        bottom: ${i * 15}%;
+                        background: linear-gradient(90deg,
+                            transparent 0%,
+                            hsla(${200 + i * 20}, 70%, 60%, 0.2) 25%,
+                            hsla(${200 + i * 20}, 70%, 60%, 0.4) 50%,
+                            hsla(${200 + i * 20}, 70%, 60%, 0.2) 75%,
+                            transparent 100%);
+                        animation: wave ${8 + i * 2}s ease-in-out infinite;
+                        animation-delay: ${i * 0.5}s;
+                        pointer-events: none;
+                    `;
                     container.appendChild(wave);
                 }
             } else if (bg === 'stars') {
