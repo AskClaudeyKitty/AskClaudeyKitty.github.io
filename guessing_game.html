@@ -2949,27 +2949,29 @@
                     container.appendChild(particle);
                 }
             } else if (bg === 'waves') {
-                // Create SVG wave elements
+                // Create SVG wave elements that look like ~ emoji
                 const svgNS = "http://www.w3.org/2000/svg";
-                for (let i = 0; i < 3; i++) {
+                const numWaves = 7;
+                for (let i = 0; i < numWaves; i++) {
                     const svg = document.createElementNS(svgNS, "svg");
                     svg.setAttribute("viewBox", "0 0 1440 320");
                     svg.style.cssText = `
                         position: fixed;
-                        bottom: ${i * 10}%;
+                        bottom: ${i * 8}%;
                         left: 0;
                         width: 100%;
-                        height: 150px;
-                        opacity: ${0.3 - i * 0.05};
-                        animation: wave ${6 + i * 2}s ease-in-out infinite;
-                        animation-delay: ${i * 0.7}s;
+                        height: 120px;
+                        opacity: ${0.25 - i * 0.025};
+                        animation: wave 8s linear infinite;
+                        animation-delay: 0s;
                         pointer-events: none;
                     `;
 
                     const path = document.createElementNS(svgNS, "path");
-                    const fill = `hsla(${200 + i * 15}, 70%, ${60 - i * 10}%, 0.4)`;
+                    const fill = `hsla(${200 + i * 10}, 80%, ${55 - i * 5}%, 0.5)`;
                     path.setAttribute("fill", fill);
-                    path.setAttribute("d", "M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z");
+                    // Wave-like path similar to ~ emoji
+                    path.setAttribute("d", "M0,160 C120,200 240,240 360,220 C480,200 600,120 720,140 C840,160 960,220 1080,200 C1200,180 1320,120 1440,140 L1440,220 C1320,200 1200,260 1080,240 C960,220 840,160 720,180 C600,200 480,280 360,260 C240,240 120,200 0,180 Z");
                     svg.appendChild(path);
                     container.appendChild(svg);
                 }
@@ -3933,7 +3935,7 @@
         }
 
         function updateCoinBalance() {
-            document.getElementById('coin-balance').textContent = '(Balance: ' + coins + ')';
+            document.getElementById('coin-balance').textContent = '(Balance: ' + formatNumber(coins) + ')';
         }
 
         function exportSave() {
