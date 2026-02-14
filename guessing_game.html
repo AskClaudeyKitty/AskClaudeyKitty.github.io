@@ -407,9 +407,10 @@
             75% { transform: translateY(-30px) translateX(5px); }
         }
         @keyframes wave {
-            0% { transform: translateX(-50%); }
-            50% { transform: translateX(0%); }
-            100% { transform: translateX(50%); }
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-10px) translateX(-20px); }
+            50% { transform: translateY(-20px) translateX(0); }
+            75% { transform: translateY(-10px) translateX(20px); }
         }
         @keyframes twinkle {
             0%, 100% { opacity: 0.3; transform: scale(0.8); }
@@ -2813,11 +2814,49 @@
             playClick();
             currentNumberSkin = document.getElementById('number-skin').value;
             localStorage.setItem('numberSkin', currentNumberSkin);
+            updateAllNumbers();
+        }
+
+        function updateAllNumbers() {
+            // Update all number displays with current skin
+            const numberElements = document.querySelectorAll('[data-format-number]');
+            numberElements.forEach(el => {
+                const num = parseInt(el.getAttribute('data-format-number'));
+                if (!isNaN(num)) {
+                    el.textContent = formatNumber(num);
+                }
+            });
+
+            // Update coin displays
+            document.getElementById('coin-balance-display').textContent = formatNumber(coins);
+            const coinBalance = document.getElementById('coin-balance');
+            if (coinBalance) coinBalance.textContent = '(Balance: ' + formatNumber(coins) + ')';
+            document.getElementById('shop-coins').textContent = formatNumber(coins);
+            const lucky7Coins = document.getElementById('lucky7-coins');
+            if (lucky7Coins) lucky7Coins.textContent = formatNumber(coins);
+
+            // Update streak displays
+            const winStreakEl = document.getElementById('current-win-streak');
+            if (winStreakEl) winStreakEl.textContent = formatNumber(winStreak);
+            const lossStreakEl = document.getElementById('current-loss-streak');
+            if (lossStreakEl) lossStreakEl.textContent = formatNumber(lossStreak);
+
+            // Update attempts display
+            const attemptsEl = document.getElementById('attempts-left');
+            if (attemptsEl) {
+                const maxAttempts = getDifficultyAttempts();
+                attemptsEl.textContent = formatNumber(maxAttempts - attempts);
+            }
+
+            // Update game description
+            const maxNum = difficultySettings[difficulty].max;
+            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + formatNumber(maxNum) + '.';
         }
 
         function loadNumberSkin() {
             const saved = localStorage.getItem('numberSkin') || 'default';
             currentNumberSkin = saved;
+            updateAllNumbers();
         }
 
         function formatNumber(num) {
@@ -2911,26 +2950,29 @@
                     container.appendChild(particle);
                 }
             } else if (bg === 'waves') {
+                // Create SVG wave elements
+                const svgNS = "http://www.w3.org/2000/svg";
                 for (let i = 0; i < 3; i++) {
-                    const wave = document.createElement('div');
-                    wave.className = 'bg-wave';
-                    wave.style.cssText = `
+                    const svg = document.createElementNS(svgNS, "svg");
+                    svg.setAttribute("viewBox", "0 0 1440 320");
+                    svg.style.cssText = `
                         position: fixed;
-                        left: -50%;
-                        width: 200%;
-                        height: ${100 + i * 20}px;
-                        bottom: ${i * 15}%;
-                        background: linear-gradient(90deg,
-                            transparent 0%,
-                            hsla(${200 + i * 20}, 70%, 60%, 0.2) 25%,
-                            hsla(${200 + i * 20}, 70%, 60%, 0.4) 50%,
-                            hsla(${200 + i * 20}, 70%, 60%, 0.2) 75%,
-                            transparent 100%);
-                        animation: wave ${8 + i * 2}s ease-in-out infinite;
-                        animation-delay: ${i * 0.5}s;
+                        bottom: ${i * 10}%;
+                        left: 0;
+                        width: 100%;
+                        height: 150px;
+                        opacity: ${0.3 - i * 0.05};
+                        animation: wave ${6 + i * 2}s ease-in-out infinite;
+                        animation-delay: ${i * 0.7}s;
                         pointer-events: none;
                     `;
-                    container.appendChild(wave);
+
+                    const path = document.createElementNS(svgNS, "path");
+                    const fill = `hsla(${200 + i * 15}, 70%, ${60 - i * 10}%, 0.4)`;
+                    path.setAttribute("fill", fill);
+                    path.setAttribute("d", "M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z");
+                    svg.appendChild(path);
+                    container.appendChild(svg);
                 }
             } else if (bg === 'stars') {
                 for (let i = 0; i < 50; i++) {
@@ -2945,7 +2987,7 @@
         }
 
         function updateCoinDisplay() {
-            document.getElementById('coin-balance-display').textContent = coins;
+            document.getElementById('coin-balance-display').textContent = formatNumber(coins);
         }
 
         // =====================================================
@@ -2963,8 +3005,8 @@
         }
 
         function updateShopDisplay() {
-            // Show current coin balance
-            document.getElementById('shop-coins').textContent = coins;
+            // Show current coin balance with number skin
+            document.getElementById('shop-coins').textContent = formatNumber(coins);
 
             // Render shop items
             renderShopCategory('sounds', shopItems.sounds, 'sounds');
@@ -3005,7 +3047,7 @@
                     div.innerHTML = `
                         <div style="font-size: 2rem;">${item.icon}</div>
                         <strong>${item.name}</strong><br>
-                        <small style="color: #f6e05e;">${item.price} 🪙</small>
+                        <small style="color: #f6e05e;">${formatNumber(item.price)} 🪙</small>
                     `;
                     div.onclick = () => buyItem(category, item.id, item.price);
                 }
