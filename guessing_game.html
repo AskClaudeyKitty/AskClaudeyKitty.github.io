@@ -407,10 +407,8 @@
             75% { transform: translateY(-30px) translateX(5px); }
         }
         @keyframes wave {
-            0%, 100% { transform: translateY(0) translateX(0); }
-            25% { transform: translateY(-10px) translateX(-20px); }
-            50% { transform: translateY(-20px) translateX(0); }
-            75% { transform: translateY(-10px) translateX(20px); }
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
         }
         @keyframes twinkle {
             0%, 100% { opacity: 0.3; transform: scale(0.8); }
@@ -1533,7 +1531,7 @@
             updateCoinDisplay();
 
             const result = Math.floor(Math.random() * 100) + 1;
-            document.getElementById('lucky7-result').textContent = result;
+            document.getElementById('lucky7-result').textContent = formatNumber(result);
 
             const message = document.getElementById('lucky7-message');
             const resultEl = document.getElementById('lucky7-result');
