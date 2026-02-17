@@ -75,6 +75,90 @@
             --shadow: 0 10px 40px rgba(14,165,233,0.3);
         }
 
+        [data-theme="cyberpunk"] {
+            --bg-primary: #0d0221;
+            --bg-secondary: #1a0a2e;
+            --text-primary: #ff2a6d;
+            --text-secondary: #05d9e8;
+            --accent: #ff2a6d;
+            --accent-hover: #d41c5c;
+            --gradient-start: #0d0221;
+            --gradient-end: #1a0a2e;
+            --card-bg: linear-gradient(135deg, #ff2a6d 0%, #05d9e8 100%);
+            --border-color: #ff2a6d;
+            --shadow: 0 0 30px rgba(255,42,109,0.5);
+        }
+
+        [data-theme="sunset"] {
+            --bg-primary: #fff5eb;
+            --bg-secondary: #ffedd5;
+            --text-primary: #7c2d12;
+            --text-secondary: #9a3412;
+            --accent: #ea580c;
+            --accent-hover: #c2410c;
+            --gradient-start: #fb923c;
+            --gradient-end: #ea580c;
+            --card-bg: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+            --border-color: #fed7aa;
+            --shadow: 0 10px 40px rgba(234,88,12,0.3);
+        }
+
+        [data-theme="forest"] {
+            --bg-primary: #f0fdf4;
+            --bg-secondary: #dcfce7;
+            --text-primary: #14532d;
+            --text-secondary: #166534;
+            --accent: #22c55e;
+            --accent-hover: #16a34a;
+            --gradient-start: #22c55e;
+            --gradient-end: #15803d;
+            --card-bg: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+            --border-color: #86efac;
+            --shadow: 0 10px 40px rgba(34,197,94,0.3);
+        }
+
+        [data-theme="candy"] {
+            --bg-primary: #fdf2f8;
+            --bg-secondary: #fce7f3;
+            --text-primary: #831843;
+            --text-secondary: #9d174d;
+            --accent: #ec4899;
+            --accent-hover: #db2777;
+            --gradient-start: #f472b6;
+            --gradient-end: #ec4899;
+            --card-bg: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+            --border-color: #fbcfe8;
+            --shadow: 0 10px 40px rgba(236,72,153,0.3);
+        }
+
+        [data-theme="matrix"] {
+            --bg-primary: #000000;
+            --bg-secondary: #001100;
+            --text-primary: #00ff00;
+            --text-secondary: #00cc00;
+            --accent: #00ff00;
+            --accent-hover: #00cc00;
+            --gradient-start: #000000;
+            --gradient-end: #002200;
+            --card-bg: linear-gradient(135deg, #00ff00 0%, #003300 100%);
+            --border-color: #00ff00;
+            --shadow: 0 0 30px rgba(0,255,0,0.5);
+        }
+
+        [data-theme="midnight"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --gradient-start: #1e1b4b;
+            --gradient-end: #0f172a;
+            --card-bg: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            --border-color: #64748b;
+            --shadow: 0 10px 40px rgba(139,92,246,0.3);
+        }
+
         body {
             font-family: system-ui, sans-serif;
             display: flex;
@@ -229,7 +313,7 @@
         .daily-btn:hover { background: rgba(255,255,255,0.3); }
         .history-btn {
             position: fixed;
-            top: 50%;
+            top: 60%;
             right: 10px;
             transform: translateY(-50%);
             background: rgba(255,255,255,0.2);
@@ -271,6 +355,33 @@
         .btn-neon button, .btn-neon input[type="button"], .btn-neon input[type="submit"] {
             border-radius: 0.5rem;
             box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+        }
+        .btn-3d button, .btn-3d input[type="button"], .btn-3d input[type="submit"] {
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 0 #cbd5e0, 0 5px 5px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        .btn-3d button:active, .btn-3d input[type="button"]:active, .btn-3d input[type="submit"]:active {
+            box-shadow: 0 2px 0 #cbd5e0, 0 3px 3px rgba(0,0,0,0.2);
+            transform: translateY(2px);
+        }
+        .btn-glass button, .btn-glass input[type="button"], .btn-glass input[type="submit"] {
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-pixel button, .btn-pixel input[type="button"], .btn-pixel input[type="submit"] {
+            border-radius: 0;
+            image-rendering: pixelated;
+        }
+        .btn-pill button, .btn-pill input[type="button"], .btn-pill input[type="submit"] {
+            border-radius: 50px;
+            padding: 0.5rem 2rem;
+        }
+        .btn-hexagon button, .btn-hexagon input[type="button"], .btn-hexagon input[type="submit"] {
+            border-radius: 0;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
         }
 
         .achievement {
@@ -334,6 +445,80 @@
         }
         .memory-card.matched:hover {
             transform: none;
+        }
+        /* Memory card backs */
+        .memory-card.card-back-gradient-blue:not(.flipped) {
+            background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%);
+        }
+        .memory-card.card-back-gradient-purple:not(.flipped) {
+            background: linear-gradient(135deg, #9f7aea 0%, #6b46c1 100%);
+        }
+        .memory-card.card-back-gradient-green:not(.flipped) {
+            background: linear-gradient(135deg, #48bb78 0%, #276749 100%);
+        }
+        .memory-card.card-back-pattern-dots:not(.flipped) {
+            background: radial-gradient(circle, #4299e1 2px, transparent 2px);
+            background-size: 10px 10px;
+            background-color: #e2e8f0;
+        }
+        .memory-card.card-back-pattern-stripes:not(.flipped) {
+            background: repeating-linear-gradient(
+                45deg,
+                #4299e1,
+                #4299e1 5px,
+                #2b6cb0 5px,
+                #2b6cb0 10px
+            );
+        }
+        .memory-card.card-back-solid-gold:not(.flipped) {
+            background: linear-gradient(135deg, #f6e05e 0%, #d69e2e 100%);
+            border: 2px solid #b7791f;
+        }
+        .memory-card.card-back-checkerboard:not(.flipped) {
+            background:
+                linear-gradient(45deg, #4299e1 25%, transparent 25%),
+                linear-gradient(-45deg, #4299e1 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #4299e1 75%),
+                linear-gradient(-45deg, transparent 75%, #4299e1 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #e2e8f0;
+        }
+        .memory-card.card-back-zigzag:not(.flipped) {
+            background: repeating-linear-gradient(
+                135deg,
+                #4299e1,
+                #4299e1 5px,
+                #e2e8f0 5px,
+                #e2e8f0 10px
+            );
+        }
+        .memory-card.card-back-space:not(.flipped) {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            position: relative;
+        }
+        .memory-card.card-back-space:not(.flipped)::before {
+            content: '✨ ⭐ 🌟';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+        }
+        .memory-card.card-back-floral:not(.flipped) {
+            background:
+                radial-gradient(circle at 20% 30%, #f687b3 3px, transparent 3px),
+                radial-gradient(circle at 80% 70%, #f687b3 3px, transparent 3px),
+                radial-gradient(circle at 50% 50%, #ed64a6 4px, transparent 4px),
+                #fce7f3;
+        }
+        .memory-card.card-back-camouflage:not(.flipped) {
+            background:
+                linear-gradient(45deg, #4a5568 25%, #2d3748 25%, #2d3748 50%, #4a5568 50%, #4a5568 75%, #2d3748 75%, #2d3748 100%);
+            background-size: 20px 20px;
+        }
+        .memory-card.card-back-rainbow-gradient:not(.flipped) {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 16.66%, #48dbfb 33.33%, #ff9ff3 50%, #54a0ff 66.66%, #5f27cd 83.33%, #ff6b6b 100%);
         }
         .modal {
             display: none;
@@ -406,10 +591,6 @@
             50% { transform: translateY(-10px) translateX(-10px); }
             75% { transform: translateY(-30px) translateX(5px); }
         }
-        @keyframes wave {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100vw); }
-        }
         @keyframes twinkle {
             0%, 100% { opacity: 0.3; transform: scale(0.8); }
             50% { opacity: 1; transform: scale(1.2); }
@@ -459,6 +640,82 @@
             background: white;
             border-radius: 50%;
             animation: twinkle 3s ease-in-out infinite;
+        }
+        .bg-rain {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 0.8));
+            animation: rain-fall linear infinite;
+        }
+        .bg-snow {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: snow-fall linear infinite;
+            opacity: 0.8;
+        }
+        .bg-bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(135, 206, 250, 0.4));
+            animation: bubble-rise linear infinite;
+        }
+        .bg-matrix-char {
+            position: absolute;
+            font-family: monospace;
+            font-size: 14px;
+            color: #00ff00;
+            animation: matrix-fall linear infinite;
+        }
+        .bg-firefly {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffff00;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #ffff00, 0 0 12px #ffa500;
+            animation: firefly-float ease-in-out infinite;
+        }
+        .aurora {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg,
+                rgba(0, 255, 136, 0.1),
+                rgba(0, 212, 255, 0.1),
+                rgba(157, 0, 255, 0.1),
+                rgba(0, 255, 136, 0.1));
+            animation: aurora-wave 8s ease-in-out infinite;
+        }
+        @keyframes rain-fall {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+        @keyframes snow-fall {
+            0% { transform: translateY(-10px) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(360deg); }
+        }
+        @keyframes bubble-rise {
+            0% { transform: translateY(100vh) scale(1); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(0.5); opacity: 0; }
+        }
+        @keyframes matrix-fall {
+            0% { transform: translateY(-100%); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0.3; }
+        }
+        @keyframes firefly-float {
+            0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+            25% { transform: translate(20px, -20px); opacity: 1; }
+            50% { transform: translate(-10px, -40px); opacity: 0.7; }
+            75% { transform: translate(10px, -20px); opacity: 1; }
+        }
+        @keyframes aurora-wave {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(180deg); }
         }
         .section-title {
             font-weight: bold;
@@ -519,6 +776,8 @@
                 <option value="lucky7">🎰 Lucky 7</option>
                 <option value="rps">✊✋✌ Rock Paper Scissors</option>
                 <option value="simon">🎵 Simon Says</option>
+                <option value="reaction">⚡ Quick Reaction</option>
+                <option value="math">🧮 Math Quiz</option>
             </select>
 
             <div class="section-title">⚡ Difficulty</div>
@@ -570,13 +829,12 @@
                         <option value="neon">💡 Neon Glow</option>
                     </select>
                 </div>
-            </div>
-
-            <div class="section-title">🔢 Number Skin</div>
-            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
-                <select id="number-skin" style="width: 100%; padding: 0.3rem;" onchange="changeNumberSkin()">
-                    <option value="default">🔢 Default Numbers</option>
-                </select>
+                <div style="margin-top: 0.5rem;">
+                    <strong>Memory Card Back:</strong>
+                    <select id="card-back-select" style="width: 100%; margin-top: 0.3rem; padding: 0.3rem;" onchange="changeCardBack()">
+                        <option value="default">🎴 Default</option>
+                    </select>
+                </div>
             </div>
 
             <div class="section-title">🎨 Animated Background</div>
@@ -611,6 +869,8 @@
                 <div class="stats-item">Best Streak: <span class="stats-value" id="stat-best-streak">0</span></div>
             </div>
 
+            <button onclick="exportStatsImage()" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;">📸 Export Stats as Image</button>
+
             <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
                 <strong>📍 Hint Levels:</strong><br><br>
                 <span style="color: #9f7aea;">🔥 Within 2</span> — SO close!<br>
@@ -633,7 +893,7 @@
             </div>
 
             <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
-                <strong>🔑 Secret Code:</strong><br><br>
+                <strong>🔑 Secret Code (for Secret #1):</strong><br><br>
                 <input type="text" id="dev-code-input" placeholder="Enter code..." style="width: 60%; padding: 0.3rem;">
                 <button onclick="checkDevCode()" style="font-size: 0.9rem; padding: 0.3rem 0.8rem; margin-left: 0.5rem;">Submit</button>
                 <div id="dev-code-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
@@ -673,7 +933,7 @@
                     <option value="timed15">Fast Win (15s)</option>
                     <option value="timed5">Insane Win (5s)</option>
                     <option value="meme">The Meme</option>
-                    <option value="developer">Developer</option>
+                    <option value="developer">Secret #1</option>
                     <option value="memoryFirstWin">Memory Master</option>
                     <option value="memoryPerfect">Perfect Memory</option>
                     <option value="memoryUnder20">Quick Mind</option>
@@ -689,6 +949,7 @@
                     <option value="nosy">Nosy</option>
                     <option value="luckyGuesses">Lucky Guesses</option>
                     <option value="completionist">Completionist</option>
+                    <option value="collector">Collector</option>
                 </select>
                 <button onclick="giveAchievement()" style="background: #f6e05e; color: #744210; border: none; padding: 0.5rem 1rem; margin-left: 0.5rem;">Give</button>
                 <br><br>
@@ -714,6 +975,12 @@
                     <option value="fire">🔥 Fire</option>
                     <option value="ocean">🌊 Ocean</option>
                     <option value="monochrome">⬛ Monochrome</option>
+                    <option value="hearts">💖 Hearts</option>
+                    <option value="stars">⭐ Stars</option>
+                    <option value="snowflakes">❄️ Snowflakes</option>
+                    <option value="coins">💰 Coins</option>
+                    <option value="pizza">🍕 Pizza</option>
+                    <option value="space">🚀 Space</option>
                 </select>
                 <button onclick="testConfetti()" style="background: #ed8936; border: none; padding: 0.3rem 1rem; margin-left: 0.5rem;">Spawn</button>
                 <br><br>
@@ -775,8 +1042,8 @@
             <div class="section-title">🔘 Button Styles</div>
             <div id="shop-buttonStyles" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
 
-            <div class="section-title">🔢 Number Skins</div>
-            <div id="shop-numberSkins" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
+            <div class="section-title">🎴 Memory Card Backs</div>
+            <div id="shop-cardBacks" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
 
             <div class="section-title">🎨 Animated Backgrounds</div>
             <div id="shop-backgrounds" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem;"></div>
@@ -818,7 +1085,7 @@
     <div class="modal" id="history-modal">
         <div class="modal-content" style="max-width: 500px;">
             <h2>📜 Game History</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Your last 10 games</p>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">Games from current session (max 10)</p>
             <div id="game-history-list" style="max-height: 400px; overflow-y: auto;"></div>
             <button class="close-modal" onclick="closeGameHistory()" style="background: #718096; margin-top: 1rem;">Close</button>
         </div>
@@ -940,8 +1207,8 @@
                     <br><small>Guess the forbidden number...</small>
                 </div>
                 <div class="achievement" id="ach-developer" style="display: none;">
-                    <span class="achievement-icon">👨‍💻</span>
-                    <strong>Developer</strong>
+                    <span class="achievement-icon">🔐</span>
+                    <strong>Secret #1</strong>
                     <br><small>Enter the secret code...</small>
                 </div>
                 <div class="achievement" id="ach-memory-first-win">
@@ -1025,7 +1292,12 @@
                 <div class="achievement" id="ach-nosy">
                     <span class="achievement-icon">🕵️</span>
                     <strong>Nosy</strong>
-                    <br><small>Find all secret achievements (The Meme, Developer, Jackpot)!</small>
+                    <br><small>Find all secret achievements!</small>
+                </div>
+                <div class="achievement" id="ach-collector">
+                    <span class="achievement-icon">🛍️</span>
+                    <strong>Collector</strong>
+                    <br><small>Own every item in the shop!</small>
                 </div>
             </div>
             <button class="close-modal" onclick="closeAchievements()">Close</button>
@@ -1071,9 +1343,9 @@
         <p>Best of 5 against the computer!</p>
         <p><small>Score: <strong id="rps-player" style="color: #48bb78;">0</strong> - <strong id="rps-computer" style="color: #f56565;">0</strong></small></p>
         <div style="display: flex; gap: 1rem; justify-content: center; margin: 1rem 0;">
-            <button onclick="playRPS('rock')" style="font-size: 3rem; padding: 1rem 2rem;">✊</button>
-            <button onclick="playRPS('paper')" style="font-size: 3rem; padding: 1rem 2rem;">✋</button>
-            <button onclick="playRPS('scissors')" style="font-size: 3rem; padding: 1rem 2rem;">✌</button>
+            <button id="rps-rock" onclick="playRPS('rock')" style="font-size: 3rem; padding: 1rem 2rem;">✊</button>
+            <button id="rps-paper" onclick="playRPS('paper')" style="font-size: 3rem; padding: 1rem 2rem;">✋</button>
+            <button id="rps-scissors" onclick="playRPS('scissors')" style="font-size: 3rem; padding: 1rem 2rem;">✌</button>
         </div>
         <div id="rps-result" style="font-size: 3rem; margin: 1rem 0; min-height: 50px;"></div>
         <button class="reset" id="rps-reset" onclick="resetRPS()" style="display: none;">Play Again</button>
@@ -1093,6 +1365,32 @@
         <button id="simon-start" onclick="startSimonSays()" style="padding: 1rem 2rem; font-size: 1.2rem;">Start Game</button>
     </div>
 
+    <div class="game" id="reaction-game" style="display: none;">
+        <h1>⚡ Quick Reaction!</h1>
+        <p>When the screen turns green, click as fast as you can!</p>
+        <p><small>Best Time: <strong id="reaction-best" style="color: #48bb78;">--</strong> ms</small></p>
+        <div id="reaction-area" style="width: 100%; max-width: 400px; height: 300px; background: #e53e3e; border-radius: 1rem; margin: 2rem auto; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.1s; user-select: none;">
+            <span id="reaction-text" style="font-size: 2rem; font-weight: bold; color: white;">Click to Start</span>
+        </div>
+        <div id="reaction-result" style="font-size: 1.5rem; margin: 1rem 0; min-height: 40px;"></div>
+        <div id="reaction-message" class="message"></div>
+    </div>
+
+    <div class="game" id="math-game" style="display: none;">
+        <h1>🧮 Math Quiz!</h1>
+        <p>Solve the problems before time runs out!</p>
+        <p><small>Score: <strong id="math-score" style="color: #f6e05e;">0</strong> | Time: <strong id="math-timer">30</strong>s</small></p>
+        <div id="math-problem" style="font-size: 3rem; margin: 2rem 0; font-weight: bold;">Loading...</div>
+        <div style="display: flex; gap: 1rem; justify-content: center; margin: 2rem 0;">
+            <button id="math-option-1" onclick="mathAnswer(0)" style="font-size: 1.5rem; padding: 1rem 2rem; min-width: 100px;">A</button>
+            <button id="math-option-2" onclick="mathAnswer(1)" style="font-size: 1.5rem; padding: 1rem 2rem; min-width: 100px;">B</button>
+            <button id="math-option-3" onclick="mathAnswer(2)" style="font-size: 1.5rem; padding: 1rem 2rem; min-width: 100px;">C</button>
+            <button id="math-option-4" onclick="mathAnswer(3)" style="font-size: 1.5rem; padding: 1rem 2rem; min-width: 100px;">D</button>
+        </div>
+        <div id="math-message" class="message"></div>
+        <button id="math-start" onclick="startMathQuiz()" style="padding: 1rem 2rem; font-size: 1.2rem;">Start Quiz</button>
+    </div>
+
     <script>
         // =====================================================
         // GLOBAL VARIABLES
@@ -1102,6 +1400,7 @@
         // Developer codes
         const DEV_ACHIEVEMENT_CODE = '146';
         const DEV_PANEL_CODE = '396967';
+        const COMPLETIONIST_SECRET_CODE = '999999'; // Secret code given when Completionist is achieved
         let developerModeUnlocked = false;
 
         // Core game variables
@@ -1154,7 +1453,31 @@
             pink: () => `hsl(${320 + Math.random() * 40}, 80%, ${55 + Math.random() * 20}%)`,
             fire: () => `hsl(${10 + Math.random() * 30}, 100%, ${50 + Math.random() * 30}%)`,
             ocean: () => `hsl(${180 + Math.random() * 60}, 70%, ${45 + Math.random() * 25}%)`,
-            monochrome: () => `hsl(0, 0%, ${30 + Math.random() * 60}%)`
+            monochrome: () => `hsl(0, 0%, ${30 + Math.random() * 60}%)`,
+            hearts: () => {
+                const colors = ['#ff6b9d', '#ff8fb1', '#ffb3c6', '#ff1744', '#e91e63'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            stars: () => {
+                const colors = ['#ffd700', '#ffec8b', '#fff700', '#ffea00', '#ffc107'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            snowflakes: () => {
+                const colors = ['#ffffff', '#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            coins: () => {
+                const colors = ['#ffd700', '#ffb300', '#ff8f00', '#ff6f00', '#ffc107'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            pizza: () => {
+                const colors = ['#ff6b35', '#f7931e', '#ffcc00', '#ee82ee', '#8b4513'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            space: () => {
+                const colors = ['#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
         };
 
         // Visual Effects Settings
@@ -1167,12 +1490,12 @@
             confetti: ['rainbow', 'monochrome'],
             games: [],
             buttonStyles: [],
-            numberSkins: ['default'],
+            cardBacks: ['default'],
             backgrounds: ['default']
         };
 
-        let currentNumberSkin = 'default';
         let currentBackground = 'default';
+        let currentCardBack = 'default';
 
         const shopItems = {
             sounds: [
@@ -1180,12 +1503,23 @@
                 { id: 'scifi', name: 'Sci-Fi', price: 10, icon: '🚀' },
                 { id: 'nature', name: 'Nature', price: 15, icon: '🌿' },
                 { id: 'arcade', name: 'Retro Arcade', price: 20, icon: '🕹️' },
-                { id: 'orchestral', name: 'Orchestral', price: 25, icon: '🎻' }
+                { id: 'orchestral', name: 'Orchestral', price: 25, icon: '🎻' },
+                { id: 'retro-nes', name: 'Retro NES', price: 18, icon: '🎮' },
+                { id: 'cartoon', name: 'Cartoon', price: 12, icon: '🤪' },
+                { id: 'sports', name: 'Sports', price: 15, icon: '🏀' },
+                { id: 'space', name: 'Space', price: 20, icon: '🌌' },
+                { id: 'animals', name: 'Animals', price: 22, icon: '🐾' }
             ],
             themes: [
                 { id: 'neon', name: 'Neon', price: 15, icon: '💜' },
                 { id: 'retro', name: 'Retro', price: 20, icon: '🕹️' },
-                { id: 'ocean', name: 'Ocean', price: 15, icon: '🌊' }
+                { id: 'ocean', name: 'Ocean', price: 15, icon: '🌊' },
+                { id: 'cyberpunk', name: 'Cyberpunk', price: 25, icon: '🌆' },
+                { id: 'sunset', name: 'Sunset', price: 20, icon: '🌅' },
+                { id: 'forest', name: 'Forest', price: 18, icon: '🌲' },
+                { id: 'candy', name: 'Candy', price: 15, icon: '🍬' },
+                { id: 'matrix', name: 'Matrix', price: 25, icon: '💻' },
+                { id: 'midnight', name: 'Midnight', price: 20, icon: '🌙' }
             ],
             confetti: [
                 { id: 'gold', name: 'Gold', price: 5, icon: '🏆' },
@@ -1195,28 +1529,54 @@
                 { id: 'purple', name: 'Purple', price: 3, icon: '💜' },
                 { id: 'pink', name: 'Pink', price: 3, icon: '🩷' },
                 { id: 'fire', name: 'Fire', price: 8, icon: '🔥' },
-                { id: 'ocean', name: 'Ocean', price: 5, icon: '🌊' }
+                { id: 'ocean', name: 'Ocean', price: 5, icon: '🌊' },
+                { id: 'hearts', name: 'Hearts', price: 5, icon: '💖' },
+                { id: 'stars', name: 'Stars', price: 8, icon: '⭐' },
+                { id: 'snowflakes', name: 'Snowflakes', price: 5, icon: '❄️' },
+                { id: 'coins', name: 'Coins', price: 10, icon: '💰' },
+                { id: 'pizza', name: 'Pizza', price: 12, icon: '🍕' },
+                { id: 'space', name: 'Space', price: 10, icon: '🚀' }
             ],
             games: [
                 { id: 'memory', name: 'Memory Match', price: 50, icon: '🧠' },
                 { id: 'lucky7', name: 'Lucky 7', price: 30, icon: '🎰' },
-                { id: 'rps', name: 'Rock Paper Scissors', price: 25, icon: '✊✋✌' }
+                { id: 'rps', name: 'Rock Paper Scissors', price: 25, icon: '✊✋✌' },
+                { id: 'reaction', name: 'Quick Reaction', price: 40, icon: '⚡' },
+                { id: 'math', name: 'Math Quiz', price: 35, icon: '🧮' }
             ],
             buttonStyles: [
                 { id: 'rounded', name: 'Rounded Buttons', price: 10, icon: '⭕' },
                 { id: 'square', name: 'Square Buttons', price: 8, icon: '⬜' },
-                { id: 'neon', name: 'Neon Glow Buttons', price: 15, icon: '💡' }
+                { id: 'neon', name: 'Neon Glow Buttons', price: 15, icon: '💡' },
+                { id: '3d', name: '3D Buttons', price: 12, icon: '🎲' },
+                { id: 'glass', name: 'Glass Buttons', price: 15, icon: '🪟' },
+                { id: 'pixel', name: 'Pixel Buttons', price: 10, icon: '👾' },
+                { id: 'pill', name: 'Pill Buttons', price: 8, icon: '💊' },
+                { id: 'hexagon', name: 'Hexagon Buttons', price: 18, icon: '⬡' }
             ],
-            numberSkins: [
-                { id: 'emoji', name: 'Emoji Numbers', price: 20, icon: '😀' },
-                { id: 'roman', name: 'Roman Numerals', price: 15, icon: '🏛️' },
-                { id: 'binary', name: 'Binary Code', price: 25, icon: '💻' },
-                { id: 'words', name: 'Number Words', price: 10, icon: '📝' }
+            cardBacks: [
+                { id: 'gradient-blue', name: 'Ocean Blue', price: 5, icon: '🌊' },
+                { id: 'gradient-purple', name: 'Galaxy Purple', price: 5, icon: '🌌' },
+                { id: 'gradient-green', name: 'Forest Green', price: 5, icon: '🌲' },
+                { id: 'pattern-dots', name: 'Polka Dots', price: 8, icon: '🔵' },
+                { id: 'pattern-stripes', name: 'Stripes', price: 8, icon: '📏' },
+                { id: 'solid-gold', name: 'Golden', price: 15, icon: '✨' },
+                { id: 'checkerboard', name: 'Checkerboard', price: 8, icon: '♟️' },
+                { id: 'zigzag', name: 'Zigzag', price: 10, icon: '⚡' },
+                { id: 'space', name: 'Space', price: 12, icon: '🌌' },
+                { id: 'floral', name: 'Floral', price: 10, icon: '🌸' },
+                { id: 'camouflage', name: 'Camouflage', price: 12, icon: '🎯' },
+                { id: 'rainbow-gradient', name: 'Rainbow Gradient', price: 20, icon: '🌈' }
             ],
             backgrounds: [
                 { id: 'particles', name: 'Floating Particles', price: 30, icon: '✨' },
-                { id: 'waves', name: 'Animated Waves', price: 25, icon: '🌊' },
-                { id: 'stars', name: 'Twinkling Stars', price: 20, icon: '⭐' }
+                { id: 'stars', name: 'Twinkling Stars', price: 20, icon: '⭐' },
+                { id: 'rain', name: 'Rain', price: 25, icon: '🌧️' },
+                { id: 'snow', name: 'Snow', price: 25, icon: '❄️' },
+                { id: 'bubbles', name: 'Bubbles', price: 20, icon: '🫧' },
+                { id: 'matrix-code', name: 'Matrix Code', price: 35, icon: '💻' },
+                { id: 'northern-lights', name: 'Northern Lights', price: 40, icon: '🌌' },
+                { id: 'fireflies', name: 'Fireflies', price: 30, icon: '✨' }
             ]
         };
 
@@ -1285,7 +1645,8 @@
             impossible: false,
             nosy: false,
             luckyGuesses: false,
-            perfectionist: false
+            perfectionist: false,
+            collector: false
         };
 
         // One-guess wins tracking
@@ -1381,6 +1742,41 @@
                 decay: 1.8,
                 clickType: 'triangle',
                 clickVolume: 0.05
+            },
+            'retro-nes': {
+                type: 'square',
+                volume: 0.1,
+                decay: 0.4,
+                clickType: 'square',
+                clickVolume: 0.07
+            },
+            cartoon: {
+                type: 'triangle',
+                volume: 0.15,
+                decay: 0.6,
+                clickType: 'sine',
+                clickVolume: 0.1
+            },
+            sports: {
+                type: 'sine',
+                volume: 0.12,
+                decay: 0.8,
+                clickType: 'square',
+                clickVolume: 0.08
+            },
+            space: {
+                type: 'sawtooth',
+                volume: 0.06,
+                decay: 1.2,
+                clickType: 'triangle',
+                clickVolume: 0.04
+            },
+            animals: {
+                type: 'triangle',
+                volume: 0.1,
+                decay: 0.5,
+                clickType: 'sine',
+                clickVolume: 0.06
             }
         };
 
@@ -1431,12 +1827,12 @@
         function playLose() {
             initAudio();
             const trombone = [
-                { freq: 98, dur: 400 },
-                { freq: 87, dur: 450 },
-                { freq: 78, dur: 500 },
-                { freq: 73, dur: 550 },
-                { freq: 65, dur: 600 },
-                { freq: 58, dur: 2500 }
+                { freq: 200, dur: 300 },
+                { freq: 175, dur: 300 },
+                { freq: 150, dur: 300 },
+                { freq: 125, dur: 300 },
+                { freq: 100, dur: 400 },
+                { freq: 80, dur: 1500 }
             ];
 
             let delay = 0;
@@ -1446,9 +1842,9 @@
                     const pack = soundPacks[currentSoundPack];
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
+                    osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(note.freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + note.dur / 1000);
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
@@ -1554,13 +1950,14 @@
                 coins += win;
                 document.getElementById('lucky7-coins').textContent = coins;
                 updateCoinDisplay();
-                trackGameModeWin('lucky7');
                 playWin();
             } else {
                 message.textContent = 'Try again! Win on 7s or multiples of 7!';
                 message.className = 'message';
                 resultEl.style.color = '#718096';
                 playLose();
+                // Record Lucky 7 loss
+                recordGame('lucky7', 'loss', `Result: ${result}`);
             }
         }
 
@@ -1578,10 +1975,21 @@
             document.getElementById('rps-result').textContent = '✊✋✌';
             document.getElementById('rps-result').style.color = '#718096';
             document.getElementById('rps-reset').style.display = 'none';
+
+            // Enable RPS buttons
+            document.getElementById('rps-rock').disabled = false;
+            document.getElementById('rps-paper').disabled = false;
+            document.getElementById('rps-scissors').disabled = false;
         }
 
         function playRPS(playerChoice) {
             playClick();
+
+            // Check if game is already over
+            if (rpsPlayerScore >= 3 || rpsComputerScore >= 3) {
+                return;
+            }
+
             const choices = ['rock', 'paper', 'scissors'];
             const computerChoice = choices[Math.floor(Math.random() * 3)];
 
@@ -1615,6 +2023,11 @@
             rpsRound++;
 
             if (rpsPlayerScore >= 3 || rpsComputerScore >= 3) {
+                // Disable RPS buttons
+                document.getElementById('rps-rock').disabled = true;
+                document.getElementById('rps-paper').disabled = true;
+                document.getElementById('rps-scissors').disabled = true;
+
                 document.getElementById('rps-reset').style.display = 'inline-block';
                 if (rpsPlayerScore >= 3) {
                     document.getElementById('rps-result').textContent += ' 🏆 YOU WIN!';
@@ -1622,9 +2035,11 @@
                     coins += 5;
                     trackGameModeWin('rps');
                     launchConfetti();
+                    recordGame('rps', 'win', `${rpsPlayerScore}-${rpsComputerScore}`);
                 } else {
                     document.getElementById('rps-result').textContent += ' 💀 YOU LOSE!';
                     document.getElementById('rps-result').style.color = '#f56565';
+                    recordGame('rps', 'loss', `${rpsPlayerScore}-${rpsComputerScore}`);
                 }
             }
         }
@@ -1666,6 +2081,9 @@
             simonPlaying = true;
             document.getElementById('simon-round').textContent = simonRound;
             document.getElementById('simon-score').textContent = simonScore;
+            document.getElementById('simon-message').textContent = 'Watch carefully!';
+            document.getElementById('simon-message').style.color = '';
+            document.getElementById('simon-message').style.fontWeight = '';
             addToSimonSequence();
         }
 
@@ -1741,14 +2159,17 @@
 
             const index = simonPlayerSequence.length - 1;
             if (simonPlayerSequence[index] !== simonSequence[index]) {
-                // Wrong!
-                document.getElementById('simon-message').textContent = `❌ Wrong! Round ${simonRound} - Score: ${simonScore}`;
+                // Wrong! Game Over
+                document.getElementById('simon-message').textContent = `🎮 Game Over! Round ${simonRound} - Final Score: ${simonScore}`;
                 document.getElementById('simon-message').style.color = '#f56565';
+                document.getElementById('simon-message').style.fontWeight = 'bold';
                 playLose();
                 simonCanInput = false;
                 simonEnableButtons(false);
                 document.getElementById('simon-start').style.display = 'inline-block';
                 simonPlaying = false;
+                // Record game in history
+                recordGame('simon', 'loss', `Round ${simonRound}, Score: ${simonScore}`);
                 return;
             }
 
@@ -1756,8 +2177,8 @@
                 // Correct! Next round
                 simonScore++;
                 document.getElementById('simon-score').textContent = simonScore;
-                // Track first successful round as a "win" for Perfectionist
-                if (simonScore === 1) {
+                // Track reaching 10 points as a "win" for Perfectionist
+                if (simonScore === 10) {
                     trackGameModeWin('simon');
                 }
                 simonRound++;
@@ -1784,6 +2205,262 @@
         }
 
         // =====================================================
+        // REACTION GAME
+        // =====================================================
+        let reactionWaiting = false;
+        let reactionStartTime = 0;
+        let reactionTimeout = null;
+        let reactionBestTime = null;
+        let reactionRoundInProgress = false;
+        let reactionRoundCompleted = false;
+        let reactionTooEarlyTriggered = false;
+
+        function initReaction() {
+            document.getElementById('reaction-best').textContent = reactionBestTime ? reactionBestTime : '--';
+            document.getElementById('reaction-area').onclick = handleReactionClick;
+            resetReactionRound();
+        }
+
+        function resetReactionRound() {
+            reactionWaiting = false;
+            reactionRoundInProgress = false;
+            reactionRoundCompleted = false;
+            reactionTooEarlyTriggered = false;
+            const area = document.getElementById('reaction-area');
+            area.style.background = '#e53e3e';
+            document.getElementById('reaction-text').textContent = 'Click to Start';
+            document.getElementById('reaction-result').textContent = '';
+        }
+
+        function handleReactionClick() {
+            if (!reactionWaiting) {
+                // Only start if no round is in progress
+                if (!reactionRoundInProgress) {
+                    startReactionRound();
+                } else if (!reactionTooEarlyTriggered) {
+                    // Clicked too early (while waiting for green) - only trigger once
+                    reactionTooEarlyTriggered = true;
+                    clearTimeout(reactionTimeout);
+                    const area = document.getElementById('reaction-area');
+                    area.style.background = '#f56565';
+                    document.getElementById('reaction-text').textContent = 'Too Early!';
+                    document.getElementById('reaction-result').textContent = '❌';
+                    document.getElementById('reaction-message').textContent = 'Wait for the green screen!';
+                    document.getElementById('reaction-message').className = 'message high';
+                    playLose();
+                    // Reset after a delay
+                    setTimeout(resetReactionRound, 1500);
+                }
+            } else {
+                // Player clicked! Check if we've already awarded coins for this round
+                if (reactionWaiting && !reactionRoundCompleted) {
+                    reactionWaiting = false;
+                    // Keep reactionRoundInProgress = true to prevent spam-clicking during result display
+
+                    const endTime = Date.now();
+                    const reactionTime = endTime - reactionStartTime;
+                    clearTimeout(reactionTimeout);
+
+                    const area = document.getElementById('reaction-area');
+                    area.style.background = '#48bb78';
+                    document.getElementById('reaction-text').textContent = reactionTime + ' ms';
+
+                    const resultEl = document.getElementById('reaction-result');
+                    resultEl.textContent = '⚡ ' + reactionTime + ' ms';
+                    resultEl.style.color = reactionTime < 250 ? '#48bb78' : reactionTime < 400 ? '#f6e05e' : '#f56565';
+
+                    // Update best time
+                    if (!reactionBestTime || reactionTime < reactionBestTime) {
+                        reactionBestTime = reactionTime;
+                        document.getElementById('reaction-best').textContent = reactionBestTime;
+                    }
+
+                    // Award coins based on speed
+                    const messageEl = document.getElementById('reaction-message');
+                    if (reactionTime < 250) {
+                        coins += 5;
+                        messageEl.textContent = '🏆 Incredible! +5 coins!';
+                        messageEl.className = 'message win';
+                        playWin();
+                        launchConfetti();
+                    } else if (reactionTime < 350) {
+                        coins += 2;
+                        messageEl.textContent = '👍 Good! +2 coins!';
+                        messageEl.className = 'message';
+                        playClick();
+                    } else {
+                        messageEl.textContent = 'Keep practicing!';
+                        messageEl.className = 'message';
+                    }
+                    updateCoinDisplay();
+                    reactionRoundCompleted = true;
+
+                    // Reset after a delay
+                    setTimeout(resetReactionRound, 2000);
+                }
+            }
+        }
+
+        function startReactionRound() {
+            reactionRoundInProgress = true;
+            reactionRoundCompleted = false;
+            reactionTooEarlyTriggered = false;
+            const area = document.getElementById('reaction-area');
+            area.style.background = '#f56565';
+            document.getElementById('reaction-text').textContent = 'Wait for green...';
+            document.getElementById('reaction-result').textContent = '';
+            document.getElementById('reaction-message').textContent = '';
+
+            // Random delay between 1 and 4 seconds
+            const delay = Math.random() * 3000 + 1000;
+            reactionTimeout = setTimeout(() => {
+                reactionWaiting = true;
+                reactionStartTime = Date.now();
+                area.style.background = '#48bb78';
+                document.getElementById('reaction-text').textContent = 'CLICK!';
+            }, delay);
+        }
+
+        // =====================================================
+        // MATH QUIZ GAME
+        // =====================================================
+        let mathScore = 0;
+        let mathTimeLeft = 30;
+        let mathTimer = null;
+        let mathCorrectAnswer = 0;
+        let mathActive = false;
+
+        function initMath() {
+            document.getElementById('math-score').textContent = '0';
+            document.getElementById('math-timer').textContent = '30';
+            document.getElementById('math-problem').textContent = 'Press Start to play!';
+            disableMathButtons(true);
+        }
+
+        function startMathQuiz() {
+            playClick();
+            mathScore = 0;
+            mathTimeLeft = 30;
+            mathActive = true;
+            document.getElementById('math-score').textContent = '0';
+            document.getElementById('math-start').style.display = 'none';
+            disableMathButtons(false);
+            generateMathProblem();
+            startMathTimer();
+        }
+
+        function generateMathProblem() {
+            const operations = ['+', '-', '×'];
+            const op = operations[Math.floor(Math.random() * operations.length)];
+            let a, b, answer;
+
+            if (op === '+') {
+                a = Math.floor(Math.random() * 20) + 1;
+                b = Math.floor(Math.random() * 20) + 1;
+                answer = a + b;
+            } else if (op === '-') {
+                a = Math.floor(Math.random() * 20) + 10;
+                b = Math.floor(Math.random() * 10) + 1;
+                answer = a - b;
+            } else {
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * 10) + 1;
+                answer = a * b;
+            }
+
+            mathCorrectAnswer = answer;
+
+            // Generate wrong options
+            let options = [answer];
+            while (options.length < 4) {
+                let wrong = answer + Math.floor(Math.random() * 11) - 5;
+                if (wrong !== answer && wrong >= 0 && !options.includes(wrong)) {
+                    options.push(wrong);
+                }
+            }
+
+            // Shuffle options
+            options.sort(() => Math.random() - 0.5);
+
+            // Display problem and options
+            document.getElementById('math-problem').textContent = `${a} ${op} ${b} = ?`;
+            document.getElementById('math-option-1').textContent = options[0];
+            document.getElementById('math-option-2').textContent = options[1];
+            document.getElementById('math-option-3').textContent = options[2];
+            document.getElementById('math-option-4').textContent = options[3];
+        }
+
+        function mathAnswer(optionIndex) {
+            if (!mathActive) return;
+            playClick();
+
+            const options = [
+                parseInt(document.getElementById('math-option-1').textContent),
+                parseInt(document.getElementById('math-option-2').textContent),
+                parseInt(document.getElementById('math-option-3').textContent),
+                parseInt(document.getElementById('math-option-4').textContent)
+            ];
+
+            const selected = options[optionIndex];
+            const messageEl = document.getElementById('math-message');
+
+            if (selected === mathCorrectAnswer) {
+                mathScore++;
+                coins++;
+                document.getElementById('math-score').textContent = mathScore;
+                updateCoinDisplay();
+                messageEl.textContent = '✅ Correct! +1 coin';
+                messageEl.className = 'message win';
+                playClick();
+                generateMathProblem();
+            } else {
+                messageEl.textContent = `❌ Wrong! Answer was ${mathCorrectAnswer}`;
+                messageEl.className = 'message high';
+                playLose();
+            }
+        }
+
+        function startMathTimer() {
+            mathTimer = setInterval(() => {
+                mathTimeLeft--;
+                document.getElementById('math-timer').textContent = mathTimeLeft;
+
+                if (mathTimeLeft <= 0) {
+                    endMathQuiz();
+                }
+            }, 1000);
+        }
+
+        function endMathQuiz() {
+            clearInterval(mathTimer);
+            mathActive = false;
+            disableMathButtons(true);
+
+            const messageEl = document.getElementById('math-message');
+            messageEl.textContent = `⏰ Time's up! Final Score: ${mathScore} (${mathScore} coins earned)`;
+            messageEl.className = mathScore >= 10 ? 'message win' : 'message';
+
+            document.getElementById('math-start').style.display = 'inline-block';
+
+            if (mathScore >= 10) {
+                playWin();
+                launchConfetti();
+            } else {
+                playLose();
+            }
+
+            // Record game
+            recordGame('math', mathScore >= 10 ? 'win' : 'loss', `Score: ${mathScore}`);
+        }
+
+        function disableMathButtons(disabled) {
+            document.getElementById('math-option-1').disabled = disabled;
+            document.getElementById('math-option-2').disabled = disabled;
+            document.getElementById('math-option-3').disabled = disabled;
+            document.getElementById('math-option-4').disabled = disabled;
+        }
+
+        // =====================================================
         // CONFETTI SYSTEM
         // =====================================================
         function resizeConfettiCanvas(canvas) {
@@ -1796,18 +2473,30 @@
             const ctx = canvas.getContext('2d');
             resizeConfettiCanvas(canvas);
 
+            // Determine shape for this theme
+            let shape = 'square';
+            let sizeMultiplier = 1;
+            if (confettiTheme === 'hearts') { shape = 'heart'; sizeMultiplier = 2; }
+            else if (confettiTheme === 'stars') { shape = 'star'; sizeMultiplier = 2; }
+            else if (confettiTheme === 'snowflakes') { shape = 'snowflake'; sizeMultiplier = 2.5; }
+            else if (confettiTheme === 'coins') { shape = 'coin'; sizeMultiplier = 2; }
+            else if (confettiTheme === 'pizza') { shape = 'pizza'; sizeMultiplier = 2.5; }
+            else if (confettiTheme === 'space') { shape = 'star'; sizeMultiplier = 2; }
+
             // Create particles
             for (let i = 0; i < 100; i++) {
                 const colorFunc = confettiThemes[confettiTheme] || confettiThemes.rainbow;
                 confettiParticles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height - canvas.height,
-                    size: Math.random() * 10 + 5,
+                    size: (Math.random() * 10 + 5) * sizeMultiplier,
                     speedX: Math.random() * 4 - 2,
                     speedY: Math.random() * 3 + 2,
                     rotation: Math.random() * 360,
                     rotationSpeed: Math.random() * 10 - 5,
-                    color: colorFunc()
+                    color: colorFunc(),
+                    shape: shape,
+                    theme: confettiTheme
                 });
             }
 
@@ -1831,7 +2520,23 @@
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation * Math.PI / 180);
                 ctx.fillStyle = p.color;
-                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+
+                // Draw different shapes based on theme
+                if (p.shape === 'heart') {
+                    drawHeart(ctx, p.size, p.color);
+                } else if (p.shape === 'star') {
+                    drawStar(ctx, p.size, p.color);
+                } else if (p.shape === 'snowflake') {
+                    drawSnowflake(ctx, p.size, p.color);
+                } else if (p.shape === 'coin') {
+                    drawCoin(ctx, p.size, p.color);
+                } else if (p.shape === 'pizza') {
+                    drawPizza(ctx, p.size, p.color);
+                } else {
+                    // Default square for standard confetti
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                }
+
                 ctx.restore();
 
                 // Remove particles that fall off screen
@@ -1844,6 +2549,92 @@
                 confettiAnimationId = requestAnimationFrame(animateConfetti);
             } else {
                 confettiAnimationId = null;
+            }
+        }
+
+        function drawHeart(ctx, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            const topCurveHeight = size * 0.3;
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
+            ctx.bezierCurveTo(-size / 2, size * 0.5, 0, size * 0.8, 0, size);
+            ctx.bezierCurveTo(0, size * 0.8, size / 2, size * 0.5, size / 2, topCurveHeight);
+            ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+            ctx.fill();
+        }
+
+        function drawStar(ctx, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                const x = Math.cos(angle) * size / 2;
+                const y = Math.sin(angle) * size / 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+
+                const innerAngle = angle + Math.PI / 5;
+                const innerX = Math.cos(innerAngle) * size / 4;
+                const innerY = Math.sin(innerAngle) * size / 4;
+                ctx.lineTo(innerX, innerY);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawSnowflake(ctx, size, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                const angle = (i * Math.PI) / 3;
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * size / 2, Math.sin(angle) * size / 2);
+                ctx.stroke();
+
+                // Add small branches
+                const branchSize = size / 4;
+                const midX = Math.cos(angle) * size / 4;
+                const midY = Math.sin(angle) * size / 4;
+                ctx.beginPath();
+                ctx.moveTo(midX - Math.cos(angle + Math.PI/4) * branchSize/2, midY - Math.sin(angle + Math.PI/4) * branchSize/2);
+                ctx.lineTo(midX + Math.cos(angle + Math.PI/4) * branchSize/2, midY + Math.sin(angle + Math.PI/4) * branchSize/2);
+                ctx.stroke();
+            }
+        }
+
+        function drawCoin(ctx, size, color) {
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Add $ symbol
+            ctx.fillStyle = '#b8860b';
+            ctx.font = `${size/2}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', 0, 0);
+        }
+
+        function drawPizza(ctx, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Add lighter circle for cheese
+            ctx.fillStyle = '#ffa500';
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Add pepperoni
+            ctx.fillStyle = '#dc2626';
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * 2 * Math.PI) / 3;
+                const x = Math.cos(angle) * size / 4;
+                const y = Math.sin(angle) * size / 4;
+                ctx.beginPath();
+                ctx.arc(x, y, size / 6, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
 
@@ -1909,7 +2700,11 @@
             // Load today's attempts from localStorage (don't reset on reopen!)
             const storedAttempts = localStorage.getItem('dailyAttempts_' + today);
             dailyAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
-            const maxAttempts = difficultySettings[difficulty].attempts;
+
+            // Lock difficulty once attempts are made for the day
+            const storedDifficulty = localStorage.getItem('dailyDifficulty_' + today);
+            const dailyDifficulty = (storedDifficulty && dailyAttempts > 0) ? storedDifficulty : difficulty;
+            const maxAttempts = difficultySettings[dailyDifficulty].attempts;
             const outOfAttempts = dailyAttempts >= maxAttempts;
 
             // Update UI
@@ -1962,9 +2757,13 @@
             dailyAttempts++;
             document.getElementById('daily-attempts-left').textContent = formatNumber(maxAttempts - dailyAttempts);
 
-            // Save attempts to localStorage so they persist on modal reopen
+            // Save attempts and difficulty to localStorage so they persist on modal reopen
             const today = getTodayString();
             localStorage.setItem('dailyAttempts_' + today, dailyAttempts.toString());
+            // Store difficulty on first attempt to lock it for the day
+            if (dailyAttempts === 1) {
+                localStorage.setItem('dailyDifficulty_' + today, difficulty);
+            }
 
             if (guess < dailyChallengeNumber) {
                 if (dailyChallengeNumber - guess <= 2) {
@@ -2133,14 +2932,14 @@
             const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
             const avgGuesses = wins > 0 ? Math.round(totalGuesses / wins) : 0;
 
-            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-total').textContent = formatNumber(total);
             document.getElementById('stat-winrate').textContent = winRate + '%';
-            document.getElementById('stat-avg').textContent = avgGuesses;
+            document.getElementById('stat-avg').textContent = formatNumber(avgGuesses);
             document.getElementById('stat-best-time').textContent = bestGuessTime ? formatTime(bestGuessTime) : '--';
             document.getElementById('stat-playtime').textContent = formatTime(totalPlayTime);
-            document.getElementById('stat-streak').textContent = winStreak;
-            document.getElementById('stat-daily-streak').textContent = dailyChallengeStreak;
-            document.getElementById('stat-best-streak').textContent = bestWinStreak;
+            document.getElementById('stat-streak').textContent = formatNumber(winStreak);
+            document.getElementById('stat-daily-streak').textContent = formatNumber(dailyChallengeStreak);
+            document.getElementById('stat-best-streak').textContent = formatNumber(bestWinStreak);
         }
 
         function updateAchievementProgress() {
@@ -2235,7 +3034,14 @@
 
             if (won) {
                 wins++;
-                coins += 2;
+                // Award coins based on difficulty
+                if (difficulty === 'easy') {
+                    coins += 1;
+                } else if (difficulty === 'hard') {
+                    coins += 5;
+                } else {
+                    coins += 2; // normal
+                }
                 updateCoinDisplay();
                 winStreak++;
                 if (winStreak > bestWinStreak) bestWinStreak = winStreak;
@@ -2257,8 +3063,6 @@
                 if (!bestGuessTime || gameTime < bestGuessTime) {
                     bestGuessTime = gameTime;
                 }
-
-                // Add to leaderboard
 
                 // Difficulty achievements
                 if (difficulty === 'hard') {
@@ -2569,6 +3373,9 @@
             pairs.forEach((emoji, index) => {
                 const card = document.createElement('div');
                 card.className = 'memory-card';
+                if (currentCardBack !== 'default') {
+                    card.classList.add('card-back-' + currentCardBack);
+                }
                 card.dataset.emoji = emoji;
                 card.dataset.index = index;
                 card.textContent = '?';
@@ -2624,8 +3431,6 @@
                             if (!bestMemoryTime || gameTime < bestMemoryTime) {
                                 bestMemoryTime = gameTime;
                             }
-
-                            // Add to leaderboard
 
                             const message = document.getElementById('memory-message');
                             message.textContent = '🎉 You won in ' + memoryMoves + ' moves!';
@@ -2686,6 +3491,10 @@
             if (lucky7Game) lucky7Game.style.display = 'none';
             const simonGame = document.getElementById('simon-game');
             if (simonGame) simonGame.style.display = 'none';
+            const reactionGame = document.getElementById('reaction-game');
+            if (reactionGame) reactionGame.style.display = 'none';
+            const mathGame = document.getElementById('math-game');
+            if (mathGame) mathGame.style.display = 'none';
 
             if (mode === 'guess') {
                 document.getElementById('guessing-game').style.display = 'block';
@@ -2733,6 +3542,28 @@
                 }
                 document.getElementById('simon-game').style.display = 'block';
                 initSimonSays();
+            } else if (mode === 'reaction') {
+                if (!ownedItems.games.includes('reaction')) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Quick Reaction is locked! Buy it in the shop!';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('reaction-game').style.display = 'block';
+                initReaction();
+            } else if (mode === 'math') {
+                if (!ownedItems.games.includes('math')) {
+                    document.getElementById('game-mode').value = 'guess';
+                    document.getElementById('guessing-game').style.display = 'block';
+                    const msg = document.getElementById('message');
+                    msg.textContent = '🔒 Math Quiz is locked! Buy it in the shop!';
+                    msg.className = 'message high';
+                    return;
+                }
+                document.getElementById('math-game').style.display = 'block';
+                initMath();
             }
         }
 
@@ -2789,7 +3620,7 @@
             document.getElementById('button-style-options').style.display = enabled ? 'block' : 'none';
             localStorage.setItem('customButtons', enabled);
             if (!enabled) {
-                document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon');
+                document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon', 'btn-3d', 'btn-glass', 'btn-pixel', 'btn-pill', 'btn-hexagon');
             } else {
                 changeButtonStyle();
             }
@@ -2799,113 +3630,46 @@
             playClick();
             const style = document.getElementById('button-style').value;
             buttonStyle = style;
-            document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon');
+            document.body.classList.remove('btn-rounded', 'btn-square', 'btn-neon', 'btn-3d', 'btn-glass', 'btn-pixel', 'btn-pill', 'btn-hexagon');
             if (style !== 'default') {
                 document.body.classList.add('btn-' + style);
             }
         }
 
-        // =====================================================
-        // NUMBER SKIN SYSTEM
-        // =====================================================
-        function changeNumberSkin() {
+        function changeCardBack() {
             playClick();
-            currentNumberSkin = document.getElementById('number-skin').value;
-            localStorage.setItem('numberSkin', currentNumberSkin);
-            updateAllNumbers();
-        }
+            const newCardBack = document.getElementById('card-back-select').value;
+            currentCardBack = newCardBack;
 
-        function updateAllNumbers() {
-            // Update all number displays with current skin
-            const numberElements = document.querySelectorAll('[data-format-number]');
-            numberElements.forEach(el => {
-                const num = parseInt(el.getAttribute('data-format-number'));
-                if (!isNaN(num)) {
-                    el.textContent = formatNumber(num);
+            // Update all existing memory cards
+            const allCards = document.querySelectorAll('.memory-card');
+            allCards.forEach(card => {
+                // Remove all card-back classes
+                card.classList.remove('card-back-gradient-blue', 'card-back-gradient-purple',
+                    'card-back-gradient-green', 'card-back-pattern-dots',
+                    'card-back-pattern-stripes', 'card-back-solid-gold',
+                    'card-back-checkerboard', 'card-back-zigzag',
+                    'card-back-space', 'card-back-floral',
+                    'card-back-camouflage', 'card-back-rainbow-gradient');
+
+                // Add new card back class if not default
+                if (newCardBack !== 'default') {
+                    card.classList.add('card-back-' + newCardBack);
                 }
             });
-
-            // Update coin displays
-            document.getElementById('coin-balance-display').textContent = formatNumber(coins);
-            const coinBalance = document.getElementById('coin-balance');
-            if (coinBalance) coinBalance.textContent = '(Balance: ' + formatNumber(coins) + ')';
-            document.getElementById('shop-coins').textContent = formatNumber(coins);
-            const lucky7Coins = document.getElementById('lucky7-coins');
-            if (lucky7Coins) lucky7Coins.textContent = formatNumber(coins);
-
-            // Update streak displays
-            const winStreakEl = document.getElementById('current-win-streak');
-            if (winStreakEl) winStreakEl.textContent = formatNumber(winStreak);
-            const lossStreakEl = document.getElementById('current-loss-streak');
-            if (lossStreakEl) lossStreakEl.textContent = formatNumber(lossStreak);
-
-            // Update attempts display
-            const attemptsEl = document.getElementById('attempts-left');
-            if (attemptsEl) {
-                const maxAttempts = getDifficultyAttempts();
-                attemptsEl.textContent = formatNumber(maxAttempts - attempts);
-            }
-
-            // Update game description
-            const maxNum = difficultySettings[difficulty].max;
-            document.getElementById('game-description').textContent = 'I\'m thinking of a number between 1 and ' + formatNumber(maxNum) + '.';
         }
 
-        function loadNumberSkin() {
-            const saved = localStorage.getItem('numberSkin') || 'default';
-            currentNumberSkin = saved;
-            updateAllNumbers();
-        }
-
+        // =====================================================
+        // =====================================================
+        // NUMBER FORMATTING
+        // =====================================================
         function formatNumber(num) {
-            switch(currentNumberSkin) {
-                case 'emoji':
-                    return numberToEmoji(num);
-                case 'roman':
-                    return numberToRoman(num);
-                case 'binary':
-                    return numberToBinary(num);
-                case 'words':
-                    return numberToWords(num);
-                default:
-                    return num.toString();
-            }
-        }
-
-        function numberToEmoji(num) {
-            const emojiNumbers = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-            return num.toString().split('').map(d => emojiNumbers[parseInt(d)] || d).join('');
-        }
-
-        function numberToRoman(num) {
-            if (num < 1 || num > 3999) return num.toString();
-            const roman = { M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1 };
-            let result = '';
-            for (let key in roman) {
-                while (num >= roman[key]) {
-                    result += key;
-                    num -= roman[key];
-                }
-            }
-            return result;
-        }
-
-        function numberToBinary(num) {
-            return num.toString(2);
-        }
-
-        function numberToWords(num) {
-            if (num === 0) return 'zero';
-            const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-            const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-
-            if (num < 20) return ones[num] || num.toString();
-            if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? '-' + ones[num % 10] : '');
-            if (num < 1000) return ones[Math.floor(num / 100)] + ' hundred' + (num % 100 ? ' ' + numberToWords(num % 100) : '');
             return num.toString();
         }
 
+        // =====================================================
+        // VISUAL EFFECTS
+        // =====================================================
         function loadVisualEffects() {
             buttonStyle = 'default';
             document.getElementById('button-style').value = buttonStyle;
@@ -2917,21 +3681,27 @@
         function changeBackground() {
             playClick();
             currentBackground = document.getElementById('background-select').value;
-            localStorage.setItem('background', currentBackground);
             applyBackground(currentBackground);
         }
 
         function loadBackground() {
-            const saved = localStorage.getItem('background') || 'default';
-            currentBackground = saved;
+            currentBackground = 'default';
             const select = document.getElementById('background-select');
-            if (select) select.value = saved;
+            if (select) select.value = 'default';
             applyBackground(currentBackground);
         }
 
         function applyBackground(bg) {
             const container = document.getElementById('background-effects');
-            container.innerHTML = '';
+            if (!container) return;
+
+            // Properly clean up all existing background elements
+            while (container.firstChild) {
+                const child = container.firstChild;
+                // Stop any animations by removing inline styles
+                child.style.animation = 'none';
+                child.remove();
+            }
 
             if (bg === 'default') return;
 
@@ -2948,33 +3718,6 @@
                     particle.style.animationDuration = Math.random() * 10 + 10 + 's';
                     container.appendChild(particle);
                 }
-            } else if (bg === 'waves') {
-                // Create SVG wave elements that look like ~ emoji
-                const svgNS = "http://www.w3.org/2000/svg";
-                const numWaves = 7;
-                for (let i = 0; i < numWaves; i++) {
-                    const svg = document.createElementNS(svgNS, "svg");
-                    svg.setAttribute("viewBox", "0 0 1440 320");
-                    svg.style.cssText = `
-                        position: fixed;
-                        bottom: ${i * 8}%;
-                        left: 0;
-                        width: 100%;
-                        height: 120px;
-                        opacity: ${0.25 - i * 0.025};
-                        animation: wave 8s linear infinite;
-                        animation-delay: 0s;
-                        pointer-events: none;
-                    `;
-
-                    const path = document.createElementNS(svgNS, "path");
-                    const fill = `hsla(${200 + i * 10}, 80%, ${55 - i * 5}%, 0.5)`;
-                    path.setAttribute("fill", fill);
-                    // Wave-like path similar to ~ emoji
-                    path.setAttribute("d", "M0,160 C120,200 240,240 360,220 C480,200 600,120 720,140 C840,160 960,220 1080,200 C1200,180 1320,120 1440,140 L1440,220 C1320,200 1200,260 1080,240 C960,220 840,160 720,180 C600,200 480,280 360,260 C240,240 120,200 0,180 Z");
-                    svg.appendChild(path);
-                    container.appendChild(svg);
-                }
             } else if (bg === 'stars') {
                 for (let i = 0; i < 50; i++) {
                     const star = document.createElement('div');
@@ -2984,10 +3727,72 @@
                     star.style.animationDelay = Math.random() * 3 + 's';
                     container.appendChild(star);
                 }
+            } else if (bg === 'rain') {
+                for (let i = 0; i < 100; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'bg-rain';
+                    drop.style.left = Math.random() * 100 + '%';
+                    drop.style.height = Math.random() * 20 + 10 + 'px';
+                    drop.style.animationDuration = Math.random() * 0.5 + 0.5 + 's';
+                    drop.style.animationDelay = Math.random() * 2 + 's';
+                    container.appendChild(drop);
+                }
+            } else if (bg === 'snow') {
+                for (let i = 0; i < 50; i++) {
+                    const flake = document.createElement('div');
+                    flake.className = 'bg-snow';
+                    flake.style.left = Math.random() * 100 + '%';
+                    flake.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    flake.style.animationDelay = Math.random() * 5 + 's';
+                    container.appendChild(flake);
+                }
+            } else if (bg === 'bubbles') {
+                for (let i = 0; i < 15; i++) {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bg-bubble';
+                    const size = Math.random() * 30 + 10;
+                    bubble.style.width = size + 'px';
+                    bubble.style.height = size + 'px';
+                    bubble.style.left = Math.random() * 100 + '%';
+                    bubble.style.animationDuration = Math.random() * 5 + 5 + 's';
+                    bubble.style.animationDelay = Math.random() * 10 + 's';
+                    container.appendChild(bubble);
+                }
+            } else if (bg === 'matrix-code') {
+                for (let i = 0; i < 20; i++) {
+                    const column = document.createElement('div');
+                    column.className = 'bg-matrix-char';
+                    column.textContent = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    column.style.left = (i * 5) + '%';
+                    column.style.animationDuration = Math.random() * 2 + 1 + 's';
+                    column.style.animationDelay = Math.random() * 5 + 's';
+                    container.appendChild(column);
+                }
+            } else if (bg === 'northern-lights') {
+                const aurora = document.createElement('div');
+                aurora.className = 'aurora';
+                container.appendChild(aurora);
+            } else if (bg === 'fireflies') {
+                for (let i = 0; i < 20; i++) {
+                    const firefly = document.createElement('div');
+                    firefly.className = 'bg-firefly';
+                    firefly.style.left = Math.random() * 100 + '%';
+                    firefly.style.top = Math.random() * 100 + '%';
+                    firefly.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    firefly.style.animationDelay = Math.random() * 3 + 's';
+                    container.appendChild(firefly);
+                }
             }
         }
 
         function updateCoinDisplay() {
+            // Ensure coins is valid and capped at 9 billion to prevent Infinity issues
+            if (!isFinite(coins) || isNaN(coins) || coins < 0) {
+                coins = 0;
+            }
+            if (coins > 9999999999) {
+                coins = 9999999999;
+            }
             document.getElementById('coin-balance-display').textContent = formatNumber(coins);
         }
 
@@ -3015,7 +3820,14 @@
             renderShopCategory('confetti', shopItems.confetti, 'confetti');
             renderShopCategory('games', shopItems.games, 'games');
             renderShopCategory('buttonStyles', shopItems.buttonStyles, 'buttonStyles');
-            renderShopCategory('numberSkins', shopItems.numberSkins, 'numberSkins');
+
+            // Only show card backs if Memory Match is owned
+            if (ownedItems.games.includes('memory')) {
+                renderShopCategory('cardBacks', shopItems.cardBacks, 'cardBacks');
+            } else {
+                document.getElementById('shop-cardBacks').innerHTML = '<small style="color: #718096;">🔒 Unlock Memory Match first!</small>';
+            }
+
             renderShopCategory('backgrounds', shopItems.backgrounds, 'backgrounds');
         }
 
@@ -3062,7 +3874,26 @@
             if (ownedItems[category].includes(itemId)) {
                 return;
             }
+            // Ensure coins is valid
+            if (!isFinite(coins) || isNaN(coins) || coins < 0) {
+                coins = 0;
+                updateCoinDisplay();
+                return;
+            }
             if (coins < price) {
+                return;
+            }
+
+            // Prevent buying card backs without Memory Match
+            if (category === 'cardBacks' && !ownedItems.games.includes('memory')) {
+                const shopModal = document.getElementById('shop-modal');
+                const msg = document.createElement('div');
+                msg.textContent = '❌ You need to buy Memory Match first!';
+                msg.style.color = '#f56565';
+                msg.style.textAlign = 'center';
+                msg.style.marginTop = '1rem';
+                shopModal.appendChild(msg);
+                setTimeout(() => msg.remove(), 2000);
                 return;
             }
 
@@ -3074,6 +3905,35 @@
 
             // Update settings dropdowns to include new item
             updateSettingsDropdowns();
+
+            // Check for collector achievement (own all shop items)
+            checkCollectorAchievement();
+        }
+
+        function checkCollectorAchievement() {
+            // Count total items in shop (excluding free ones)
+            let totalItems = 0;
+            totalItems += shopItems.sounds.length;
+            totalItems += shopItems.themes.filter(t => t.id !== 'default' && t.id !== 'dark').length;
+            totalItems += shopItems.confetti.filter(c => c.id !== 'rainbow' && c.id !== 'monochrome').length;
+            totalItems += shopItems.games.length;
+            totalItems += shopItems.buttonStyles.length;
+            totalItems += shopItems.cardBacks.length;
+            totalItems += shopItems.backgrounds.length;
+
+            // Count owned items (excluding free items)
+            let ownedCount = 0;
+            ownedCount += ownedItems.sounds.filter(s => s !== 'default' && s !== 'piano').length;
+            ownedCount += ownedItems.themes.filter(t => t !== 'default' && t !== 'dark').length;
+            ownedCount += ownedItems.confetti.filter(c => c !== 'rainbow' && c !== 'monochrome').length;
+            ownedCount += ownedItems.games.length;
+            ownedCount += ownedItems.buttonStyles.length;
+            ownedCount += ownedItems.cardBacks.filter(cb => cb !== 'default').length;
+            ownedCount += ownedItems.backgrounds.filter(b => b !== 'default').length;
+
+            if (ownedCount === totalItems && totalItems > 0) {
+                unlockAchievement('collector');
+            }
         }
 
         function updateSettingsDropdowns() {
@@ -3087,7 +3947,13 @@
                 { id: 'dark', name: '🌙 Dark', free: true },
                 { id: 'neon', name: '💜 Neon', free: false },
                 { id: 'retro', name: '🕹️ Retro', free: false },
-                { id: 'ocean', name: '🌊 Ocean', free: false }
+                { id: 'ocean', name: '🌊 Ocean', free: false },
+                { id: 'cyberpunk', name: '🌆 Cyberpunk', free: false },
+                { id: 'sunset', name: '🌅 Sunset', free: false },
+                { id: 'forest', name: '🌲 Forest', free: false },
+                { id: 'candy', name: '🍬 Candy', free: false },
+                { id: 'matrix', name: '💻 Matrix', free: false },
+                { id: 'midnight', name: '🌙 Midnight', free: false }
             ];
 
             allThemes.forEach(theme => {
@@ -3112,7 +3978,12 @@
                 { id: 'scifi', name: '🚀 Sci-Fi', free: false },
                 { id: 'nature', name: '🌿 Nature', free: false },
                 { id: 'arcade', name: '🕹️ Retro Arcade', free: false },
-                { id: 'orchestral', name: '🎻 Orchestral', free: false }
+                { id: 'orchestral', name: '🎻 Orchestral', free: false },
+                { id: 'retro-nes', name: '🎮 Retro NES', free: false },
+                { id: 'cartoon', name: '🤪 Cartoon', free: false },
+                { id: 'sports', name: '🏀 Sports', free: false },
+                { id: 'space', name: '🌌 Space', free: false },
+                { id: 'animals', name: '🐾 Animals', free: false }
             ];
 
             allSounds.forEach(sound => {
@@ -3140,7 +4011,13 @@
                 { id: 'purple', name: '💜 Purple', free: false },
                 { id: 'pink', name: '🩷 Pink', free: false },
                 { id: 'fire', name: '🔥 Fire', free: false },
-                { id: 'ocean', name: '🌊 Ocean', free: false }
+                { id: 'ocean', name: '🌊 Ocean', free: false },
+                { id: 'hearts', name: '💖 Hearts', free: false },
+                { id: 'stars', name: '⭐ Stars', free: false },
+                { id: 'snowflakes', name: '❄️ Snowflakes', free: false },
+                { id: 'coins', name: '💰 Coins', free: false },
+                { id: 'pizza', name: '🍕 Pizza', free: false },
+                { id: 'space', name: '🚀 Space', free: false }
             ];
 
             allConfetti.forEach(c => {
@@ -3161,7 +4038,12 @@
             const allButtonStyles = [
                 { id: 'rounded', name: '⭕ Rounded' },
                 { id: 'square', name: '⬜ Square' },
-                { id: 'neon', name: '💡 Neon Glow' }
+                { id: 'neon', name: '💡 Neon Glow' },
+                { id: '3d', name: '🎲 3D' },
+                { id: 'glass', name: '🪟 Glass' },
+                { id: 'pixel', name: '👾 Pixel' },
+                { id: 'pill', name: '💊 Pill' },
+                { id: 'hexagon', name: '⬡ Hexagon' }
             ];
 
             allButtonStyles.forEach(style => {
@@ -3174,29 +4056,35 @@
             });
             buttonStyleSelect.value = currentButtonStyle;
 
-            // Update number skin dropdown
-            const numberSkinSelect = document.getElementById('number-skin');
-            if (numberSkinSelect) {
-                const currentNumberSkinLocal = numberSkinSelect.value;
-                numberSkinSelect.innerHTML = '<option value="default">🔢 Default Numbers</option>';
+            // Update card back dropdown
+            const cardBackSelect = document.getElementById('card-back-select');
+            const currentCardBackLocal = cardBackSelect.value;
+            cardBackSelect.innerHTML = '<option value="default">🎴 Default</option>';
 
-                const allNumberSkins = [
-                    { id: 'emoji', name: '😀 Emoji Numbers' },
-                    { id: 'roman', name: '🏛️ Roman Numerals' },
-                    { id: 'binary', name: '💻 Binary Code' },
-                    { id: 'words', name: '📝 Number Words' }
-                ];
+            const allCardBacks = [
+                { id: 'gradient-blue', name: '🌊 Ocean Blue' },
+                { id: 'gradient-purple', name: '🌌 Galaxy Purple' },
+                { id: 'gradient-green', name: '🌲 Forest Green' },
+                { id: 'pattern-dots', name: '🔵 Polka Dots' },
+                { id: 'pattern-stripes', name: '📏 Stripes' },
+                { id: 'solid-gold', name: '✨ Golden' },
+                { id: 'checkerboard', name: '♟️ Checkerboard' },
+                { id: 'zigzag', name: '⚡ Zigzag' },
+                { id: 'space', name: '🌌 Space' },
+                { id: 'floral', name: '🌸 Floral' },
+                { id: 'camouflage', name: '🎯 Camouflage' },
+                { id: 'rainbow-gradient', name: '🌈 Rainbow Gradient' }
+            ];
 
-                allNumberSkins.forEach(skin => {
-                    if (ownedItems.numberSkins.includes(skin.id)) {
-                        const option = document.createElement('option');
-                        option.value = skin.id;
-                        option.textContent = skin.name;
-                        numberSkinSelect.appendChild(option);
-                    }
-                });
-                numberSkinSelect.value = currentNumberSkinLocal;
-            }
+            allCardBacks.forEach(cb => {
+                if (ownedItems.cardBacks.includes(cb.id)) {
+                    const option = document.createElement('option');
+                    option.value = cb.id;
+                    option.textContent = cb.name;
+                    cardBackSelect.appendChild(option);
+                }
+            });
+            cardBackSelect.value = currentCardBackLocal;
 
             // Update background dropdown
             const backgroundSelect = document.getElementById('background-select');
@@ -3206,8 +4094,13 @@
 
                 const allBackgrounds = [
                     { id: 'particles', name: '✨ Floating Particles' },
-                    { id: 'waves', name: '🌊 Animated Waves' },
-                    { id: 'stars', name: '⭐ Twinkling Stars' }
+                    { id: 'stars', name: '⭐ Twinkling Stars' },
+                    { id: 'rain', name: '🌧️ Rain' },
+                    { id: 'snow', name: '❄️ Snow' },
+                    { id: 'bubbles', name: '🫧 Bubbles' },
+                    { id: 'matrix-code', name: '💻 Matrix Code' },
+                    { id: 'northern-lights', name: '🌌 Northern Lights' },
+                    { id: 'fireflies', name: '✨ Fireflies' }
                 ];
 
                 allBackgrounds.forEach(bg => {
@@ -3231,13 +4124,20 @@
         }
 
         function loadShopData() {
-            const saved = localStorage.getItem('shopData');
-            if (saved) {
-                const data = JSON.parse(saved);
-                ownedItems = data.items || ownedItems;
-                coins = data.coins || 0;
-                // Ensure buttonStyles exists for old saves
-                if (!ownedItems.buttonStyles) ownedItems.buttonStyles = [];
+            try {
+                const saved = localStorage.getItem('shopData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    ownedItems = data.items || ownedItems;
+                    coins = data.coins || 0;
+                    // Ensure buttonStyles and cardBacks exist for old saves
+                    if (!ownedItems.buttonStyles) ownedItems.buttonStyles = [];
+                    if (!ownedItems.cardBacks) ownedItems.cardBacks = ['default'];
+                    if (!ownedItems.backgrounds) ownedItems.backgrounds = ['default'];
+                }
+            } catch (e) {
+                console.error('Error loading shop data:', e);
+                // Keep defaults
             }
         }
 
@@ -3294,7 +4194,8 @@
                 ['luckyGuesses', 'ach-lucky-guesses'],
                 ['perfectionist', 'ach-perfectionist'],
                 ['completionist', 'ach-completionist'],
-                ['nosy', 'ach-nosy']
+                ['nosy', 'ach-nosy'],
+                ['collector', 'ach-collector']
             ];
             achList.forEach(([key, id]) => {
                 const el = document.getElementById(id);
@@ -3325,13 +4226,49 @@
         }
 
         function saveGameModeWins() {
-            localStorage.setItem('gameModeWins', JSON.stringify(gameModeWins));
+            try {
+                localStorage.setItem('gameModeWins', JSON.stringify(gameModeWins));
+            } catch (e) {
+                console.error('Error saving game mode wins:', e);
+            }
         }
 
         function loadGameModeWins() {
-            const saved = localStorage.getItem('gameModeWins');
-            if (saved) {
-                gameModeWins = JSON.parse(saved);
+            try {
+                const saved = localStorage.getItem('gameModeWins');
+                if (saved) {
+                    const loaded = JSON.parse(saved);
+
+                    // Validate loaded wins to prevent old stale data from incorrectly triggering Perfectionist
+                    // Only load wins that have proof (achievements or ownership)
+
+                    // Guessing game - validated by wins counter
+                    if (loaded.guess && wins > 0) {
+                        gameModeWins.guess = true;
+                    }
+
+                    // Memory - validated by memoryFirstWin achievement
+                    if (loaded.memory && achievements.memoryFirstWin) {
+                        gameModeWins.memory = true;
+                    }
+
+                    // Lucky 7 - only tracked when rolling a 7, trust the data if they own it
+                    if (loaded.lucky7 && ownedItems.games.includes('lucky7')) {
+                        gameModeWins.lucky7 = true;
+                    }
+
+                    // RPS - only tracked when winning the match, trust the data if they own it
+                    if (loaded.rps && ownedItems.games.includes('rps')) {
+                        gameModeWins.rps = true;
+                    }
+
+                    // Simon - only tracked when reaching 10 points, trust the data if unlocked
+                    if (loaded.simon && achievements.luckyGuesses) {
+                        gameModeWins.simon = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading game mode wins:', e);
             }
         }
 
@@ -3351,7 +4288,6 @@
                 gameHistory = gameHistory.slice(0, MAX_HISTORY);
             }
 
-            localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
             updateGameHistoryDisplay();
         }
 
@@ -3377,7 +4313,9 @@
                     memory: '🧠 Memory Match',
                     lucky7: '🎰 Lucky 7',
                     rps: '✊✋✌ Rock Paper Scissors',
-                    simon: '🎵 Simon Says'
+                    simon: '🎵 Simon Says',
+                    reaction: '⚡ Quick Reaction',
+                    math: '🧮 Math Quiz'
                 };
 
                 const resultIcon = game.result === 'win' ? '✅' : '❌';
@@ -3385,11 +4323,17 @@
                 const date = new Date(game.timestamp);
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+                // Format numbers in details
+                let formattedDetails = game.details.replace(/\d+/g, (match) => {
+                    const num = parseInt(match);
+                    return isNaN(num) ? match : formatNumber(num);
+                });
+
                 return `
                     <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 0.5rem;">
                         <div>
                             <div style="font-weight: bold; margin-bottom: 0.25rem;">${modeNames[game.mode] || game.mode}</div>
-                            <div style="font-size: 0.9rem; color: var(--text-secondary);">${game.details}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary);">${formattedDetails}</div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 1.2rem; color: ${resultColor};">${resultIcon}</div>
@@ -3404,8 +4348,21 @@
         // END GAME HISTORY
         // =====================================================
 
-        function unlockAchievement(ach) {
+        function unlockAchievement(ach, bypass = false) {
             if (achievements[ach]) return;
+
+            // If giving Collector via bypass (cheat panel), give all shop items first
+            if (ach === 'collector' && bypass) {
+                ownedItems.sounds = ['default', 'piano', '8bit', 'scifi', 'nature', 'arcade', 'orchestral', 'retro-nes', 'cartoon', 'sports', 'space', 'animals'];
+                ownedItems.themes = ['default', 'dark', 'neon', 'retro', 'ocean', 'cyberpunk', 'sunset', 'forest', 'candy', 'matrix', 'midnight'];
+                ownedItems.confetti = ['rainbow', 'monochrome', 'gold', 'red', 'blue', 'green', 'purple', 'pink', 'fire', 'ocean', 'hearts', 'stars', 'snowflakes', 'coins', 'pizza', 'space'];
+                ownedItems.games = ['memory', 'lucky7', 'rps', 'reaction', 'math'];
+                ownedItems.buttonStyles = ['rounded', 'square', 'neon', '3d', 'glass', 'pixel', 'pill', 'hexagon'];
+                ownedItems.cardBacks = ['default', 'gradient-blue', 'gradient-purple', 'gradient-green', 'pattern-dots', 'pattern-stripes', 'solid-gold', 'checkerboard', 'zigzag', 'space', 'floral', 'camouflage', 'rainbow-gradient'];
+                ownedItems.backgrounds = ['default', 'particles', 'stars', 'rain', 'snow', 'bubbles', 'matrix-code', 'northern-lights', 'fireflies'];
+                updateSettingsDropdowns();
+            }
+
             achievements[ach] = true;
             updateAchievementsDisplay();
 
@@ -3430,7 +4387,7 @@
                 timed15: 'Fast Win',
                 timed5: 'Insane Win',
                 meme: 'The Meme',
-                developer: 'Developer',
+                developer: 'Secret #1',
                 memoryFirstWin: 'Memory Master',
                 memoryPerfect: 'Perfect Memory',
                 memoryUnder20: 'Quick Mind',
@@ -3446,14 +4403,22 @@
                 completionist: 'Completionist',
                 nosy: 'Nosy',
                 luckyGuesses: 'Lucky Guesses',
-                perfectionist: 'Perfectionist'
+                perfectionist: 'Perfectionist',
+                collector: 'Collector'
             };
 
             const achMsg = document.createElement('div');
             achMsg.className = 'achievement-notification';
             achMsg.dataset.achievement = ach;
             achMsg.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%); padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap; transition: left 0.3s ease;';
-            achMsg.textContent = '🏆 ' + achNames[ach] + '!';
+
+            // Special message for Completionist - show the secret code
+            if (ach === 'completionist') {
+                achMsg.innerHTML = `🏆 Completionist!<br><br><span style="font-size: 1.2rem;">🔐 Secret Code: <strong>${DEV_ACHIEVEMENT_CODE}</strong></span><br><small>(For Secret #1 achievement)</small>`;
+            } else {
+                achMsg.textContent = '🏆 ' + achNames[ach] + '!';
+            }
+
             document.body.appendChild(achMsg);
 
             repositionAchievementNotifications();
@@ -3469,7 +4434,7 @@
                     'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'lossStreak10', 'games100', 'perfectGame',
                     'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5',
                     'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10', 'dailyStreak3',
-                    'dailyStreak7', 'dailyStreak30', 'hardWin', 'hardMemory', 'perfectDay', 'impossible', 'luckyGuesses', 'perfectionist'];
+                    'dailyStreak7', 'dailyStreak30', 'hardWin', 'hardMemory', 'perfectDay', 'impossible', 'luckyGuesses', 'perfectionist', 'collector'];
                 const allUnlocked = allAchs.every(a => achievements[a]);
                 if (allUnlocked && !achievements.completionist) {
                     setTimeout(() => unlockAchievement('completionist'), 500);
@@ -3549,10 +4514,25 @@
                 achievements: achievements,
                 reverseScroll: reverseScroll,
                 shopItems: ownedItems,
-                coins: coins
+                coins: coins,
+                gameHistory: gameHistory
             };
 
-            localStorage.setItem('guessingGame_' + name, JSON.stringify(saveData));
+            // Check if save already exists
+            const existingSave = localStorage.getItem('guessingGame_' + name);
+            if (existingSave) {
+                if (!confirm(`⚠️ Save "${name}" already exists! Overwrite it?`)) {
+                    return;
+                }
+            }
+
+            try {
+                localStorage.setItem('guessingGame_' + name, JSON.stringify(saveData));
+            } catch (e) {
+                messageEl.textContent = '❌ Save failed! Storage might be full.';
+                messageEl.style.color = '#f56565';
+                return;
+            }
             messageEl.textContent = '✅ Saved successfully!';
             messageEl.style.color = '#48bb78';
             document.getElementById('save-name').value = '';
@@ -3569,7 +4549,14 @@
                 return;
             }
 
-            const savedData = localStorage.getItem('guessingGame_' + name);
+            let savedData;
+            try {
+                savedData = localStorage.getItem('guessingGame_' + name);
+            } catch (e) {
+                messageEl.textContent = '� Load failed! Storage error.';
+                messageEl.style.color = '#f56565';
+                return;
+            }
 
             if (!savedData) {
                 messageEl.textContent = '❌ Save not found!';
@@ -3628,8 +4615,13 @@
             // Load shop items
             if (data.shopItems) {
                 ownedItems = data.shopItems;
-                saveShopData();
                 updateSettingsDropdowns();
+            }
+
+            // Load game history
+            if (data.gameHistory) {
+                gameHistory = data.gameHistory;
+                updateGameHistoryDisplay();
             }
 
             // Note: Settings (timedMode, timerDuration, difficulty, theme, soundPack)
@@ -3674,7 +4666,7 @@
                     achievements.developer = true;
                     updateAchievementsDisplay();
                     unlockAchievement('developer');
-                    messageEl.textContent = '🎉 Developer achievement unlocked!';
+                    messageEl.textContent = '🎉 Secret #1 achievement unlocked!';
                     messageEl.style.color = '#48bb78';
                     input.value = '';
                 } else {
@@ -3696,17 +4688,12 @@
             const code = input.value.trim();
 
             if (code === DEV_PANEL_CODE) {
-                if (achievements.developer) {
-                    developerModeUnlocked = true;
-                    messageEl.textContent = '🔓 Cheat panel unlocked!';
-                    messageEl.style.color = '#48bb78';
-                    document.getElementById('developer-panel').style.display = 'block';
-                    updateDevSaveList();
-                    input.value = '';
-                } else {
-                    messageEl.textContent = '❌ Unlock the Developer achievement first!';
-                    messageEl.style.color = '#f56565';
-                }
+                developerModeUnlocked = true;
+                messageEl.textContent = '🔓 Cheat panel unlocked!';
+                messageEl.style.color = '#48bb78';
+                document.getElementById('developer-panel').style.display = 'block';
+                updateDevSaveList();
+                input.value = '';
             } else if (code !== '') {
                 messageEl.textContent = '❌ Wrong code!';
                 messageEl.style.color = '#f56565';
@@ -3888,17 +4875,31 @@
                 return;
             }
 
-            // If giving Completionist, unlock all other achievements first
+            // If giving Completionist, unlock all other achievements and shop items first
             if (ach === 'completionist') {
+                // Unlock all shop items so Collector achievement is legitimate
+                ownedItems.sounds = ['default', 'piano', '8bit', 'scifi', 'nature', 'arcade', 'orchestral', 'retro-nes', 'cartoon', 'sports', 'space', 'animals'];
+                ownedItems.themes = ['default', 'dark', 'neon', 'retro', 'ocean', 'cyberpunk', 'sunset', 'forest', 'candy', 'matrix', 'midnight'];
+                ownedItems.confetti = ['rainbow', 'monochrome', 'gold', 'red', 'blue', 'green', 'purple', 'pink', 'fire', 'ocean', 'hearts', 'stars', 'snowflakes', 'coins', 'pizza', 'space'];
+                ownedItems.games = ['memory', 'lucky7', 'rps', 'reaction', 'math'];
+                ownedItems.buttonStyles = ['rounded', 'square', 'neon', '3d', 'glass', 'pixel', 'pill', 'hexagon'];
+                ownedItems.cardBacks = ['default', 'gradient-blue', 'gradient-purple', 'gradient-green', 'pattern-dots', 'pattern-stripes', 'solid-gold', 'checkerboard', 'zigzag', 'space', 'floral', 'camouflage', 'rainbow-gradient'];
+                ownedItems.backgrounds = ['default', 'particles', 'stars', 'rain', 'snow', 'bubbles', 'matrix-code', 'northern-lights', 'fireflies'];
+                updateSettingsDropdowns();
+
+                // Unlock all other achievements first (including collector)
                 for (const key in achievements) {
                     if (key !== 'completionist' && key !== 'nosy') {
                         achievements[key] = true;
                     }
                 }
                 updateAchievementsDisplay();
+
+                // Then explicitly check for Collector achievement now that all items are owned
+                checkCollectorAchievement();
             }
 
-            unlockAchievement(ach);
+            unlockAchievement(ach, true); // true = bypass requirements for cheat panel
             select.value = '';
         }
 
@@ -3911,8 +4912,10 @@
             confettiTheme = theme;
             launchConfetti();
 
-            // Restore original theme after launching
-            confettiTheme = originalTheme;
+            // Restore original theme after particles are created (small delay)
+            setTimeout(() => {
+                confettiTheme = originalTheme;
+            }, 100);
         }
 
         function giveCoins() {
@@ -3921,10 +4924,17 @@
             const msgEl = document.getElementById('dev-action-message');
 
             if (!isNaN(amount) && amount > 0) {
-                coins += amount;
+                // Cap coins at 9 billion (9999999999) to prevent Infinity issues
+                const newCoins = coins + amount;
+                if (newCoins > 9999999999) {
+                    coins = 9999999999;
+                    msgEl.textContent = '⚠️ Coins capped at 9,999,999,999!';
+                } else {
+                    coins = newCoins;
+                    msgEl.textContent = '✅ Added ' + amount + ' coins!';
+                }
                 updateCoinDisplay();
                 updateCoinBalance();
-                msgEl.textContent = '✅ Added ' + amount + ' coins!';
                 msgEl.style.color = '#48bb78';
                 setTimeout(() => { msgEl.textContent = ''; }, 2000);
             } else {
@@ -3935,7 +4945,16 @@
         }
 
         function updateCoinBalance() {
-            document.getElementById('coin-balance').textContent = '(Balance: ' + formatNumber(coins) + ')';
+            // Ensure coins is valid and capped
+            if (!isFinite(coins) || isNaN(coins) || coins < 0) {
+                coins = 0;
+            }
+            if (coins > 9999999999) {
+                coins = 9999999999;
+            }
+            // Cap coin display to prevent overflow issues with number skins
+            const displayCoins = coins;
+            document.getElementById('coin-balance').textContent = '(Balance: ' + formatNumber(displayCoins) + ')';
         }
 
         function exportSave() {
@@ -3960,7 +4979,8 @@
                 confettiTheme: confettiTheme,
                 buttonStyle: buttonStyle,
                 ownedItems: ownedItems,
-                achievements: achievements
+                achievements: achievements,
+                gameHistory: gameHistory
             };
             const encoded = btoa(JSON.stringify(saveData));
             navigator.clipboard.writeText(encoded).then(() => {
@@ -3970,6 +4990,77 @@
                 setTimeout(() => { msgEl.textContent = ''; }, 3000);
             }).catch(() => {
                 alert('Save data:\n\n' + encoded + '\n\nCopy this text to import later!');
+            });
+        }
+
+        function exportStatsImage() {
+            playClick();
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = 600;
+            const height = 800;
+            canvas.width = width;
+            canvas.height = height;
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🎮 Guessing Game Stats', width / 2, 80);
+
+            // Stats
+            const winRate = gamesPlayed > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+            const avgGuesses = gamesPlayed > 0 ? Math.round(totalGuesses / gamesPlayed) : 0;
+            const playTimeMinutes = Math.round(totalPlayTime / 60);
+            const playTimeDisplay = playTimeMinutes >= 60 ? Math.round(playTimeMinutes / 60) + 'h' : playTimeMinutes + 'm';
+
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'left';
+            const startY = 180;
+            const lineHeight = 60;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`🎯 Total Games: ${gamesPlayed}`, 80, startY);
+            ctx.fillText(`🏆 Wins: ${wins}`, 80, startY + lineHeight);
+            ctx.fillText(`💀 Losses: ${losses}`, 80, startY + lineHeight * 2);
+            ctx.fillText(`📈 Win Rate: ${winRate}%`, 80, startY + lineHeight * 3);
+            ctx.fillText(`🎲 Avg Guesses: ${avgGuesses}`, 80, startY + lineHeight * 4);
+            ctx.fillText(`⏱️ Play Time: ${playTimeDisplay}`, 80, startY + lineHeight * 5);
+            ctx.fillText(`🔥 Current Streak: ${winStreak}`, 80, startY + lineHeight * 6);
+            ctx.fillText(`⭐ Best Streak: ${bestWinStreak}`, 80, startY + lineHeight * 7);
+            ctx.fillText(`📅 Daily Streak: ${dailyChallengeStreak}`, 80, startY + lineHeight * 8);
+
+            // Achievements count
+            const achievementCount = Object.values(achievements).filter(a => a).length;
+            const totalAchievements = Object.keys(achievements).length;
+
+            ctx.fillStyle = '#f6e05e';
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText(`🏅 Achievements: ${achievementCount}/${totalAchievements}`, 80, startY + lineHeight * 9 + 20);
+
+            // Footer
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Generated at guessing-game.html', width / 2, height - 40);
+
+            // Convert to image and download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `guessing-game-stats-${Date.now()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
             });
         }
 
@@ -3987,6 +5078,14 @@
             try {
                 const decoded = atob(input);
                 const data = JSON.parse(decoded);
+
+                // Validate data structure
+                if (typeof data !== 'object' || data === null) {
+                    throw new Error('Invalid save format');
+                }
+                if (typeof data.coins !== 'number' || data.coins < 0) {
+                    throw new Error('Invalid coin data');
+                }
 
                 // Load all the data
                 coins = data.coins || 0;
@@ -4008,6 +5107,7 @@
                 confettiTheme = data.confettiTheme || 'rainbow';
                 buttonStyle = data.buttonStyle || 'default';
                 ownedItems = data.ownedItems || ownedItems;
+                reverseScroll = data.reverseScroll || false;
 
                 // Merge achievements
                 if (data.achievements) {
@@ -4016,6 +5116,12 @@
                             achievements[key] = true;
                         }
                     }
+                }
+
+                // Load game history
+                if (data.gameHistory) {
+                    gameHistory = data.gameHistory;
+                    updateGameHistoryDisplay();
                 }
 
                 // Update UI
@@ -4029,6 +5135,7 @@
                 changeTheme();
                 changeSoundPack();
                 loadVisualEffects();
+                document.getElementById('reverse-scroll').checked = reverseScroll;
 
                 document.getElementById('import-save-text').value = '';
                 msgEl.textContent = '✅ Save imported successfully!';
@@ -4056,6 +5163,14 @@
                 const decoded = atob(input);
                 const data = JSON.parse(decoded);
 
+                // Validate data structure
+                if (typeof data !== 'object' || data === null) {
+                    throw new Error('Invalid save format');
+                }
+                if (typeof data.coins !== 'number' || data.coins < 0) {
+                    throw new Error('Invalid coin data');
+                }
+
                 // Load all the data
                 coins = data.coins || 0;
                 wins = data.wins || 0;
@@ -4076,6 +5191,7 @@
                 confettiTheme = data.confettiTheme || 'rainbow';
                 buttonStyle = data.buttonStyle || 'default';
                 ownedItems = data.ownedItems || ownedItems;
+                reverseScroll = data.reverseScroll || false;
 
                 // Merge achievements
                 if (data.achievements) {
@@ -4084,6 +5200,12 @@
                             achievements[key] = true;
                         }
                     }
+                }
+
+                // Load game history
+                if (data.gameHistory) {
+                    gameHistory = data.gameHistory;
+                    updateGameHistoryDisplay();
                 }
 
                 // Update UI
@@ -4097,6 +5219,7 @@
                 changeTheme();
                 changeSoundPack();
                 loadVisualEffects();
+                document.getElementById('reverse-scroll').checked = reverseScroll;
 
                 document.getElementById('import-save-text-main').value = '';
                 msgEl.textContent = '✅ Save imported successfully!';
@@ -4114,22 +5237,21 @@
             const msgEl = document.getElementById('dev-action-message');
 
             // Unlock all sounds
-            ownedItems.sounds = ['default', 'piano', '8bit', 'scifi', 'nature', 'arcade', 'orchestral'];
+            ownedItems.sounds = ['default', 'piano', '8bit', 'scifi', 'nature', 'arcade', 'orchestral', 'retro-nes', 'cartoon', 'sports', 'space', 'animals'];
             // Unlock all themes
-            ownedItems.themes = ['default', 'dark', 'neon', 'retro', 'ocean'];
+            ownedItems.themes = ['default', 'dark', 'neon', 'retro', 'ocean', 'cyberpunk', 'sunset', 'forest', 'candy', 'matrix', 'midnight'];
             // Unlock all confetti
-            ownedItems.confetti = ['rainbow', 'gold', 'red', 'blue', 'green', 'purple', 'pink', 'fire', 'ocean', 'monochrome'];
+            ownedItems.confetti = ['rainbow', 'monochrome', 'gold', 'red', 'blue', 'green', 'purple', 'pink', 'fire', 'ocean', 'hearts', 'stars', 'snowflakes', 'coins', 'pizza', 'space'];
             // Unlock all games
-            ownedItems.games = ['memory', 'lucky7', 'rps'];
+            ownedItems.games = ['memory', 'lucky7', 'rps', 'reaction', 'math'];
             // Unlock all button styles
-            ownedItems.buttonStyles = ['rounded', 'square', 'neon'];
-            // Unlock all number skins
-            ownedItems.numberSkins = ['default', 'emoji', 'roman', 'binary', 'words'];
+            ownedItems.buttonStyles = ['rounded', 'square', 'neon', '3d', 'glass', 'pixel', 'pill', 'hexagon'];
+            // Unlock all card backs
+            ownedItems.cardBacks = ['default', 'gradient-blue', 'gradient-purple', 'gradient-green', 'pattern-dots', 'pattern-stripes', 'solid-gold', 'checkerboard', 'zigzag', 'space', 'floral', 'camouflage', 'rainbow-gradient'];
             // Unlock all backgrounds
-            ownedItems.backgrounds = ['default', 'particles', 'waves', 'stars'];
+            ownedItems.backgrounds = ['default', 'particles', 'stars', 'rain', 'snow', 'bubbles', 'matrix-code', 'northern-lights', 'fireflies'];
 
             updateSettingsDropdowns();
-            saveShopData();
 
             msgEl.textContent = '✅ All shop items unlocked!';
             msgEl.style.color = '#9f7aea';
@@ -4201,6 +5323,32 @@
             if (e.key === 'Enter') guess();
         });
 
+        // Global keyboard shortcuts for mini-games
+        document.addEventListener('keydown', (e) => {
+            const gameMode = document.getElementById('game-mode').value;
+
+            // Lucky 7: Enter or Space to spin
+            if (gameMode === 'lucky7' && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                spinLucky7();
+            }
+
+            // Rock Paper Scissors: 1/2/3 for rock/paper/scissors
+            if (gameMode === 'rps') {
+                if (e.key === '1') { playRPS('rock'); e.preventDefault(); }
+                if (e.key === '2') { playRPS('paper'); e.preventDefault(); }
+                if (e.key === '3') { playRPS('scissors'); e.preventDefault(); }
+            }
+
+            // Simon Says: 1/2/3/4 for red/blue/green/yellow (only when input is enabled)
+            if (gameMode === 'simon' && simonCanInput) {
+                if (e.key === '1') { simonInput('red'); e.preventDefault(); }
+                if (e.key === '2') { simonInput('blue'); e.preventDefault(); }
+                if (e.key === '3') { simonInput('green'); e.preventDefault(); }
+                if (e.key === '4') { simonInput('yellow'); e.preventDefault(); }
+            }
+        });
+
         function closeWelcome() {
             playClick();
             document.getElementById('welcome-modal').style.display = 'none';
@@ -4222,17 +5370,11 @@
         // Load game mode wins for Perfectionist achievement
         loadGameModeWins();
 
-        // Load game history
-        loadGameHistory();
-
         // Load confetti theme
         loadConfettiTheme();
 
         // Load visual effects settings
         loadVisualEffects();
-
-        // Load number skin
-        loadNumberSkin();
 
         // Load background
         loadBackground();
