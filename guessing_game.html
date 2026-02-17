@@ -3593,6 +3593,19 @@
             fetch(window.location.href)
                 .then(response => response.text())
                 .then(html => {
+                    // Redact secret codes before displaying
+                    html = html.replace(/guessVal === 67/g, 'guessVal === [REDACTED]');
+                    html = html.replace(/guessVal === 777/g, 'guessVal === [REDACTED]');
+                    html = html.replace(/=== '67'/g, "=== '[REDACTED]'");
+                    html = html.replace(/=== 67/g, "=== [REDACTED]");
+                    html = html.replace(/=== '777'/g, "=== '[REDACTED]'");
+                    html = html.replace(/=== 777/g, "=== [REDACTED]");
+                    html = html.replace(/SECRET_CODE/g, '[REDACTED]');
+                    html = html.replace(/'devpanel'/g, "'[REDACTED]'");
+                    html = html.replace(/"devpanel"/g, '"[REDACTED]"');
+                    html = html.replace(/opensezame/g, '[REDACTED]');
+                    html = html.replace(/challenge67/g, '[REDACTED]');
+
                     // Count lines
                     const totalLines = html.split('\n').length;
                     const codeLines = html.split('\n').filter(line => line.trim() !== '' && !line.trim().startsWith('//')).length;
@@ -3601,8 +3614,14 @@
                     document.getElementById('code-total-lines').textContent = totalLines.toLocaleString();
                     document.getElementById('code-code-lines').textContent = codeLines.toLocaleString();
 
-                    // Display code with basic syntax highlighting
-                    sourceCodeDisplay.textContent = html;
+                    // Display code with line numbers and proper formatting
+                    const lines = html.split('\n');
+                    const numberedCode = lines.map((line, index) => {
+                        const lineNum = (index + 1).toString().padStart(5, ' ');
+                        return lineNum + ' | ' + line;
+                    }).join('\n');
+
+                    sourceCodeDisplay.textContent = numberedCode;
                 })
                 .catch(err => {
                     sourceCodeDisplay.textContent = 'Error loading source code: ' + err.message;
