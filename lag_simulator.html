@@ -231,7 +231,9 @@
         }
 
         function updateBalls() {
-            balls.forEach(ball => {
+            const ballsToRemove = [];
+
+            balls.forEach((ball, index) => {
                 // Apply gravity
                 ball.vy += gravity;
 
@@ -260,7 +262,29 @@
 
                 ball.element.style.left = ball.x + 'px';
                 ball.element.style.top = ball.y + 'px';
+
+                // Check if ball has stopped bouncing (very low velocity and on ground)
+                const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                const isOnGround = ball.y + ball.size >= window.innerHeight - 5;
+
+                if (speed < 0.5 && isOnGround && balls.length > 50) {
+                    ballsToRemove.push(index);
+                }
             });
+
+            // Remove stopped balls and spawn replacements (5 new balls per stopped ball)
+            if (ballsToRemove.length > 0) {
+                // Remove from highest index first to avoid shifting issues
+                ballsToRemove.sort((a, b) => b - a).forEach(index => {
+                    balls[index].element.remove();
+                    balls.splice(index, 1);
+                });
+
+                // Spawn 5 new balls for each removed ball
+                for (let i = 0; i < ballsToRemove.length * 5; i++) {
+                    createBall();
+                }
+            }
         }
 
         function clearAllBalls() {
