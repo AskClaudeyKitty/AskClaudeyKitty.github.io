@@ -4113,10 +4113,6 @@
                     if (!ownedItems.buttonStyles) ownedItems.buttonStyles = [];
                     if (!ownedItems.cardBacks) ownedItems.cardBacks = ['default'];
                     if (!ownedItems.backgrounds) ownedItems.backgrounds = ['default'];
-                    // Remove northern-lights from owned items (feature removed)
-                    if (ownedItems.backgrounds.includes('northern-lights')) {
-                        ownedItems.backgrounds = ownedItems.backgrounds.filter(bg => bg !== 'northern-lights');
-                    }
                 }
             } catch (e) {
                 console.error('Error loading shop data:', e);
