@@ -856,6 +856,8 @@
 
             <button onclick="exportStatsImage()" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;">📸 Export Stats as Image</button>
 
+            <button onclick="viewSourceCode()" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #48bb78; color: white; border: none; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;">💻 View Source Code</button>
+
             <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
                 <strong>📍 Hint Levels:</strong><br><br>
                 <span style="color: #9f7aea;">🔥 Within 2</span> — SO close!<br>
@@ -986,6 +988,17 @@
             </div>
 
             <button class="close-modal" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
+
+    <div class="modal" id="source-code-modal">
+        <div class="modal-content" style="max-width: 900px; height: 80vh; display: flex; flex-direction: column;">
+            <h2>💻 Source Code</h2>
+            <p style="margin-bottom: 0.5rem;">Total Lines: <strong id="code-total-lines">0</strong> | Code Lines: <strong id="code-code-lines">0</strong></p>
+            <div style="flex: 1; overflow: auto; background: #1a1a1a; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0;">
+                <pre id="source-code-display" style="margin: 0; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 12px; line-height: 1.4; color: #f0f0f0; white-space: pre; overflow-x: auto;"></pre>
+            </div>
+            <button class="close-modal" onclick="closeSourceCode()">Close</button>
         </div>
     </div>
 
@@ -3572,6 +3585,37 @@
             document.getElementById('settings-modal').style.display = 'none';
         }
 
+        function viewSourceCode() {
+            playClick();
+            const sourceCodeDisplay = document.getElementById('source-code-display');
+
+            // Get the entire HTML content
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    // Count lines
+                    const totalLines = html.split('\n').length;
+                    const codeLines = html.split('\n').filter(line => line.trim() !== '' && !line.trim().startsWith('//')).length;
+
+                    // Update stats
+                    document.getElementById('code-total-lines').textContent = totalLines.toLocaleString();
+                    document.getElementById('code-code-lines').textContent = codeLines.toLocaleString();
+
+                    // Display code with basic syntax highlighting
+                    sourceCodeDisplay.textContent = html;
+                })
+                .catch(err => {
+                    sourceCodeDisplay.textContent = 'Error loading source code: ' + err.message;
+                });
+
+            document.getElementById('source-code-modal').style.display = 'flex';
+        }
+
+        function closeSourceCode() {
+            playClick();
+            document.getElementById('source-code-modal').style.display = 'none';
+        }
+
         function toggleTimedMode() {
             playClick();
             timedMode = document.getElementById('timed-mode').checked;
@@ -5276,6 +5320,10 @@
 
         document.getElementById('settings-modal').addEventListener('click', (e) => {
             if (e.target.id === 'settings-modal') closeSettings();
+        });
+
+        document.getElementById('source-code-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'source-code-modal') closeSourceCode();
         });
 
         document.getElementById('shop-modal').addEventListener('click', (e) => {
