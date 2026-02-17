@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncing Ball in Ring</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            overflow: hidden;
+        }
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+        .game-area {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        #canvas {
+            border: none;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+        button {
+            padding: 1.5rem 2rem;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #startBtn {
+            background: #48bb78;
+            color: white;
+        }
+        #stopBtn {
+            background: #f56565;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ball in a Ring</h1>
+
+    <div class="game-area">
+        <button id="startBtn" onclick="startAnimation()">▶️ Start</button>
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <button id="stopBtn" onclick="stopAnimation()">⏸️ Stop</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const ringRadius = 230;
+
+        let isRunning = false;
+        let animationId = null;
+        let audioContext = null;
+        let bounceCount = 0;
+
+        // Ball properties
+        const ball = {
+            x: centerX,
+            y: centerY,
+            vx: 4,
+            vy: 3,
+            radius: 20
+        };
+
+        // Initialize audio context on user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play bounce sound
+        function playBounceSound() {
+            if (!audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Random pitch between 300 and 600 Hz
+            oscillator.frequency.value = 300 + Math.random() * 300;
+            oscillator.type = 'sine';
+
+            // Sound envelope
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+        }
+
+        function drawRing() {
+            // Draw outer ring
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Draw inner glow
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, ringRadius - 5, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+
+            // Ball gradient - changes color on bounce
+            const hue = (bounceCount * 30) % 360;
+            const gradient = ctx.createRadialGradient(
+                ball.x - ball.radius * 0.3,
+                ball.y - ball.radius * 0.3,
+                0,
+                ball.x,
+                ball.y,
+                ball.radius
+            );
+            gradient.addColorStop(0, `hsl(${hue}, 70%, 70%)`);
+            gradient.addColorStop(1, `hsl(${hue}, 70%, 50%)`);
+
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Ball shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+        }
+
+        function updateBall() {
+            // Update position
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Check collision with ring
+            const dx = ball.x - centerX;
+            const dy = ball.y - centerY;
+            const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+
+            // If ball touches or goes beyond ring
+            if (distanceFromCenter + ball.radius >= ringRadius) {
+                // Calculate normal vector at collision point
+                const nx = dx / distanceFromCenter;
+                const ny = dy / distanceFromCenter;
+
+                // Calculate dot product of velocity and normal
+                const dotProduct = ball.vx * nx + ball.vy * ny;
+
+                // Reflect velocity vector (perfect bounce, no energy loss)
+                ball.vx = ball.vx - 2 * dotProduct * nx;
+                ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                // Push ball back inside ring
+                const overlap = distanceFromCenter + ball.radius - ringRadius;
+                ball.x -= nx * overlap;
+                ball.y -= ny * overlap;
+
+                // Play sound and change color
+                playBounceSound();
+                bounceCount++;
+            }
+        }
+
+        function gameLoop() {
+            if (!isRunning) return;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Reset shadow for ring
+            ctx.shadowColor = 'transparent';
+
+            // Draw ring and ball
+            drawRing();
+            drawBall();
+            updateBall();
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startAnimation() {
+            initAudio();
+            if (isRunning) return;
+            isRunning = true;
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopAnimation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        // Initialize - draw static ring and ball
+        ctx.shadowColor = 'transparent';
+        drawRing();
+        drawBall();
+    </script>
+</body>
+</html>
