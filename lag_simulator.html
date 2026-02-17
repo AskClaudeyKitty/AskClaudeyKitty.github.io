@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lag Simulator 🐌</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .fps-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        .fps-display.good {
+            color: #48bb78;
+        }
+        .fps-display.ok {
+            color: #f6e05e;
+        }
+        .fps-display.bad {
+            color: #f56565;
+        }
+        .fps-display.terrible {
+            color: #ff0066;
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        button {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #startBtn {
+            background: #48bb78;
+            color: white;
+        }
+        #stopBtn {
+            background: #f56565;
+            color: white;
+        }
+        #resetBtn {
+            background: #4299e1;
+            color: white;
+        }
+        .lag-indicator {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+        .lag-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .lag-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #f6e05e, #f56565, #ff0066);
+            transition: width 0.3s;
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐌 Lag Simulator</h1>
+        <p>Watch your FPS crumble over time!</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.9rem;">
+            ⌨️ Press <strong>1</strong> to Start | <strong>2</strong> to Stop | <strong>3</strong> to Reset
+        </p>
+
+        <div class="fps-display good" id="fpsDisplay">60 FPS</div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Time Elapsed</div>
+                <div class="stat-value" id="timeElapsed">0s</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Lag Factor</div>
+                <div class="stat-value" id="lagFactor">1x</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Frame Time</div>
+                <div class="stat-value" id="frameTime">16.67ms</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Operations/Frame</div>
+                <div class="stat-value" id="operations">0</div>
+            </div>
+        </div>
+
+        <div class="lag-indicator">
+            <div style="margin-bottom: 0.5rem;">🐢 LAG INTENSITY</div>
+            <div class="lag-bar">
+                <div class="lag-fill" id="lagFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button id="startBtn" onclick="startSimulation()">▶️ Start Lag</button>
+            <button id="stopBtn" onclick="stopSimulation()" style="display: none;">⏸️ Stop</button>
+            <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+
+        <canvas id="lagCanvas" style="display: none;"></canvas>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let animationId = null;
+        let startTime = null;
+        let frameCount = 0;
+        let lastFrameTime = performance.now();
+        let fps = 60;
+        let lagFactor = 1;
+
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const timeElapsed = document.getElementById('timeElapsed');
+        const lagFactorDisplay = document.getElementById('lagFactor');
+        const frameTimeDisplay = document.getElementById('frameTime');
+        const operationsDisplay = document.getElementById('operations');
+        const lagFill = document.getElementById('lagFill');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // Create arrays for heavy computation
+        let dataArrays = [];
+        let canvas = document.getElementById('lagCanvas');
+        let ctx = canvas.getContext('2d');
+
+        function generateHeavyLoad(iterations) {
+            // Do heavy math computations
+            let result = 0;
+            for (let i = 0; i < iterations; i++) {
+                result += Math.sqrt(i) * Math.sin(i) * Math.cos(i);
+                // Create temporary arrays to stress memory
+                if (i % 1000 === 0) {
+                    let temp = new Array(100).fill(0).map((_, j) => Math.random() * j);
+                    result += temp.reduce((a, b) => a + b, 0);
+                }
+            }
+            return result;
+        }
+
+        function renderComplexShapes(complexity) {
+            canvas.width = 800;
+            canvas.height = 600;
+
+            for (let i = 0; i < complexity; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = `hsl(${i % 360}, 70%, 50%)`;
+                ctx.lineWidth = 2;
+
+                for (let j = 0; j < 100; j++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    if (j === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        function createDOMElements(count) {
+            const container = document.createElement('div');
+            container.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
+
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.innerHTML = `<span>${Math.random()}</span>`.repeat(10);
+                div.style.cssText = `
+                    position: absolute;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    transform: rotate(${Math.random() * 360}deg);
+                `;
+                container.appendChild(div);
+            }
+
+            document.body.appendChild(container);
+            setTimeout(() => container.remove(), 100);
+        }
+
+        function calculateLagFactor(elapsedTime) {
+            // Exponential lag growth
+            // At 0s: 1x (no lag)
+            // At 10s: 10x
+            // At 20s: 100x
+            // At 30s: 1000x
+            return Math.pow(10, elapsedTime / 10);
+        }
+
+        function updateDisplay(currentTime) {
+            const elapsedTime = (currentTime - startTime) / 1000;
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+
+            frameCount++;
+
+            // Calculate FPS every 10 frames
+            if (frameCount % 10 === 0) {
+                fps = Math.round(1000 / deltaTime);
+                timeElapsed.textContent = elapsedTime.toFixed(1) + 's';
+                lagFactorDisplay.textContent = lagFactor.toFixed(1) + 'x';
+                frameTimeDisplay.textContent = deltaTime.toFixed(2) + 'ms';
+                operationsDisplay.textContent = Math.floor(lagFactor * 1000).toLocaleString();
+
+                // Update FPS display color
+                fpsDisplay.className = 'fps-display';
+                if (fps >= 50) fpsDisplay.classList.add('good');
+                else if (fps >= 30) fpsDisplay.classList.add('ok');
+                else if (fps >= 15) fpsDisplay.classList.add('bad');
+                else fpsDisplay.classList.add('terrible');
+
+                fpsDisplay.textContent = fps + ' FPS';
+
+                // Update lag bar
+                const lagPercentage = Math.min((elapsedTime / 60) * 100, 100);
+                lagFill.style.width = lagPercentage + '%';
+            }
+        }
+
+        function gameLoop(currentTime) {
+            if (!isRunning) return;
+
+            const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
+            lagFactor = calculateLagFactor(elapsedTime);
+
+            // Create increasingly heavy load
+            const operations = Math.floor(lagFactor * 1000);
+
+            // Heavy computation
+            generateHeavyLoad(operations);
+
+            // Complex rendering every 5 frames
+            if (frameCount % 5 === 0) {
+                renderComplexShapes(Math.floor(lagFactor / 10));
+            }
+
+            // DOM manipulation every 10 frames
+            if (frameCount % 10 === 0) {
+                createDOMElements(Math.floor(lagFactor / 100));
+            }
+
+            updateDisplay(currentTime);
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startSimulation() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startTime = performance.now();
+            lastFrameTime = startTime;
+            frameCount = 0;
+            lagFactor = 1;
+
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+        }
+
+        function resetSimulation() {
+            stopSimulation();
+
+            frameCount = 0;
+            fps = 60;
+            lagFactor = 1;
+            startTime = null;
+            lastFrameTime = performance.now();
+
+            fpsDisplay.className = 'fps-display good';
+            fpsDisplay.textContent = '60 FPS';
+            timeElapsed.textContent = '0s';
+            lagFactorDisplay.textContent = '1x';
+            frameTimeDisplay.textContent = '16.67ms';
+            operationsDisplay.textContent = '0';
+            lagFill.style.width = '0%';
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') {
+                startSimulation();
+            } else if (e.key === '2') {
+                stopSimulation();
+            } else if (e.key === '3') {
+                resetSimulation();
+            }
+        });
+
+        // Initialize
+        resetSimulation();
+    </script>
+</body>
+</html>
