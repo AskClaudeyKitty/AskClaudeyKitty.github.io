@@ -196,6 +196,8 @@
         let balls = [];
         let ballSpawnTimer = 0;
         let ballsPerSecond = 10;
+        const gravity = 0.3;
+        const bounciness = 0.7;
 
         function createBall() {
             const ball = document.createElement('div');
@@ -203,9 +205,9 @@
 
             const size = Math.random() * 40 + 20;
             const x = Math.random() * (window.innerWidth - size);
-            const y = Math.random() * (window.innerHeight - size);
-            const vx = (Math.random() - 0.5) * 10;
-            const vy = (Math.random() - 0.5) * 10;
+            const y = Math.random() * 100 + 50;
+            const vx = (Math.random() - 0.5) * 8;
+            const vy = Math.random() * 3;
             const color = `hsl(${Math.random() * 360}, 70%, 60%)`;
 
             ball.style.cssText = `
@@ -230,17 +232,30 @@
 
         function updateBalls() {
             balls.forEach(ball => {
+                // Apply gravity
+                ball.vy += gravity;
+
+                // Update position
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
-                // Bounce off edges
+                // Bounce off walls
                 if (ball.x <= 0 || ball.x + ball.size >= window.innerWidth) {
-                    ball.vx = -ball.vx;
+                    ball.vx = -ball.vx * bounciness;
                     ball.x = Math.max(0, Math.min(ball.x, window.innerWidth - ball.size));
                 }
-                if (ball.y <= 0 || ball.y + ball.size >= window.innerHeight) {
-                    ball.vy = -ball.vy;
-                    ball.y = Math.max(0, Math.min(ball.y, window.innerHeight - ball.size));
+
+                // Bounce off floor
+                if (ball.y + ball.size >= window.innerHeight) {
+                    ball.vy = -ball.vy * bounciness;
+                    ball.y = window.innerHeight - ball.size;
+                    // Add friction on ground
+                    ball.vx *= 0.99;
+                }
+                // Bounce off ceiling
+                else if (ball.y <= 0) {
+                    ball.vy = -ball.vy * bounciness;
+                    ball.y = 0;
                 }
 
                 ball.element.style.left = ball.x + 'px';
