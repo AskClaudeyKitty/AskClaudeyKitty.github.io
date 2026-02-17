@@ -79,15 +79,25 @@
         let animationId = null;
         let audioContext = null;
         let bounceCount = 0;
+        const gravity = 0.15;
 
-        // Ball properties
-        const ball = {
-            x: centerX,
-            y: centerY,
-            vx: 4,
-            vy: 3,
-            radius: 20
-        };
+        // Ball array
+        let balls = [];
+
+        // Create a new ball
+        function createBall() {
+            return {
+                x: centerX,
+                y: centerY,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                radius: 20,
+                hue: Math.random() * 360
+            };
+        }
+
+        // Initialize with first ball
+        balls.push(createBall());
 
         // Initialize audio context on user interaction
         function initAudio() {
@@ -135,12 +145,11 @@
             ctx.stroke();
         }
 
-        function drawBall() {
+        function drawBall(ball) {
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
 
-            // Ball gradient - changes color on bounce
-            const hue = (bounceCount * 30) % 360;
+            // Ball gradient with unique color
             const gradient = ctx.createRadialGradient(
                 ball.x - ball.radius * 0.3,
                 ball.y - ball.radius * 0.3,
@@ -149,8 +158,8 @@
                 ball.y,
                 ball.radius
             );
-            gradient.addColorStop(0, `hsl(${hue}, 70%, 70%)`);
-            gradient.addColorStop(1, `hsl(${hue}, 70%, 50%)`);
+            gradient.addColorStop(0, `hsl(${ball.hue}, 70%, 70%)`);
+            gradient.addColorStop(1, `hsl(${ball.hue}, 70%, 50%)`);
 
             ctx.fillStyle = gradient;
             ctx.fill();
@@ -162,7 +171,10 @@
             ctx.shadowOffsetY = 2;
         }
 
-        function updateBall() {
+        function updateBall(ball) {
+            // Apply gravity
+            ball.vy += gravity;
+
             // Update position
             ball.x += ball.vx;
             ball.y += ball.vy;
@@ -190,9 +202,64 @@
                 ball.x -= nx * overlap;
                 ball.y -= ny * overlap;
 
-                // Play sound and change color
+                // Play sound and update counters
                 playBounceSound();
+                ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                 bounceCount++;
+
+                // Every 10 bounces, add a new ball
+                if (bounceCount % 10 === 0) {
+                    balls.push(createBall());
+                }
+            }
+        }
+
+        // Check collision between two balls
+        function checkBallCollision(ball1, ball2) {
+            const dx = ball2.x - ball1.x;
+            const dy = ball2.y - ball1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = ball1.radius + ball2.radius;
+
+            if (distance < minDistance && distance > 0) {
+                // Collision detected!
+
+                // Normal vector (from ball1 to ball2)
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                // Relative velocity
+                const dvx = ball1.vx - ball2.vx;
+                const dvy = ball1.vy - ball2.vy;
+
+                // Velocity along normal
+                const velAlongNormal = dvx * nx + dvy * ny;
+
+                // Only resolve if balls are moving toward each other
+                if (velAlongNormal > 0) {
+                    // Elastic collision (equal mass, no energy loss)
+                    // Swap velocity components along the normal
+                    const impulse = velAlongNormal;
+
+                    ball1.vx -= impulse * nx;
+                    ball1.vy -= impulse * ny;
+                    ball2.vx += impulse * nx;
+                    ball2.vy += impulse * ny;
+
+                    // Separate balls to prevent sticking
+                    const overlap = minDistance - distance;
+                    const separationX = nx * overlap / 2;
+                    const separationY = ny * overlap / 2;
+
+                    ball1.x -= separationX;
+                    ball1.y -= separationY;
+                    ball2.x += separationX;
+                    ball2.y += separationY;
+
+                    // Change colors on collision
+                    ball1.hue = (ball1.hue + 15) % 360;
+                    ball2.hue = (ball2.hue + 15) % 360;
+                }
             }
         }
 
@@ -205,10 +272,21 @@
             // Reset shadow for ring
             ctx.shadowColor = 'transparent';
 
-            // Draw ring and ball
+            // Draw ring and all balls
             drawRing();
-            drawBall();
-            updateBall();
+
+            // Update all balls
+            balls.forEach(ball => updateBall(ball));
+
+            // Check ball-to-ball collisions
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    checkBallCollision(balls[i], balls[j]);
+                }
+            }
+
+            // Draw all balls
+            balls.forEach(ball => drawBall(ball));
 
             animationId = requestAnimationFrame(gameLoop);
         }
@@ -228,10 +306,10 @@
             }
         }
 
-        // Initialize - draw static ring and ball
+        // Initialize - draw static ring and balls
         ctx.shadowColor = 'transparent';
         drawRing();
-        drawBall();
+        balls.forEach(ball => drawBall(ball));
     </script>
 </body>
 </html>
