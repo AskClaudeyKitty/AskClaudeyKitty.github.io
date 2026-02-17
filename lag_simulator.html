@@ -197,7 +197,8 @@
         let ballSpawnTimer = 0;
         let ballsPerSecond = 10;
         const gravity = 0.3;
-        const bounciness = 0.7;
+        const bounciness = 0.9;
+        const maxBallSize = 300;
 
         function createBall() {
             const ball = document.createElement('div');
@@ -245,6 +246,11 @@
                 if (ball.x <= 0 || ball.x + ball.size >= window.innerWidth) {
                     ball.vx = -ball.vx * bounciness;
                     ball.x = Math.max(0, Math.min(ball.x, window.innerWidth - ball.size));
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.02; // Grow 2% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
                 }
 
                 // Bounce off floor
@@ -253,11 +259,21 @@
                     ball.y = window.innerHeight - ball.size;
                     // Add friction on ground
                     ball.vx *= 0.99;
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.02; // Grow 2% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
                 }
                 // Bounce off ceiling
                 else if (ball.y <= 0) {
                     ball.vy = -ball.vy * bounciness;
                     ball.y = 0;
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.02; // Grow 2% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
                 }
 
                 ball.element.style.left = ball.x + 'px';
