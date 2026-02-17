@@ -678,17 +678,6 @@
             box-shadow: 0 0 6px #ffff00, 0 0 12px #ffa500;
             animation: firefly-float ease-in-out infinite;
         }
-        .aurora {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg,
-                rgba(0, 255, 136, 0.1),
-                rgba(0, 212, 255, 0.1),
-                rgba(157, 0, 255, 0.1),
-                rgba(0, 255, 136, 0.1));
-            animation: aurora-wave 8s ease-in-out infinite;
-        }
         @keyframes rain-fall {
             0% { transform: translateY(-100vh); }
             100% { transform: translateY(100vh); }
@@ -712,10 +701,6 @@
             25% { transform: translate(20px, -20px); opacity: 1; }
             50% { transform: translate(-10px, -40px); opacity: 0.7; }
             75% { transform: translate(10px, -20px); opacity: 1; }
-        }
-        @keyframes aurora-wave {
-            0%, 100% { transform: translateX(-50%) rotate(0deg); }
-            50% { transform: translateX(-50%) rotate(180deg); }
         }
         .section-title {
             font-weight: bold;
@@ -1575,7 +1560,6 @@
                 { id: 'snow', name: 'Snow', price: 25, icon: '❄️' },
                 { id: 'bubbles', name: 'Bubbles', price: 20, icon: '🫧' },
                 { id: 'matrix-code', name: 'Matrix Code', price: 35, icon: '💻' },
-                { id: 'northern-lights', name: 'Northern Lights', price: 40, icon: '🌌' },
                 { id: 'fireflies', name: 'Fireflies', price: 30, icon: '✨' }
             ]
         };
@@ -3768,10 +3752,6 @@
                     column.style.animationDelay = Math.random() * 5 + 's';
                     container.appendChild(column);
                 }
-            } else if (bg === 'northern-lights') {
-                const aurora = document.createElement('div');
-                aurora.className = 'aurora';
-                container.appendChild(aurora);
             } else if (bg === 'fireflies') {
                 for (let i = 0; i < 20; i++) {
                     const firefly = document.createElement('div');
@@ -3811,7 +3791,7 @@
         }
 
         function updateShopDisplay() {
-            // Show current coin balance with number skin
+            // Show current coin balance
             document.getElementById('shop-coins').textContent = formatNumber(coins);
 
             // Render shop items
@@ -4952,7 +4932,7 @@
             if (coins > 9999999999) {
                 coins = 9999999999;
             }
-            // Cap coin display to prevent overflow issues with number skins
+            // Cap coin display to prevent overflow issues
             const displayCoins = coins;
             document.getElementById('coin-balance').textContent = '(Balance: ' + formatNumber(displayCoins) + ')';
         }
@@ -5249,7 +5229,7 @@
             // Unlock all card backs
             ownedItems.cardBacks = ['default', 'gradient-blue', 'gradient-purple', 'gradient-green', 'pattern-dots', 'pattern-stripes', 'solid-gold', 'checkerboard', 'zigzag', 'space', 'floral', 'camouflage', 'rainbow-gradient'];
             // Unlock all backgrounds
-            ownedItems.backgrounds = ['default', 'particles', 'stars', 'rain', 'snow', 'bubbles', 'matrix-code', 'northern-lights', 'fireflies'];
+            ownedItems.backgrounds = ['default', 'particles', 'stars', 'rain', 'snow', 'bubbles', 'matrix-code', 'fireflies'];
 
             updateSettingsDropdowns();
 
