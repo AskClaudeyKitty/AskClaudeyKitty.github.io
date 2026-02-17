@@ -3743,11 +3743,11 @@
                     container.appendChild(bubble);
                 }
             } else if (bg === 'matrix-code') {
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < 150; i++) {
                     const column = document.createElement('div');
                     column.className = 'bg-matrix-char';
                     column.textContent = String.fromCharCode(0x30A0 + Math.random() * 96);
-                    column.style.left = (i * 5) + '%';
+                    column.style.left = (i * 0.67) + '%';
                     column.style.animationDuration = Math.random() * 2 + 1 + 's';
                     column.style.animationDelay = Math.random() * 5 + 's';
                     container.appendChild(column);
