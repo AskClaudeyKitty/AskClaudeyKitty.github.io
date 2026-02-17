@@ -20,6 +20,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
         }
         .container {
             background: rgba(0, 0, 0, 0.3);
@@ -140,15 +147,15 @@
                 <div class="stat-value" id="timeElapsed">0s</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Lag Factor</div>
-                <div class="stat-value" id="lagFactor">1x</div>
+                <div class="stat-label">Ball Count</div>
+                <div class="stat-value" id="lagFactor">0 balls</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Frame Time</div>
                 <div class="stat-value" id="frameTime">16.67ms</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Operations/Frame</div>
+                <div class="stat-label">Target Balls</div>
                 <div class="stat-value" id="operations">0</div>
             </div>
         </div>
@@ -165,8 +172,6 @@
             <button id="stopBtn" onclick="stopSimulation()" style="display: none;">⏸️ Stop</button>
             <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
         </div>
-
-        <canvas id="lagCanvas" style="display: none;"></canvas>
     </div>
 
     <script>
@@ -187,74 +192,70 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
 
-        // Create arrays for heavy computation
-        let dataArrays = [];
-        let canvas = document.getElementById('lagCanvas');
-        let ctx = canvas.getContext('2d');
+        // Ball management
+        let balls = [];
+        let ballSpawnTimer = 0;
+        let ballsPerSecond = 10;
 
-        function generateHeavyLoad(iterations) {
-            // Do heavy math computations
-            let result = 0;
-            for (let i = 0; i < iterations; i++) {
-                result += Math.sqrt(i) * Math.sin(i) * Math.cos(i);
-                // Create temporary arrays to stress memory
-                if (i % 1000 === 0) {
-                    let temp = new Array(100).fill(0).map((_, j) => Math.random() * j);
-                    result += temp.reduce((a, b) => a + b, 0);
-                }
-            }
-            return result;
+        function createBall() {
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+
+            const size = Math.random() * 40 + 20;
+            const x = Math.random() * (window.innerWidth - size);
+            const y = Math.random() * (window.innerHeight - size);
+            const vx = (Math.random() - 0.5) * 10;
+            const vy = (Math.random() - 0.5) * 10;
+            const color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+
+            ball.style.cssText = `
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                left: ${x}px;
+                top: ${y}px;
+                box-shadow: 0 0 10px ${color};
+            `;
+
+            document.body.appendChild(ball);
+            balls.push({
+                element: ball,
+                x: x,
+                y: y,
+                vx: vx,
+                vy: vy,
+                size: size
+            });
         }
 
-        function renderComplexShapes(complexity) {
-            canvas.width = 800;
-            canvas.height = 600;
+        function updateBalls() {
+            balls.forEach(ball => {
+                ball.x += ball.vx;
+                ball.y += ball.vy;
 
-            for (let i = 0; i < complexity; i++) {
-                ctx.beginPath();
-                ctx.strokeStyle = `hsl(${i % 360}, 70%, 50%)`;
-                ctx.lineWidth = 2;
-
-                for (let j = 0; j < 100; j++) {
-                    const x = Math.random() * canvas.width;
-                    const y = Math.random() * canvas.height;
-                    if (j === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
+                // Bounce off edges
+                if (ball.x <= 0 || ball.x + ball.size >= window.innerWidth) {
+                    ball.vx = -ball.vx;
+                    ball.x = Math.max(0, Math.min(ball.x, window.innerWidth - ball.size));
                 }
-                ctx.stroke();
-            }
+                if (ball.y <= 0 || ball.y + ball.size >= window.innerHeight) {
+                    ball.vy = -ball.vy;
+                    ball.y = Math.max(0, Math.min(ball.y, window.innerHeight - ball.size));
+                }
+
+                ball.element.style.left = ball.x + 'px';
+                ball.element.style.top = ball.y + 'px';
+            });
         }
 
-        function createDOMElements(count) {
-            const container = document.createElement('div');
-            container.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
-
-            for (let i = 0; i < count; i++) {
-                const div = document.createElement('div');
-                div.innerHTML = `<span>${Math.random()}</span>`.repeat(10);
-                div.style.cssText = `
-                    position: absolute;
-                    left: ${Math.random() * 100}%;
-                    top: ${Math.random() * 100}%;
-                    transform: rotate(${Math.random() * 360}deg);
-                `;
-                container.appendChild(div);
-            }
-
-            document.body.appendChild(container);
-            setTimeout(() => container.remove(), 100);
+        function clearAllBalls() {
+            balls.forEach(ball => ball.element.remove());
+            balls = [];
         }
 
         function calculateLagFactor(elapsedTime) {
-            // Exponential lag growth
-            // At 0s: 1x (no lag)
-            // At 10s: 10x
-            // At 20s: 100x
-            // At 30s: 1000x
-            return Math.pow(10, elapsedTime / 10);
+            // Linear growth - 10 balls per second
+            return Math.floor(elapsedTime * ballsPerSecond);
         }
 
         function updateDisplay(currentTime) {
@@ -268,9 +269,9 @@
             if (frameCount % 10 === 0) {
                 fps = Math.round(1000 / deltaTime);
                 timeElapsed.textContent = elapsedTime.toFixed(1) + 's';
-                lagFactorDisplay.textContent = lagFactor.toFixed(1) + 'x';
+                lagFactorDisplay.textContent = balls.length + ' balls';
                 frameTimeDisplay.textContent = deltaTime.toFixed(2) + 'ms';
-                operationsDisplay.textContent = Math.floor(lagFactor * 1000).toLocaleString();
+                operationsDisplay.textContent = balls.length.toLocaleString();
 
                 // Update FPS display color
                 fpsDisplay.className = 'fps-display';
@@ -291,23 +292,15 @@
             if (!isRunning) return;
 
             const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
-            lagFactor = calculateLagFactor(elapsedTime);
+            const targetBallCount = calculateLagFactor(elapsedTime);
 
-            // Create increasingly heavy load
-            const operations = Math.floor(lagFactor * 1000);
-
-            // Heavy computation
-            generateHeavyLoad(operations);
-
-            // Complex rendering every 5 frames
-            if (frameCount % 5 === 0) {
-                renderComplexShapes(Math.floor(lagFactor / 10));
+            // Spawn new balls if needed
+            while (balls.length < targetBallCount) {
+                createBall();
             }
 
-            // DOM manipulation every 10 frames
-            if (frameCount % 10 === 0) {
-                createDOMElements(Math.floor(lagFactor / 100));
-            }
+            // Update all ball positions
+            updateBalls();
 
             updateDisplay(currentTime);
 
@@ -322,6 +315,7 @@
             lastFrameTime = startTime;
             frameCount = 0;
             lagFactor = 1;
+            ballSpawnTimer = 0;
 
             startBtn.style.display = 'none';
             stopBtn.style.display = 'inline-block';
@@ -342,17 +336,19 @@
 
         function resetSimulation() {
             stopSimulation();
+            clearAllBalls();
 
             frameCount = 0;
             fps = 60;
             lagFactor = 1;
             startTime = null;
             lastFrameTime = performance.now();
+            ballSpawnTimer = 0;
 
             fpsDisplay.className = 'fps-display good';
             fpsDisplay.textContent = '60 FPS';
             timeElapsed.textContent = '0s';
-            lagFactorDisplay.textContent = '1x';
+            lagFactorDisplay.textContent = '0 balls';
             frameTimeDisplay.textContent = '16.67ms';
             operationsDisplay.textContent = '0';
             lagFill.style.width = '0%';
