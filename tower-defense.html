@@ -219,13 +219,13 @@
 
         // Spawn enemy
         function spawnEnemy() {
-            const health = 50 + wave * 20;
+            const health = 20 + wave * 10;
             enemies.push({
                 x: path[0].x,
                 y: path[0].y,
                 health: health,
                 maxHealth: health,
-                speed: 1 + wave * 0.1,
+                speed: 0.5 + wave * 0.05,
                 pathIndex: 0,
                 reward: 10 + wave * 2
             });
