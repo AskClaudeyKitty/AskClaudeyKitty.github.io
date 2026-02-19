@@ -25,11 +25,20 @@
             margin-top: 0;
             color: #2d3748;
         }
+        .section-title {
+            font-size: 1.3rem;
+            color: #718096;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .section-title:first-of-type {
+            margin-top: 1rem;
+        }
         .game-links {
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            margin-top: 2rem;
         }
         a {
             display: inline-block;
@@ -44,28 +53,34 @@
         a:hover {
             background: #38a169;
         }
-        a:nth-child(2) {
-            background: #e53e3e;
-        }
-        a:nth-child(2):hover {
-            background: #c53030;
-        }
-        a:nth-child(3) {
-            background: #805ad5;
-        }
-        a:nth-child(3):hover {
-            background: #6b46c1;
-        }
-        a:nth-child(4) {
+        .simulations a {
             background: #ed8936;
         }
-        a:nth-child(4):hover {
+        .simulations a:hover {
             background: #dd6b20;
         }
-        a:nth-child(5) {
+        .games a:nth-child(1) {
+            background: #48bb78;
+        }
+        .games a:nth-child(1):hover {
+            background: #38a169;
+        }
+        .games a:nth-child(2) {
+            background: #e53e3e;
+        }
+        .games a:nth-child(2):hover {
+            background: #c53030;
+        }
+        .games a:nth-child(3) {
+            background: #805ad5;
+        }
+        .games a:nth-child(3):hover {
+            background: #6b46c1;
+        }
+        .games a:nth-child(4) {
             background: #38b2ac;
         }
-        a:nth-child(5):hover {
+        .games a:nth-child(4):hover {
             background: #319795;
         }
     </style>
@@ -74,11 +89,17 @@
     <div class="container">
         <h1>🎮 Game Collection</h1>
         <p>Welcome to the game hub!</p>
-        <div class="game-links">
+
+        <h2 class="section-title">🔬 Simulations</h2>
+        <div class="game-links simulations">
+            <a href="lag_simulator.html">Lag Simulator</a>
+        </div>
+
+        <h2 class="section-title">🎮 Games</h2>
+        <div class="game-links games">
             <a href="guessing_game.html">Play Guessing Game</a>
             <a href="explosion-button.html">Explosion Button</a>
             <a href="explosion-button-webgl.html">Explosion Button (WebGL)</a>
-            <a href="lag_simulator.html">Lag Simulator</a>
             <a href="bouncing_ball.html">Ball in a Ring</a>
         </div>
     </div>
