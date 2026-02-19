@@ -82,6 +82,7 @@
             <option value="gravity-balls">Gravity + Ball Spawning</option>
             <option value="classic">Classic Bouncing</option>
             <option value="no-gravity">No Gravity</option>
+            <option value="speed-up">Speed Increase</option>
         </select>
     </div>
 
@@ -106,6 +107,7 @@
         let gravity = 0.15;
         let currentSimulation = 'gravity-balls';
         let spawnBalls = true;
+        let speedIncrease = false;
 
         // Ball array
         let balls = [];
@@ -245,6 +247,12 @@
                 ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                 bounceCount++;
 
+                // Increase speed on bounce (if enabled)
+                if (speedIncrease) {
+                    ball.vx *= 1.1;
+                    ball.vy *= 1.1;
+                }
+
                 // Every 10 bounces, add a new ball (if spawning enabled and under max)
                 if (spawnBalls && bounceCount % 10 === 0 && balls.length < maxBalls) {
                     balls.push(createBall());
@@ -355,14 +363,22 @@
                 case 'gravity-balls':
                     gravity = 0.15;
                     spawnBalls = true;
+                    speedIncrease = false;
                     break;
                 case 'classic':
                     gravity = 0.15;
                     spawnBalls = false;
+                    speedIncrease = false;
                     break;
                 case 'no-gravity':
                     gravity = 0;
                     spawnBalls = false;
+                    speedIncrease = false;
+                    break;
+                case 'speed-up':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = true;
                     break;
             }
 
