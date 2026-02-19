@@ -33,9 +33,6 @@
         }
         #canvas {
             border: none;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3), inset 0 0 50px rgba(0, 0, 0, 0.3);
         }
         button {
             padding: 1.5rem 2rem;
@@ -64,7 +61,7 @@
 
     <div class="game-area">
         <button id="startBtn" onclick="startAnimation()">▶️ Start</button>
-        <canvas id="canvas" width="500" height="500"></canvas>
+        <canvas id="canvas" width="600" height="600"></canvas>
         <button id="stopBtn" onclick="stopAnimation()">⏸️ Stop</button>
     </div>
 
@@ -73,7 +70,8 @@
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const ringRadius = 230;
+        let ringRadius = 230;
+        const maxBalls = 5;
 
         let isRunning = false;
         let animationId = null;
@@ -130,6 +128,12 @@
         }
 
         function drawRing() {
+            ctx.save(); // Save state and ensure no shadows
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
             // Draw outer ring
             ctx.beginPath();
             ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
@@ -143,9 +147,12 @@
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 3;
             ctx.stroke();
+
+            ctx.restore(); // Restore state
         }
 
         function drawBall(ball) {
+            ctx.save(); // Save current state
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
 
@@ -169,6 +176,7 @@
             ctx.shadowBlur = 10;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
+            ctx.restore(); // Restore state (removes shadow for next draw)
         }
 
         function updateBall(ball) {
@@ -207,8 +215,11 @@
                 ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                 bounceCount++;
 
-                // Every 10 bounces, add a new ball
-                if (bounceCount % 10 === 0) {
+                // Grow ring by 1%
+                ringRadius *= 1.01;
+
+                // Every 10 bounces, add a new ball (max 5 balls)
+                if (bounceCount % 10 === 0 && balls.length < maxBalls) {
                     balls.push(createBall());
                 }
             }
@@ -269,10 +280,7 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Reset shadow for ring
-            ctx.shadowColor = 'transparent';
-
-            // Draw ring and all balls
+            // Draw ring
             drawRing();
 
             // Update all balls
