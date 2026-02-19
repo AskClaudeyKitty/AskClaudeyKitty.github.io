@@ -83,6 +83,7 @@
             <option value="classic">Classic Bouncing</option>
             <option value="no-gravity">No Gravity</option>
             <option value="speed-up">Speed Increase</option>
+            <option value="moon-gravity">Moon Gravity</option>
         </select>
     </div>
 
@@ -379,6 +380,11 @@
                     gravity = 0.15;
                     spawnBalls = false;
                     speedIncrease = true;
+                    break;
+                case 'moon-gravity':
+                    gravity = 0.025; // Moon gravity is ~1/6 of Earth
+                    spawnBalls = false;
+                    speedIncrease = false;
                     break;
             }
 
