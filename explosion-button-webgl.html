@@ -320,7 +320,7 @@
             }
 
             // Clear canvas
-            gl.clearColor(0, 0, 0, 0);
+            gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             gl.useProgram(program);
@@ -396,8 +396,17 @@
         requestAnimationFrame(update);
 
         // ============== Sound ==============
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
         function playExplosionSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioCtx = getAudioContext();
 
             const bufferSize = audioCtx.sampleRate * 2.0;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -428,7 +437,7 @@
         }
 
         function playMiniExplosionSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioCtx = getAudioContext();
 
             const bufferSize = audioCtx.sampleRate * 0.3;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -459,7 +468,7 @@
         }
 
         function playTinyBombSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioCtx = getAudioContext();
 
             const bufferSize = audioCtx.sampleRate * 0.15;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
