@@ -215,9 +215,6 @@
                 ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                 bounceCount++;
 
-                // Grow ring by 1%
-                ringRadius *= 1.01;
-
                 // Every 10 bounces, add a new ball (max 5 balls)
                 if (bounceCount % 10 === 0 && balls.length < maxBalls) {
                     balls.push(createBall());
