@@ -217,7 +217,7 @@
             </button>
             <button class="start-btn hidden" id="sell-btn" onclick="sellTower()" style="background: #e53e3e; padding: 0.4rem 0.8rem; font-size: 0.85rem;">💰 Sell</button>
             <button class="start-btn hidden" id="upgrade-btn" onclick="upgradeTower()" style="background: #38b2ac; padding: 0.4rem 0.8rem; font-size: 0.85rem;">⬆️ Upgrade</button>
-            <button class="start-btn" onclick="startGame()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">▶️ Start Game</button>
+            <button class="start-btn" id="start-btn" onclick="startGame()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">▶️ Start Game</button>
             <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936; padding: 0.4rem 0.8rem; font-size: 0.85rem;">⏩ 2x Speed</button>
         </div>
     </div>
@@ -428,6 +428,7 @@
             document.getElementById('main-menu').classList.remove('hidden');
             document.querySelector('.game-container').classList.add('hidden');
             document.getElementById('speed-btn').classList.add('hidden');
+            document.getElementById('start-btn').classList.remove('hidden');
         }
 
         // Update tower button prices based on difficulty
@@ -825,7 +826,8 @@
             updateDisplay();
             updateTowerSelectionUI();
 
-            // Show speed button, reset its text
+            // Hide start button, show speed button
+            document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('speed-btn').classList.remove('hidden');
             document.getElementById('speed-btn').textContent = '⏩ 2x Speed';
 
@@ -852,7 +854,8 @@
             updateDisplay();
             updateTowerSelectionUI();
             draw();
-            // Hide speed button when game over
+            // Show start button, hide speed button when game over
+            document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('speed-btn').classList.add('hidden');
         }
 
