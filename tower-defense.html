@@ -363,12 +363,14 @@
             const tower = towers[selectedPlacedTower];
             const upgradeCost = Math.floor(tower.totalCost * 0.5);
 
-            if (gold < upgradeCost) {
+            if (!freeTowers && gold < upgradeCost) {
                 alert('Not enough gold!');
                 return;
             }
 
-            gold -= upgradeCost;
+            if (!freeTowers) {
+                gold -= upgradeCost;
+            }
             tower.level++;
             tower.totalCost += upgradeCost;
             tower.damage = Math.floor(tower.damage * 1.3);
