@@ -604,7 +604,7 @@
 
                 if (dist < 10) {
                     // Hit enemy
-                    if (proj.type === 'bomb' && proj.splashRadius > 0) {
+                    if (proj.splashRadius > 0) {
                         // Splash damage - affect all enemies in radius
                         enemies.forEach(enemy => {
                             const ex = enemy.x - proj.targetX;
