@@ -859,6 +859,26 @@
 
             <button onclick="viewSourceCode()" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: #48bb78; color: white; border: none; border-radius: 0.5rem; font-size: 1rem; cursor: pointer;">💻 View Source Code</button>
 
+            <div class="section-title">🔑 Keyboard Shortcuts</div>
+            <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin-bottom: 1rem;">
+                <div style="margin-bottom: 0.8rem;">
+                    <strong>🎯 Guess:</strong> <input type="text" id="keybind-guess" maxlength="1" style="width: 50px; padding: 0.3rem; text-align: center;" placeholder="Enter"> <small>Submit guess</small>
+                </div>
+                <div style="margin-bottom: 0.8rem;">
+                    <strong>🎰 Lucky 7:</strong> <input type="text" id="keybind-lucky7" maxlength="1" style="width: 50px; padding: 0.3rem; text-align: center;" placeholder=" "> <small>Spin</small>
+                </div>
+                <div style="margin-bottom: 0.8rem;">
+                    <strong>✊ Rock:</strong> <input type="text" id="keybind-rock" maxlength="1" style="width: 50px; padding: 0.3rem; text-align: center;" placeholder="1">
+                    <strong>✋ Paper:</strong> <input type="text" id="keybind-paper" maxlength="1" style="width: 50px; padding: 0.3rem; text-align: center;" placeholder="2">
+                    <strong>✌ Scissors:</strong> <input type="text" id="keybind-scissors" maxlength="1" style="width: 50px; padding: 0.3rem; text-align: center;" placeholder="3">
+                    <small>RPS choices</small>
+                </div>
+                <div style="margin-bottom: 0.8rem;">
+                    <strong>🎵 Simon (Red/Blue/Green/Yellow):</strong> <input type="text" id="keybind-simon-red" maxlength="1" style="width: 40px; padding: 0.3rem; text-align: center;" placeholder="1"> <input type="text" id="keybind-simon-blue" maxlength="1" style="width: 40px; padding: 0.3rem; text-align: center;" placeholder="2"> <input type="text" id="keybind-simon-green" maxlength="1" style="width: 40px; padding: 0.3rem; text-align: center;" placeholder="3"> <input type="text" id="keybind-simon-yellow" maxlength="1" style="width: 40px; padding: 0.3rem; text-align: center;" placeholder="4">
+                </div>
+                <button onclick="saveKeybinds()" style="width: 100%; padding: 0.5rem; margin-top: 0.3rem; background: #4299e1; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">💾 Save Keybinds</button>
+            </div>
+
             <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
                 <strong>📍 Hint Levels:</strong><br><br>
                 <span style="color: #9f7aea;">🔥 Within 2</span> — SO close!<br>
@@ -5368,29 +5388,87 @@
             if (e.key === 'Enter') guess();
         });
 
+        // =====================================================
+        // KEYBOARD SHORTCUTS
+        // =====================================================
+        let keybinds = {
+            guess: 'Enter',
+            lucky7: ' ',
+            rock: '1',
+            paper: '2',
+            scissors: '3',
+            simonRed: '1',
+            simonBlue: '2',
+            simonGreen: '3',
+            simonYellow: '4'
+        };
+
+        function loadKeybinds() {
+            const saved = localStorage.getItem('keybinds');
+            if (saved) {
+                try {
+                    keybinds = JSON.parse(saved);
+                    document.getElementById('keybind-guess').value = keybinds.guess;
+                    document.getElementById('keybind-lucky7').value = keybinds.lucky7;
+                    document.getElementById('keybind-rock').value = keybinds.rock;
+                    document.getElementById('keybind-paper').value = keybinds.paper;
+                    document.getElementById('keybind-scissors').value = keybinds.scissors;
+                    document.getElementById('keybind-simon-red').value = keybinds.simonRed;
+                    document.getElementById('keybind-simon-blue').value = keybinds.simonBlue;
+                    document.getElementById('keybind-simon-green').value = keybinds.simonGreen;
+                    document.getElementById('keybind-simon-yellow').value = keybinds.simonYellow;
+                } catch (e) {
+                    console.error('Failed to load keybinds:', e);
+                }
+            }
+        }
+
+        function saveKeybinds() {
+            keybinds.guess = document.getElementById('keybind-guess').value || 'Enter';
+            keybinds.lucky7 = document.getElementById('keybind-lucky7').value || ' ';
+            keybinds.rock = document.getElementById('keybind-rock').value || '1';
+            keybinds.paper = document.getElementById('keybind-paper').value || '2';
+            keybinds.scissors = document.getElementById('keybind-scissors').value || '3';
+            keybinds.simonRed = document.getElementById('keybind-simon-red').value || '1';
+            keybinds.simonBlue = document.getElementById('keybind-simon-blue').value || '2';
+            keybinds.simonGreen = document.getElementById('keyimon-green').value || '3';
+            keybinds.simonYellow = document.getElementById('keybind-simon-yellow').value || '4';
+            localStorage.setItem('keybinds', JSON.stringify(keybinds));
+            alert('Keybinds saved! 💾');
+        }
+
         // Global keyboard shortcuts for mini-games
         document.addEventListener('keydown', (e) => {
             const gameMode = document.getElementById('game-mode').value;
 
-            // Lucky 7: Enter or Space to spin
-            if (gameMode === 'lucky7' && (e.key === 'Enter' || e.key === ' ')) {
+            // Guess: Custom keybind (default Enter)
+            if (gameMode === 'guess' && e.key === keybinds.guess) {
+                const guessInput = document.getElementById('guess');
+                if (guessInput === document.activeElement) {
+                    e.preventDefault();
+                    guess();
+                }
+            }
+
+            // Lucky 7: Custom keybind (default Space)
+            if (gameMode === 'lucky7' && e.key === keybinds.lucky7) {
                 e.preventDefault();
                 spinLucky7();
             }
 
-            // Rock Paper Scissors: 1/2/3 for rock/paper/scissors
+            // Rock Paper Scissors: Custom keybinds (default 1/2/3)
             if (gameMode === 'rps') {
-                if (e.key === '1') { playRPS('rock'); e.preventDefault(); }
-                if (e.key === '2') { playRPS('paper'); e.preventDefault(); }
-                if (e.key === '3') { playRPS('scissors'); e.preventDefault(); }
+                if (e.key === keybinds.rock) { playRPS('rock'); e.preventDefault(); }
+                if (e.key === keybinds.paper) { playRPS('paper'); e.preventDefault(); }
+                if (e.key === keybinds.scissors) { playRPS('scissors'); e.preventDefault(); }
             }
 
-            // Simon Says: 1/2/3/4 for red/blue/green/yellow (only when input is enabled)
+            // Simon Says: Custom keybinds (default 1/2/3/4)
             if (gameMode === 'simon' && simonCanInput) {
-                if (e.key === '1') { simonInput('red'); e.preventDefault(); }
-                if (e.key === '2') { simonInput('blue'); e.preventDefault(); }
-                if (e.key === '3') { simonInput('green'); e.preventDefault(); }
-                if (e.key === '4') { simonInput('yellow'); e.preventDefault(); }
+                if (e.key === keybinds.simonRed) { simonInput('red'); e.preventDefault(); }
+                if (e.key === keybinds.simonBlue) { simonInput('blue'); e.preventDefault(); }
+                if (e.key === keybinds.simonGreen) { simonInput('green'); e.preventDefault(); }
+                if (e.key === keybinds.simonYellow) { simonInput('yellow'); e.preventDefault(); }
             }
         });
 
@@ -5420,6 +5498,9 @@
 
         // Load visual effects settings
         loadVisualEffects();
+
+        // Load keybinds
+        loadKeybinds();
 
         // Load background
         loadBackground();
