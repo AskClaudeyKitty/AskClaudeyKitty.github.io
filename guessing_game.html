@@ -210,8 +210,10 @@
         }
         button:hover { background: var(--accent-hover); }
         .message {
-            margin-top: 1rem;
             font-size: 1.1rem;
+        }
+        .message:not(:empty) {
+            margin-top: 1rem;
         }
         .win { color: #48bb78; }
         .high { color: #f56565; }
@@ -1647,7 +1649,7 @@
         };
 
         // One-guess wins tracking
-        let oneGuessWinsInRow = 0;
+        let oneGuessWinsTotal = 0;
 
         // Memory Match game variables
         const allMemoryEmojis = ['🎮', '🎲', '🎯', '🏆', '🎪', '🎨', '🎭', '🎬', '🎵', '🎸', '🎹', '🎺', '🎻', '🥁', '🎤', '🎧', '🎬', '📷'];
@@ -3048,12 +3050,10 @@
 
                 // Track one-guess wins for Lucky Guesses achievement
                 if (attempts === 1) {
-                    oneGuessWinsInRow++;
-                    if (oneGuessWinsInRow >= 3) {
+                    oneGuessWinsTotal++;
+                    if (oneGuessWinsTotal >= 3) {
                         unlockAchievement('luckyGuesses');
                     }
-                } else {
-                    oneGuessWinsInRow = 0;
                 }
 
                 // Track best time
@@ -3100,7 +3100,6 @@
                 losses++;
                 lossStreak++;
                 winStreak = 0;
-                oneGuessWinsInRow = 0; // Reset lucky guesses streak on loss
                 if (difficulty === 'hard') hardWinStreak = 0;
                 gamesPlayed++;
 
