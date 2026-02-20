@@ -98,6 +98,9 @@
             <button class="tower-btn" onclick="selectTower('rapid')" id="rapid-tower">
                 🔫 Machine Gunner (150g)
             </button>
+            <button class="tower-btn" onclick="selectTower('master')" id="master-tower">
+                🎖️ Master Gunsman (10000g)
+            </button>
             <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
         </div>
     </div>
@@ -136,7 +139,8 @@
         const towerTypes = {
             basic: { cost: 50, range: 100, damage: 10, fireRate: 60, color: '#48bb78' },
             sniper: { cost: 100, range: 200, damage: 50, fireRate: 120, color: '#f6e05e' },
-            rapid: { cost: 150, range: 80, damage: 5, fireRate: 10, color: '#4299e1' }
+            rapid: { cost: 150, range: 80, damage: 5, fireRate: 10, color: '#4299e1' },
+            master: { cost: 10000, range: 200, damage: 50, fireRate: 10, color: '#9f7aea' }
         };
 
         // Update display
