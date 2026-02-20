@@ -74,26 +74,6 @@
             background: #f6e05e;
             box-shadow: 0 0 10px #f6e05e;
         }
-        #tower-menu {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            transition: max-height 0.3s ease;
-            overflow: hidden;
-        }
-        #tower-menu.closed {
-            max-height: 0;
-            opacity: 0;
-        }
-        #tower-menu.open {
-            max-height: 500px;
-            opacity: 1;
-        }
-        #toggle-towers {
-            background: #805ad5;
-            margin-bottom: 0.5rem;
-        }
         .hidden {
             display: none !important;
         }
@@ -220,24 +200,21 @@
         <canvas id="canvas" width="800" height="500"></canvas>
 
         <div class="controls">
-            <button id="toggle-towers" onclick="toggleTowerMenu()">🗼️ Tower Menu</button>
-            <div id="tower-menu" class="open">
-                <button class="tower-btn selected" onclick="selectTower('basic')" id="basic-tower">
-                    🗼 Trainee (50g)
-                </button>
-                <button class="tower-btn" onclick="selectTower('sniper')" id="sniper-tower">
-                    🎯 Sniper Tower (100g)
-                </button>
-                <button class="tower-btn" onclick="selectTower('rapid')" id="rapid-tower">
-                    🔫 Machine Gunner (150g)
-                </button>
-                <button class="tower-btn" onclick="selectTower('bomb')" id="bomb-tower">
-                    💣 Bomb Tower (200g)
-                </button>
-                <button class="tower-btn" onclick="selectTower('master')" id="master-tower">
-                    🎖️ Master Gunsman (10000g)
-                </button>
-            </div>
+            <button class="tower-btn selected" onclick="selectTower('basic')" id="basic-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Trainee (50g)
+            </button>
+            <button class="tower-btn" onclick="selectTower('sniper')" id="sniper-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Sniper (100g)
+            </button>
+            <button class="tower-btn" onclick="selectTower('rapid')" id="rapid-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Machine Gun (150g)
+            </button>
+            <button class="tower-btn" onclick="selectTower('bomb')" id="bomb-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Bomb (200g)
+            </button>
+            <button class="tower-btn" onclick="selectTower('master')" id="master-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                Master (10000g)
+            </button>
             <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
             <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936;">⏩ 2x Speed</button>
         </div>
@@ -339,21 +316,6 @@
             document.getElementById(type + '-tower').classList.add('selected');
         }
 
-        // Toggle tower menu
-        function toggleTowerMenu() {
-            const menu = document.getElementById('tower-menu');
-            const btn = document.getElementById('toggle-towers');
-            if (menu.classList.contains('open')) {
-                menu.classList.remove('open');
-                menu.classList.add('closed');
-                btn.textContent = '🗼️ Show Towers';
-            } else {
-                menu.classList.remove('closed');
-                menu.classList.add('open');
-                btn.textContent = '🗼️ Hide Towers';
-            }
-        }
-
         // Menu functions
         function selectMap(map) {
             selectedMap = map;
@@ -405,16 +367,16 @@
             const diffMod = difficultyModifiers[selectedDifficulty];
             const towerButtons = {
                 basic: { baseCost: 50, elementId: 'basic-tower', name: 'Trainee' },
-                sniper: { baseCost: 100, elementId: 'sniper-tower', name: 'Sniper Tower' },
-                rapid: { baseCost: 150, elementId: 'rapid-tower', name: 'Machine Gunner' },
-                bomb: { baseCost: 200, elementId: 'bomb-tower', name: 'Bomb Tower' },
-                master: { baseCost: 10000, elementId: 'master-tower', name: 'Master Gunsman' }
+                sniper: { baseCost: 100, elementId: 'sniper-tower', name: 'Sniper' },
+                rapid: { baseCost: 150, elementId: 'rapid-tower', name: 'Machine Gun' },
+                bomb: { baseCost: 200, elementId: 'bomb-tower', name: 'Bomb' },
+                master: { baseCost: 10000, elementId: 'master-tower', name: 'Master' }
             };
 
             for (const [type, info] of Object.entries(towerButtons)) {
                 const cost = Math.floor(info.baseCost * diffMod.costMod);
                 const btn = document.getElementById(info.elementId);
-                btn.textContent = btn.textContent.replace(/\(\d+g\)/, `(${cost}g)`);
+                btn.textContent = `${info.name} (${cost}g)`;
             }
         }
 
