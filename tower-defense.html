@@ -213,6 +213,7 @@
                 🎖️ Master Gunsman (10000g)
             </button>
             <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
+            <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936;">⏩ 2x Speed</button>
         </div>
     </div>
 
@@ -230,6 +231,7 @@
         let selectedMap = 'easy';
         let selectedDifficulty = 'easy';
         let currentPath = [];
+        let gameSpeed = 1;
 
         // Arrays
         let towers = [];
@@ -346,8 +348,10 @@
 
         function backToMenu() {
             gameRunning = false;
+            gameSpeed = 1;
             document.getElementById('main-menu').classList.remove('hidden');
             document.querySelector('.game-container').classList.add('hidden');
+            document.getElementById('speed-btn').classList.add('hidden');
         }
 
         // Update tower button prices based on difficulty
@@ -648,10 +652,21 @@
             });
         }
 
+        // Toggle game speed
+        function toggleSpeed() {
+            gameSpeed = gameSpeed === 1 ? 2 : 1;
+            const btn = document.getElementById('speed-btn');
+            btn.textContent = gameSpeed === 1 ? '▶️ 1x Speed' : '⏩ 2x Speed';
+        }
+
         // Game loop
         function gameLoop() {
             if (!gameRunning) return;
+            // Update twice if 2x speed
             update();
+            if (gameSpeed === 2) {
+                update();
+            }
             draw();
             requestAnimationFrame(gameLoop);
         }
@@ -660,6 +675,7 @@
         function startGame() {
             if (gameRunning) return;
             gameRunning = true;
+            gameSpeed = 1;
             gold = 100;
             // lives is set by playGame() based on difficulty
             wave = 1;
@@ -667,6 +683,10 @@
             enemies = [];
             projectiles = [];
             updateDisplay();
+
+            // Show speed button, reset its text
+            document.getElementById('speed-btn').classList.remove('hidden');
+            document.getElementById('speed-btn').textContent = '⏩ 2x Speed';
 
             // Spawn first wave
             for (let i = 0; i < 5; i++) {
@@ -679,6 +699,7 @@
         // Reset game
         function resetGame() {
             gameRunning = false;
+            gameSpeed = 1;
             gold = 100;
             const diffMod = difficultyModifiers[selectedDifficulty];
             lives = diffMod.lives;
@@ -688,6 +709,8 @@
             projectiles = [];
             updateDisplay();
             draw();
+            // Hide speed button when game over
+            document.getElementById('speed-btn').classList.add('hidden');
         }
 
         // Initial draw
