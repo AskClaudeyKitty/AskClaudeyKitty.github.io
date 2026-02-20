@@ -380,8 +380,23 @@
 
             console.log(`Upgraded! New Level: ${tower.level}, New Damage: ${tower.damage}, New Range: ${tower.range}`);
 
+            // Re-acquire tower reference after update
+            const updatedTower = towers[selectedPlacedTower];
+
             updateDisplay();
-            updateTowerSelectionUI();
+
+            // Update button text with new cost and level
+            const sellBtn = document.getElementById('sell-btn');
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const newSellValue = Math.floor(updatedTower.totalCost * 0.5);
+            const newUpgradeCost = Math.floor(updatedTower.totalCost * 0.5);
+
+            sellBtn.textContent = `💰 Sell (${newSellValue}g)`;
+            upgradeBtn.textContent = `⬆️ Upgrade (${newUpgradeCost}g) [Lvl ${updatedTower.level}]`;
+
+            // Keep tower selected and buttons visible
+            sellBtn.classList.remove('hidden');
+            upgradeBtn.classList.remove('hidden');
         }
 
         // Menu functions
