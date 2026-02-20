@@ -160,8 +160,6 @@
 
         // Place tower
         canvas.addEventListener('click', (e) => {
-            if (!gameRunning) return;
-
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -172,6 +170,8 @@
                 alert(freeTowers ? 'FREE TOWERS ENABLED! 🎉' : 'Free towers disabled');
                 return;
             }
+
+            if (!gameRunning) return;
 
             const towerInfo = towerTypes[selectedTower];
             const canAfford = freeTowers || gold >= towerInfo.cost;
