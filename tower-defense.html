@@ -342,8 +342,14 @@
             document.getElementById('main-menu').classList.add('hidden');
             document.querySelector('.game-container').classList.remove('hidden');
 
-            // Start the game
-            startGame();
+            // Reset game state but don't start until user clicks Start Game
+            gold = 100;
+            wave = 1;
+            towers = [];
+            enemies = [];
+            projectiles = [];
+            updateDisplay();
+            draw();
         }
 
         function backToMenu() {
