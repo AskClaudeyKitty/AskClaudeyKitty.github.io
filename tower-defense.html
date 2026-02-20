@@ -215,8 +215,12 @@
             <button class="tower-btn" onclick="selectTower('master')" id="master-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
                 Master (10000g)
             </button>
-            <button class="start-btn hidden" id="sell-btn" onclick="sellTower()" style="background: #e53e3e;">💰 Sell</button>
-            <button class="start-btn hidden" id="upgrade-btn" onclick="upgradeTower()" style="background: #38b2ac;">⬆️ Upgrade</button>
+        </div>
+        <div class="controls" id="tower-actions" style="display: none;">
+            <button class="start-btn" id="sell-btn" onclick="sellTower()" style="background: #e53e3e;">💰 Sell</button>
+            <button class="start-btn" id="upgrade-btn" onclick="upgradeTower()" style="background: #38b2ac;">⬆️ Upgrade</button>
+        </div>
+        <div class="controls">
             <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
             <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936;">⏩ 2x Speed</button>
         </div>
@@ -323,6 +327,7 @@
 
         // Update tower selection UI
         function updateTowerSelectionUI() {
+            const actionsDiv = document.getElementById('tower-actions');
             const sellBtn = document.getElementById('sell-btn');
             const upgradeBtn = document.getElementById('upgrade-btn');
 
@@ -331,13 +336,11 @@
                 const sellValue = Math.floor(tower.totalCost * 0.5);
                 const upgradeCost = Math.floor(tower.totalCost * 0.5);
 
-                sellBtn.classList.remove('hidden');
-                upgradeBtn.classList.remove('hidden');
+                actionsDiv.style.display = 'flex';
                 sellBtn.textContent = `💰 Sell (${sellValue}g)`;
                 upgradeBtn.textContent = `⬆️ Upgrade (${upgradeCost}g) [Lvl ${tower.level}]`;
             } else {
-                sellBtn.classList.add('hidden');
-                upgradeBtn.classList.add('hidden');
+                actionsDiv.style.display = 'none';
             }
         }
 
@@ -380,23 +383,8 @@
 
             console.log(`Upgraded! New Level: ${tower.level}, New Damage: ${tower.damage}, New Range: ${tower.range}`);
 
-            // Re-acquire tower reference after update
-            const updatedTower = towers[selectedPlacedTower];
-
             updateDisplay();
-
-            // Update button text with new cost and level
-            const sellBtn = document.getElementById('sell-btn');
-            const upgradeBtn = document.getElementById('upgrade-btn');
-            const newSellValue = Math.floor(updatedTower.totalCost * 0.5);
-            const newUpgradeCost = Math.floor(updatedTower.totalCost * 0.5);
-
-            sellBtn.textContent = `💰 Sell (${newSellValue}g)`;
-            upgradeBtn.textContent = `⬆️ Upgrade (${newUpgradeCost}g) [Lvl ${updatedTower.level}]`;
-
-            // Keep tower selected and buttons visible
-            sellBtn.classList.remove('hidden');
-            upgradeBtn.classList.remove('hidden');
+            updateTowerSelectionUI();
         }
 
         // Menu functions
