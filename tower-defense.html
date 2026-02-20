@@ -200,29 +200,25 @@
         <canvas id="canvas" width="800" height="500"></canvas>
 
         <div class="controls">
-            <button class="tower-btn selected" onclick="selectTower('basic')" id="basic-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <button class="tower-btn selected" onclick="selectTower('basic')" id="basic-tower" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 Trainee (50g)
             </button>
-            <button class="tower-btn" onclick="selectTower('sniper')" id="sniper-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <button class="tower-btn" onclick="selectTower('sniper')" id="sniper-tower" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 Sniper (100g)
             </button>
-            <button class="tower-btn" onclick="selectTower('rapid')" id="rapid-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <button class="tower-btn" onclick="selectTower('rapid')" id="rapid-tower" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 Machine Gun (150g)
             </button>
-            <button class="tower-btn" onclick="selectTower('bomb')" id="bomb-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <button class="tower-btn" onclick="selectTower('bomb')" id="bomb-tower" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 Bomb (200g)
             </button>
-            <button class="tower-btn" onclick="selectTower('master')" id="master-tower" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <button class="tower-btn" onclick="selectTower('master')" id="master-tower" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 Master (10000g)
             </button>
-        </div>
-        <div class="controls" id="tower-actions" style="display: none;">
-            <button class="start-btn" id="sell-btn" onclick="sellTower()" style="background: #e53e3e;">💰 Sell</button>
-            <button class="start-btn" id="upgrade-btn" onclick="upgradeTower()" style="background: #38b2ac;">⬆️ Upgrade</button>
-        </div>
-        <div class="controls">
-            <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
-            <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936;">⏩ 2x Speed</button>
+            <button class="start-btn hidden" id="sell-btn" onclick="sellTower()" style="background: #e53e3e; padding: 0.4rem 0.8rem; font-size: 0.85rem;">💰 Sell</button>
+            <button class="start-btn hidden" id="upgrade-btn" onclick="upgradeTower()" style="background: #38b2ac; padding: 0.4rem 0.8rem; font-size: 0.85rem;">⬆️ Upgrade</button>
+            <button class="start-btn" onclick="startGame()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">▶️ Start Game</button>
+            <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background: #ed8936; padding: 0.4rem 0.8rem; font-size: 0.85rem;">⏩ 2x Speed</button>
         </div>
     </div>
 
@@ -327,7 +323,6 @@
 
         // Update tower selection UI
         function updateTowerSelectionUI() {
-            const actionsDiv = document.getElementById('tower-actions');
             const sellBtn = document.getElementById('sell-btn');
             const upgradeBtn = document.getElementById('upgrade-btn');
 
@@ -336,11 +331,13 @@
                 const sellValue = Math.floor(tower.totalCost * 0.5);
                 const upgradeCost = Math.floor(tower.totalCost * 0.5);
 
-                actionsDiv.style.display = 'flex';
+                sellBtn.classList.remove('hidden');
+                upgradeBtn.classList.remove('hidden');
                 sellBtn.textContent = `💰 Sell (${sellValue}g)`;
                 upgradeBtn.textContent = `⬆️ Upgrade (${upgradeCost}g) [Lvl ${tower.level}]`;
             } else {
-                actionsDiv.style.display = 'none';
+                sellBtn.classList.add('hidden');
+                upgradeBtn.classList.add('hidden');
             }
         }
 
