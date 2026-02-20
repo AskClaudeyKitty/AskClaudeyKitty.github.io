@@ -115,6 +115,7 @@
         let wave = 1;
         let gameRunning = false;
         let selectedTower = 'basic';
+        let freeTowers = false;
 
         // Arrays
         let towers = [];
@@ -165,8 +166,16 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
+            // Check for bottom-left corner click (cheat: free towers)
+            if (x < 50 && y > canvas.height - 50) {
+                freeTowers = !freeTowers;
+                alert(freeTowers ? 'FREE TOWERS ENABLED! 🎉' : 'Free towers disabled');
+                return;
+            }
+
             const towerInfo = towerTypes[selectedTower];
-            if (gold >= towerInfo.cost && !isOnPath(x, y)) {
+            const canAfford = freeTowers || gold >= towerInfo.cost;
+            if (canAfford && !isOnPath(x, y)) {
                 towers.push({
                     x: x,
                     y: y,
@@ -175,7 +184,9 @@
                     cooldown: 0,
                     angle: 0
                 });
-                gold -= towerInfo.cost;
+                if (!freeTowers) {
+                    gold -= towerInfo.cost;
+                }
                 updateDisplay();
             }
         });
