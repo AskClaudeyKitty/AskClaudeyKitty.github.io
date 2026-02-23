@@ -308,6 +308,11 @@
                 ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                 bounceCount++;
 
+                // Increase orbit speed by 1% on bounce in orbit-gravity mode
+                if (currentSimulation === 'orbit-gravity') {
+                    orbitSpeed *= 1.01;
+                }
+
                 // Increase speed on bounce (if enabled)
                 if (speedIncrease) {
                     ball.vx *= 1.1;
@@ -517,6 +522,7 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     orbitAngle = 0; // Reset orbit position
+                    orbitSpeed = 0.005; // Reset orbit speed
                     break;
             }
 
