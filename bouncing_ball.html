@@ -265,7 +265,7 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance > 0) {
-                    const force = 5000 / (distance * distance); // Much stronger gravity
+                    const force = 2000 / (distance * distance); // Stronger gravity but not overwhelming
                     const fx = (dx / distance) * force;
                     const fy = (dy / distance) * force;
                     ball.vx += fx;
