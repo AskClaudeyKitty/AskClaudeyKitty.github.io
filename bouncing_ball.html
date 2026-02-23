@@ -450,6 +450,12 @@
         function startAnimation() {
             initAudio();
             if (isRunning) return;
+
+            // Create a ball if there are none
+            if (balls.length === 0) {
+                balls.push(createBall());
+            }
+
             isRunning = true;
             animationId = requestAnimationFrame(gameLoop);
         }
