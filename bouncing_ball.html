@@ -348,6 +348,14 @@
                 cancelAnimationFrame(animationId);
                 animationId = null;
             }
+
+            // Reset the simulation
+            balls = [];
+            bounceCount = 0;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRing();
         }
 
         function changeSimulation() {

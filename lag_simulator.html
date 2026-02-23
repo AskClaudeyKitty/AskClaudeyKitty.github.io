@@ -450,12 +450,9 @@
 
             startBtn.style.display = 'inline-block';
             stopBtn.style.display = 'none';
-        }
 
-        function resetSimulation() {
-            stopSimulation();
+            // Reset the simulation
             clearAllBalls();
-
             frameCount = 0;
             fps = 60;
             lagFactor = 1;
@@ -470,6 +467,10 @@
             frameTimeDisplay.textContent = '16.67ms';
             operationsDisplay.textContent = '0';
             lagFill.style.width = '0%';
+        }
+
+        function resetSimulation() {
+            stopSimulation();
         }
 
         // Keyboard shortcuts
