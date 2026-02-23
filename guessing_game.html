@@ -721,6 +721,80 @@
             flex: 1;
             margin-left: 1rem;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+            .container {
+                padding: 1rem;
+                max-width: 100%;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .game-mode-selector select {
+                font-size: 1rem;
+                padding: 0.5rem;
+            }
+            button {
+                font-size: 1rem;
+                padding: 0.5rem 1rem;
+            }
+            .achievements-btn, .shop-btn, .saves-btn, .settings-btn, .mute-btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.9rem;
+            }
+            .modal-content {
+                max-width: 95%;
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 1rem;
+            }
+            .modal-content h2 {
+                font-size: 1.5rem;
+            }
+            .achievement-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 0.5rem;
+            }
+            .shop-item {
+                padding: 0.5rem;
+            }
+            .shop-item button {
+                font-size: 0.85rem;
+                padding: 0.4rem 0.8rem;
+            }
+            input[type="number"], input[type="text"] {
+                font-size: 1rem;
+                padding: 0.5rem;
+            }
+            .lucky7-grid, .simon-btns, .rps-btns {
+                gap: 0.5rem;
+            }
+            .lucky7-btn, .simon-btn, .rps-btn {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+            .memory-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.3rem;
+            }
+            .memory-card {
+                font-size: 1.5rem;
+                padding: 0.5rem;
+            }
+            .math-btns {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .math-btn {
+                font-size: 1.2rem;
+                padding: 0.6rem;
+            }
+        }
     </style>
 </head>
 <body data-theme="default">

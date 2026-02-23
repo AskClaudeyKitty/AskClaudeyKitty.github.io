@@ -129,6 +129,46 @@
             transition: width 0.3s;
             border-radius: 1rem;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .fps-display {
+                font-size: 2.5rem;
+            }
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .stat-box {
+                padding: 0.6rem;
+            }
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            button {
+                padding: 0.7rem 1.5rem;
+                font-size: 1rem;
+                margin: 0.3rem;
+            }
+            .lag-indicator {
+                padding: 0.6rem;
+            }
+            .lag-bar {
+                height: 25px;
+            }
+        }
     </style>
 </head>
 <body>
