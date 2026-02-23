@@ -149,7 +149,7 @@
         // Orbiting gravity ball
         let orbitAngle = 0;
         let orbitRadius = 320; // Outside the ring (ring radius is 230)
-        let orbitSpeed = 0.02;
+        let orbitSpeed = 0.005; // Much slower orbit
         let gravityBall = {
             x: 0,
             y: 0,
@@ -265,7 +265,7 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance > 0) {
-                    const force = 500 / (distance * distance); // Inverse square law
+                    const force = 5000 / (distance * distance); // Much stronger gravity
                     const fx = (dx / distance) * force;
                     const fy = (dy / distance) * force;
                     ball.vx += fx;
