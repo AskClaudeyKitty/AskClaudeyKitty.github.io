@@ -71,6 +71,41 @@
             background: #f56565;
             color: white;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .controls label {
+                font-size: 0.9rem;
+            }
+            select {
+                padding: 0.5rem 1rem;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 300px;
+            }
+            .game-area {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            #canvas {
+                max-width: 100%;
+                height: auto;
+            }
+            button {
+                padding: 1rem 1.5rem;
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -84,6 +119,7 @@
             <option value="no-gravity">No Gravity</option>
             <option value="speed-up">Speed Increase</option>
             <option value="moon-gravity">Moon Gravity</option>
+            <option value="orbit-gravity">Orbiting Gravity Ball</option>
         </select>
     </div>
 
@@ -109,6 +145,16 @@
         let currentSimulation = 'gravity-balls';
         let spawnBalls = true;
         let speedIncrease = false;
+
+        // Orbiting gravity ball
+        let orbitAngle = 0;
+        let orbitRadius = 320; // Outside the ring (ring radius is 230)
+        let orbitSpeed = 0.02;
+        let gravityBall = {
+            x: 0,
+            y: 0,
+            radius: 25
+        };
 
         // Ball array
         let balls = [];
@@ -212,7 +258,21 @@
 
         function updateBall(ball) {
             // Apply gravity (if enabled)
-            if (gravity !== 0) {
+            if (currentSimulation === 'orbit-gravity') {
+                // Gravitational pull toward the orbiting ball
+                const dx = gravityBall.x - ball.x;
+                const dy = gravityBall.y - ball.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 0) {
+                    const force = 500 / (distance * distance); // Inverse square law
+                    const fx = (dx / distance) * force;
+                    const fy = (dy / distance) * force;
+                    ball.vx += fx;
+                    ball.vy += fy;
+                }
+            } else if (gravity !== 0) {
+                // Standard downward gravity
                 ball.vy += gravity;
             }
 
@@ -310,6 +370,52 @@
             }
         }
 
+        function updateGravityBall() {
+            // Update orbit angle
+            orbitAngle += orbitSpeed;
+
+            // Calculate gravity ball position (orbiting around center)
+            gravityBall.x = centerX + Math.cos(orbitAngle) * orbitRadius;
+            gravityBall.y = centerY + Math.sin(orbitAngle) * orbitRadius;
+        }
+
+        function drawGravityBall() {
+            ctx.save();
+
+            // Draw gravity ball with glow
+            ctx.beginPath();
+            ctx.arc(gravityBall.x, gravityBall.y, gravityBall.radius, 0, Math.PI * 2);
+
+            // Gradient for gravity ball
+            const gradient = ctx.createRadialGradient(
+                gravityBall.x - gravityBall.radius * 0.3,
+                gravityBall.y - gravityBall.radius * 0.3,
+                0,
+                gravityBall.x,
+                gravityBall.y,
+                gravityBall.radius
+            );
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(1, '#c92a2a');
+
+            ctx.fillStyle = gradient;
+
+            // Glow effect
+            ctx.shadowColor = '#ff6b6b';
+            ctx.shadowBlur = 20;
+
+            ctx.fill();
+
+            // Draw force field indicator
+            ctx.beginPath();
+            ctx.arc(gravityBall.x, gravityBall.y, gravityBall.radius + 15, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 107, 107, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
         function gameLoop() {
             if (!isRunning) return;
 
@@ -318,6 +424,12 @@
 
             // Draw ring
             drawRing();
+
+            // Update and draw orbiting gravity ball if in that mode
+            if (currentSimulation === 'orbit-gravity') {
+                updateGravityBall();
+                drawGravityBall();
+            }
 
             // Update all balls
             balls.forEach(ball => updateBall(ball));
@@ -394,6 +506,12 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     break;
+                case 'orbit-gravity':
+                    gravity = 0;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    orbitAngle = 0; // Reset orbit position
+                    break;
             }
 
             // Initialize with first ball
@@ -402,6 +520,13 @@
             // Redraw static state
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawRing();
+
+            // Draw gravity ball if in orbit-gravity mode
+            if (currentSimulation === 'orbit-gravity') {
+                updateGravityBall();
+                drawGravityBall();
+            }
+
             balls.forEach(ball => drawBall(ball));
         }
 
