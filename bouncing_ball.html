@@ -150,6 +150,7 @@
         let orbitAngle = 0;
         let orbitRadius = 255; // On the edge of the ring (230 + 25 for gravity ball radius)
         let orbitSpeed = 0.005; // Much slower orbit
+        let gravityMultiplier = 1; // Gravity strength multiplier
         let gravityBall = {
             x: 0,
             y: 0,
@@ -265,7 +266,7 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance > 0) {
-                    const force = 2000 / (distance * distance); // Stronger gravity but not overwhelming
+                    const force = (2000 * gravityMultiplier) / (distance * distance); // Stronger gravity but not overwhelming
                     const fx = (dx / distance) * force;
                     const fy = (dy / distance) * force;
                     ball.vx += fx;
@@ -311,6 +312,7 @@
                 // Increase orbit speed by 5% on bounce in orbit-gravity mode
                 if (currentSimulation === 'orbit-gravity') {
                     orbitSpeed *= 1.05;
+                    gravityMultiplier *= 1.05; // Also increase gravity by 5%
                 }
 
                 // Increase speed on bounce (if enabled)
@@ -523,6 +525,7 @@
                     speedIncrease = false;
                     orbitAngle = 0; // Reset orbit position
                     orbitSpeed = 0.005; // Reset orbit speed
+                    gravityMultiplier = 1; // Reset gravity multiplier
                     break;
             }
 
