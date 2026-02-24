@@ -52,11 +52,16 @@
             border: none;
         }
         .game-area.fullscreen {
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
         }
         .game-area.fullscreen #startBtn,
         .game-area.fullscreen #stopBtn {
-            position: absolute;
+            position: fixed;
             z-index: 10;
         }
         .game-area.fullscreen #startBtn {
@@ -149,8 +154,8 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        let centerX = canvas.width / 2;
+        let centerY = canvas.height / 2;
         let ringRadius = 230;
         const maxBalls = 5;
 
@@ -653,6 +658,9 @@
                     // Resize canvas to fill screen
                     canvas.width = window.innerWidth;
                     canvas.height = window.innerHeight;
+                    // Update center point
+                    centerX = canvas.width / 2;
+                    centerY = canvas.height / 2;
                     // Add fullscreen class to game-area for button positioning
                     document.querySelector('.game-area').classList.add('fullscreen');
                     break;
@@ -660,6 +668,9 @@
                     // Reset canvas to original size for other modes
                     canvas.width = 600;
                     canvas.height = 600;
+                    // Update center point back to original
+                    centerX = canvas.width / 2;
+                    centerY = canvas.height / 2;
                     // Remove fullscreen class
                     document.querySelector('.game-area').classList.remove('fullscreen');
                     break;
@@ -691,6 +702,8 @@
             if (currentSimulation === 'screen-edges') {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
+                centerX = canvas.width / 2;
+                centerY = canvas.height / 2;
             }
         });
     </script>
