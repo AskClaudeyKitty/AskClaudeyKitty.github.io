@@ -229,6 +229,16 @@
             oscillator.stop(now + 0.1);
         }
 
+        // Get irregular radius for no-gravity mode
+        function getIrregularRadius(angle) {
+            // Create irregular shape using multiple sine waves
+            const baseRadius = ringRadius;
+            const variation1 = Math.sin(angle * 3) * 15; // 3 lobes
+            const variation2 = Math.sin(angle * 5) * 10; // 5 lobes
+            const variation3 = Math.sin(angle * 7) * 5;  // 7 lobes
+            return baseRadius + variation1 + variation2 + variation3;
+        }
+
         function drawRing() {
             // Don't draw ring in screen-edges mode
             if (currentSimulation === 'screen-edges') {
@@ -243,14 +253,54 @@
 
             // Draw outer ring
             ctx.beginPath();
-            ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+
+            if (currentSimulation === 'no-gravity') {
+                // Draw irregular ring using line segments
+                const segments = 120;
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = getIrregularRadius(angle);
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+            } else {
+                // Draw perfect circle for other modes
+                ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            }
+
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 10;
             ctx.stroke();
 
             // Draw inner glow
             ctx.beginPath();
-            ctx.arc(centerX, centerY, ringRadius - 5, 0, Math.PI * 2);
+
+            if (currentSimulation === 'no-gravity') {
+                // Draw irregular inner glow
+                const segments = 120;
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = getIrregularRadius(angle) - 5;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+            } else {
+                // Draw perfect circle for other modes
+                ctx.arc(centerX, centerY, ringRadius - 5, 0, Math.PI * 2);
+            }
+
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -353,12 +403,17 @@
                 const dx = ball.x - centerX;
                 const dy = ball.y - centerY;
                 const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+
+                // Get the radius at this angle (irregular for no-gravity mode)
+                const currentRingRadius = currentSimulation === 'no-gravity' ? getIrregularRadius(angle) : ringRadius;
 
                 // If ball touches or goes beyond ring
-                if (distanceFromCenter + ball.radius >= ringRadius) {
+                if (distanceFromCenter + ball.radius >= currentRingRadius) {
                     // Calculate normal vector at collision point
-                    const nx = dx / distanceFromCenter;
-                    const ny = dy / distanceFromCenter;
+                    // For irregular shape, approximate by using angle to center
+                    const nx = Math.cos(angle);
+                    const ny = Math.sin(angle);
 
                     // Calculate dot product of velocity and normal
                     const dotProduct = ball.vx * nx + ball.vy * ny;
@@ -368,7 +423,7 @@
                     ball.vy = ball.vy - 2 * dotProduct * ny;
 
                     // Push ball back inside ring
-                    const overlap = distanceFromCenter + ball.radius - ringRadius;
+                    const overlap = distanceFromCenter + ball.radius - currentRingRadius;
                     ball.x -= nx * overlap;
                     ball.y -= ny * overlap;
 
