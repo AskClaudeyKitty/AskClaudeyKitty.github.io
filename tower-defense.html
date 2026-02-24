@@ -411,6 +411,9 @@
 
             updateDisplay();
             updateTowerSelectionUI();
+            if (!gameRunning) {
+                draw();
+            }
         }
 
         // Upgrade selected tower
@@ -439,6 +442,9 @@
 
             updateDisplay();
             updateTowerSelectionUI();
+            if (!gameRunning) {
+                draw();
+            }
         }
 
         // Menu functions
@@ -519,8 +525,6 @@
                 return;
             }
 
-            if (!gameRunning) return;
-
             // Check if clicking on an existing tower
             for (let i = 0; i < towers.length; i++) {
                 const tower = towers[i];
@@ -528,6 +532,9 @@
                 if (dist < 20) {
                     selectedPlacedTower = i;
                     updateTowerSelectionUI();
+                    if (!gameRunning) {
+                        draw();
+                    }
                     return;
                 }
             }
@@ -535,6 +542,9 @@
             // Deselect tower if clicking elsewhere
             selectedPlacedTower = null;
             updateTowerSelectionUI();
+            if (!gameRunning) {
+                draw();
+            }
 
             // Place new tower
             const towerInfo = towerTypes[selectedTower];
@@ -556,6 +566,10 @@
                     gold -= actualCost;
                 }
                 updateDisplay();
+                // Redraw to show the new tower even if game isn't running
+                if (!gameRunning) {
+                    draw();
+                }
             }
         });
 
@@ -873,10 +887,12 @@
             if (gameRunning) return;
             gameRunning = true;
             gameSpeed = 1;
-            gold = 100;
+            // Only reset gold if no towers have been placed
+            if (towers.length === 0) {
+                gold = 100;
+            }
             // lives is set by playGame() based on difficulty
             wave = 1;
-            towers = [];
             enemies = [];
             projectiles = [];
             selectedPlacedTower = null;
