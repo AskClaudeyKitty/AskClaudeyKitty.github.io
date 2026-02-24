@@ -289,35 +289,30 @@
 
             // Check collision based on simulation mode
             if (currentSimulation === 'screen-edges') {
-                // Screen edge collision (actual window edges)
-                const canvasRect = canvas.getBoundingClientRect();
+                // Screen edge collision (canvas now fills screen)
                 let bounced = false;
 
-                // Calculate ball's screen position
-                const ballScreenX = canvasRect.left + ball.x;
-                const ballScreenY = canvasRect.top + ball.y;
-
-                // Left edge of screen
-                if (ballScreenX - ball.radius <= 0) {
-                    ball.x = -canvasRect.left + ball.radius;
+                // Left edge
+                if (ball.x - ball.radius <= 0) {
+                    ball.x = ball.radius;
                     ball.vx = -ball.vx;
                     bounced = true;
                 }
-                // Right edge of screen
-                if (ballScreenX + ball.radius >= window.innerWidth) {
-                    ball.x = window.innerWidth - canvasRect.left - ball.radius;
+                // Right edge
+                if (ball.x + ball.radius >= canvas.width) {
+                    ball.x = canvas.width - ball.radius;
                     ball.vx = -ball.vx;
                     bounced = true;
                 }
-                // Top edge of screen
-                if (ballScreenY - ball.radius <= 0) {
-                    ball.y = -canvasRect.top + ball.radius;
+                // Top edge
+                if (ball.y - ball.radius <= 0) {
+                    ball.y = ball.radius;
                     ball.vy = -ball.vy;
                     bounced = true;
                 }
-                // Bottom edge of screen
-                if (ballScreenY + ball.radius >= window.innerHeight) {
-                    ball.y = window.innerHeight - canvasRect.top - ball.radius;
+                // Bottom edge
+                if (ball.y + ball.radius >= canvas.height) {
+                    ball.y = canvas.height - ball.radius;
                     ball.vy = -ball.vy;
                     bounced = true;
                 }
@@ -579,6 +574,14 @@
                     gravity = 0.15;
                     spawnBalls = false;
                     speedIncrease = false;
+                    // Resize canvas to fill screen
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    break;
+                default:
+                    // Reset canvas to original size for other modes
+                    canvas.width = 600;
+                    canvas.height = 600;
                     break;
             }
 
@@ -602,6 +605,14 @@
         ctx.shadowColor = 'transparent';
         drawRing();
         balls.forEach(ball => drawBall(ball));
+
+        // Handle window resize for screen-edges mode
+        window.addEventListener('resize', () => {
+            if (currentSimulation === 'screen-edges') {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        });
     </script>
 </body>
 </html>
