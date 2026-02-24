@@ -120,6 +120,7 @@
             <option value="speed-up">Speed Increase</option>
             <option value="moon-gravity">Moon Gravity</option>
             <option value="orbit-gravity">Orbiting Gravity Ball</option>
+            <option value="screen-edges">Screen Edges Only (No Ring)</option>
         </select>
     </div>
 
@@ -206,6 +207,11 @@
         }
 
         function drawRing() {
+            // Don't draw ring in screen-edges mode
+            if (currentSimulation === 'screen-edges') {
+                return;
+            }
+
             ctx.save(); // Save state and ensure no shadows
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
@@ -281,49 +287,86 @@
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // Check collision with ring
-            const dx = ball.x - centerX;
-            const dy = ball.y - centerY;
-            const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+            // Check collision based on simulation mode
+            if (currentSimulation === 'screen-edges') {
+                // Screen edge collision
+                let bounced = false;
 
-            // If ball touches or goes beyond ring
-            if (distanceFromCenter + ball.radius >= ringRadius) {
-                // Calculate normal vector at collision point
-                const nx = dx / distanceFromCenter;
-                const ny = dy / distanceFromCenter;
-
-                // Calculate dot product of velocity and normal
-                const dotProduct = ball.vx * nx + ball.vy * ny;
-
-                // Reflect velocity vector (perfect bounce, no energy loss)
-                ball.vx = ball.vx - 2 * dotProduct * nx;
-                ball.vy = ball.vy - 2 * dotProduct * ny;
-
-                // Push ball back inside ring
-                const overlap = distanceFromCenter + ball.radius - ringRadius;
-                ball.x -= nx * overlap;
-                ball.y -= ny * overlap;
-
-                // Play sound and update counters
-                playBounceSound();
-                ball.hue = (ball.hue + 30) % 360; // Change color on bounce
-                bounceCount++;
-
-                // Increase orbit speed by 5% on bounce in orbit-gravity mode
-                if (currentSimulation === 'orbit-gravity') {
-                    orbitSpeed *= 1.05;
-                    gravityMultiplier *= 1.05; // Also increase gravity by 5%
+                // Left edge
+                if (ball.x - ball.radius <= 0) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx;
+                    bounced = true;
+                }
+                // Right edge
+                if (ball.x + ball.radius >= canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx = -ball.vx;
+                    bounced = true;
+                }
+                // Top edge
+                if (ball.y - ball.radius <= 0) {
+                    ball.y = ball.radius;
+                    ball.vy = -ball.vy;
+                    bounced = true;
+                }
+                // Bottom edge
+                if (ball.y + ball.radius >= canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy = -ball.vy;
+                    bounced = true;
                 }
 
-                // Increase speed on bounce (if enabled)
-                if (speedIncrease) {
-                    ball.vx *= 1.1;
-                    ball.vy *= 1.1;
+                if (bounced) {
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
                 }
+            } else {
+                // Ring collision
+                const dx = ball.x - centerX;
+                const dy = ball.y - centerY;
+                const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
 
-                // Every 10 bounces, add a new ball (if spawning enabled and under max)
-                if (spawnBalls && bounceCount % 10 === 0 && balls.length < maxBalls) {
-                    balls.push(createBall());
+                // If ball touches or goes beyond ring
+                if (distanceFromCenter + ball.radius >= ringRadius) {
+                    // Calculate normal vector at collision point
+                    const nx = dx / distanceFromCenter;
+                    const ny = dy / distanceFromCenter;
+
+                    // Calculate dot product of velocity and normal
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+
+                    // Reflect velocity vector (perfect bounce, no energy loss)
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                    // Push ball back inside ring
+                    const overlap = distanceFromCenter + ball.radius - ringRadius;
+                    ball.x -= nx * overlap;
+                    ball.y -= ny * overlap;
+
+                    // Play sound and update counters
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360; // Change color on bounce
+                    bounceCount++;
+
+                    // Increase orbit speed by 5% on bounce in orbit-gravity mode
+                    if (currentSimulation === 'orbit-gravity') {
+                        orbitSpeed *= 1.05;
+                        gravityMultiplier *= 1.05; // Also increase gravity by 5%
+                    }
+
+                    // Increase speed on bounce (if enabled)
+                    if (speedIncrease) {
+                        ball.vx *= 1.1;
+                        ball.vy *= 1.1;
+                    }
+
+                    // Every 10 bounces, add a new ball (if spawning enabled and under max)
+                    if (spawnBalls && bounceCount % 10 === 0 && balls.length < maxBalls) {
+                        balls.push(createBall());
+                    }
                 }
             }
         }
@@ -526,6 +569,11 @@
                     orbitAngle = 0; // Reset orbit position
                     orbitSpeed = 0.005; // Reset orbit speed
                     gravityMultiplier = 1; // Reset gravity multiplier
+                    break;
+                case 'screen-edges':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = false;
                     break;
             }
 
