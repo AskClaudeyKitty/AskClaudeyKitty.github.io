@@ -422,6 +422,17 @@
                     ball.vx = ball.vx - 2 * dotProduct * nx;
                     ball.vy = ball.vy - 2 * dotProduct * ny;
 
+                    // Add randomness in no-gravity mode to prevent getting stuck
+                    if (currentSimulation === 'no-gravity') {
+                        const randomAngle = (Math.random() - 0.5) * 0.3; // Small random deviation
+                        const cos = Math.cos(randomAngle);
+                        const sin = Math.sin(randomAngle);
+                        const newVx = ball.vx * cos - ball.vy * sin;
+                        const newVy = ball.vx * sin + ball.vy * cos;
+                        ball.vx = newVx;
+                        ball.vy = newVy;
+                    }
+
                     // Push ball back inside ring
                     const overlap = distanceFromCenter + ball.radius - currentRingRadius;
                     ball.x -= nx * overlap;
