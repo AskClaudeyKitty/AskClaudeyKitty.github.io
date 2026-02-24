@@ -58,6 +58,25 @@
             width: 100%;
             height: 100%;
             display: block;
+            z-index: 1;
+        }
+        .controls.fullscreen-mode {
+            position: fixed;
+            z-index: 100;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        h1.fullscreen-mode {
+            position: fixed;
+            z-index: 100;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
         }
         .game-area.fullscreen #startBtn,
         .game-area.fullscreen #stopBtn {
@@ -729,8 +748,10 @@
                     // Update center point
                     centerX = canvas.width / 2;
                     centerY = canvas.height / 2;
-                    // Add fullscreen class to game-area for button positioning
+                    // Add fullscreen classes for positioning
                     document.querySelector('.game-area').classList.add('fullscreen');
+                    document.querySelector('.controls').classList.add('fullscreen-mode');
+                    document.querySelector('h1').classList.add('fullscreen-mode');
                     break;
                 default:
                     // Reset canvas to original size for other modes
@@ -739,8 +760,10 @@
                     // Update center point back to original
                     centerX = canvas.width / 2;
                     centerY = canvas.height / 2;
-                    // Remove fullscreen class
+                    // Remove fullscreen classes
                     document.querySelector('.game-area').classList.remove('fullscreen');
+                    document.querySelector('.controls').classList.remove('fullscreen-mode');
+                    document.querySelector('h1').classList.remove('fullscreen-mode');
                     break;
             }
 
