@@ -51,6 +51,22 @@
         #canvas {
             border: none;
         }
+        .game-area.fullscreen {
+            position: relative;
+        }
+        .game-area.fullscreen #startBtn,
+        .game-area.fullscreen #stopBtn {
+            position: absolute;
+            z-index: 10;
+        }
+        .game-area.fullscreen #startBtn {
+            top: 20px;
+            left: 20px;
+        }
+        .game-area.fullscreen #stopBtn {
+            top: 20px;
+            right: 20px;
+        }
         button {
             padding: 1.5rem 2rem;
             font-size: 1.5rem;
@@ -322,6 +338,9 @@
                     ball.hue = (ball.hue + 30) % 360;
                     bounceCount++;
                 }
+
+                // Check collision with start and stop buttons
+                checkButtonCollision(ball);
             } else {
                 // Ring collision
                 const dx = ball.x - centerX;
@@ -368,6 +387,9 @@
                         balls.push(createBall());
                     }
                 }
+
+                // Check collision with buttons in all modes
+                checkButtonCollision(ball);
             }
         }
 
@@ -418,6 +440,60 @@
                     ball2.hue = (ball2.hue + 15) % 360;
                 }
             }
+        }
+
+        // Check collision with start and stop buttons
+        function checkButtonCollision(ball) {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            [startBtn, stopBtn].forEach(btn => {
+                const rect = btn.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+
+                // Convert button position to canvas coordinates
+                const btnLeft = rect.left - canvasRect.left;
+                const btnTop = rect.top - canvasRect.top;
+                const btnRight = btnLeft + rect.width;
+                const btnBottom = btnTop + rect.height;
+
+                // Check if ball collides with button
+                const closestX = Math.max(btnLeft, Math.min(ball.x, btnRight));
+                const closestY = Math.max(btnTop, Math.min(ball.y, btnBottom));
+
+                const distX = ball.x - closestX;
+                const distY = ball.y - closestY;
+                const distance = Math.sqrt(distX * distX + distY * distY);
+
+                if (distance < ball.radius) {
+                    // Collision detected!
+                    const overlap = ball.radius - distance;
+
+                    // Normal vector from button to ball
+                    let nx = distX / distance;
+                    let ny = distY / distance;
+
+                    // If center is inside button, push out
+                    if (distance === 0) {
+                        nx = 1;
+                        ny = 0;
+                    }
+
+                    // Reflect velocity
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                    // Push ball out of button
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+
+                    // Play sound and update
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
+                }
+            });
         }
 
         function updateGravityBall() {
@@ -577,11 +653,15 @@
                     // Resize canvas to fill screen
                     canvas.width = window.innerWidth;
                     canvas.height = window.innerHeight;
+                    // Add fullscreen class to game-area for button positioning
+                    document.querySelector('.game-area').classList.add('fullscreen');
                     break;
                 default:
                     // Reset canvas to original size for other modes
                     canvas.width = 600;
                     canvas.height = 600;
+                    // Remove fullscreen class
+                    document.querySelector('.game-area').classList.remove('fullscreen');
                     break;
             }
 
