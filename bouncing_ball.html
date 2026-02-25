@@ -462,6 +462,10 @@
                     ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                     bounceCount++;
 
+                    // Decrease ball speed by 0.1% on each bounce
+                    ball.vx *= 0.999;
+                    ball.vy *= 0.999;
+
                     // Increase orbit speed by 10% and gravity by 1% on bounce in orbit-gravity mode
                     if (currentSimulation === 'orbit-gravity') {
                         orbitSpeed *= 1.10;
