@@ -192,7 +192,7 @@
         // Orbiting gravity ball
         let orbitAngle = 0;
         let orbitRadius = 255; // On the edge of the ring (230 + 25 for gravity ball radius)
-        let orbitSpeed = 0.005; // Much slower orbit
+        let orbitSpeed = 0.002; // Very slow orbit
         let gravityMultiplier = 1; // Gravity strength multiplier
         let gravityBall = {
             x: 0,
@@ -462,10 +462,10 @@
                     ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                     bounceCount++;
 
-                    // Increase orbit speed by 5% on bounce in orbit-gravity mode
+                    // Increase orbit speed and gravity by 1% on bounce in orbit-gravity mode
                     if (currentSimulation === 'orbit-gravity') {
-                        orbitSpeed *= 1.05;
-                        gravityMultiplier *= 1.05; // Also increase gravity by 5%
+                        orbitSpeed *= 1.01;
+                        gravityMultiplier *= 1.01; // Also increase gravity by 1%
                     }
 
                     // Increase speed on bounce (if enabled)
@@ -735,7 +735,7 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     orbitAngle = 0; // Reset orbit position
-                    orbitSpeed = 0.005; // Reset orbit speed
+                    orbitSpeed = 0.002; // Reset orbit speed
                     gravityMultiplier = 1; // Reset gravity multiplier
                     break;
                 case 'screen-edges':
