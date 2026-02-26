@@ -163,6 +163,7 @@
             <option value="moon-gravity">Moon Gravity</option>
             <option value="orbit-gravity">Orbiting Gravity Ball</option>
             <option value="screen-edges">Screen Edges Only (No Ring)</option>
+            <option value="growing-polygon">Growing Polygon (Triangle → Square → ...)</option>
         </select>
     </div>
 
@@ -199,6 +200,10 @@
             y: 0,
             radius: 25
         };
+
+        // Growing polygon
+        let polygonSides = 3; // Start with triangle
+        let polygonRadius = 200;
 
         // Ball array
         let balls = [];
@@ -258,9 +263,88 @@
             return baseRadius + variation1 + variation2 + variation3;
         }
 
+        function drawPolygon() {
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Draw polygon with current number of sides
+            ctx.beginPath();
+            const angleStep = (Math.PI * 2) / polygonSides;
+
+            // Move to first vertex
+            ctx.moveTo(
+                centerX + Math.cos(0) * polygonRadius,
+                centerY + Math.sin(0) * polygonRadius
+            );
+
+            // Draw lines to each vertex
+            for (let i = 1; i <= polygonSides; i++) {
+                const angle = i * angleStep;
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * polygonRadius,
+                    centerY + Math.sin(angle) * polygonRadius
+                );
+            }
+
+            ctx.closePath();
+
+            // Outer line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Inner glow
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Draw side count indicator
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${polygonSides} sides`, centerX, centerY - polygonRadius - 30);
+        }
+
+        // Line-circle collision detection helper
+        function lineCircleCollision(x1, y1, x2, y2, cx, cy, r) {
+            // Vector from line start to end
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lenSq = dx * dx + dy * dy;
+
+            // Project circle center onto line
+            let t = ((cx - x1) * dx + (cy - y1) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t)); // Clamp to line segment
+
+            // Closest point on line
+            const closestX = x1 + t * dx;
+            const closestY = y1 + t * dy;
+
+            // Distance from circle center to closest point
+            const distX = cx - closestX;
+            const distY = cy - closestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < r) {
+                return { collides: true, overlap: r - dist };
+            }
+            return { collides: false };
+        }
+
         function drawRing() {
             // Don't draw ring in screen-edges mode
             if (currentSimulation === 'screen-edges') {
+                return;
+            }
+
+            // Draw polygon instead of ring in growing-polygon mode
+            if (currentSimulation === 'growing-polygon') {
+                drawPolygon();
                 return;
             }
 
@@ -416,6 +500,70 @@
                 }
 
                 // Check collision with start and stop buttons
+                checkButtonCollision(ball);
+            } else if (currentSimulation === 'growing-polygon') {
+                // Polygon collision
+                const angleStep = (Math.PI * 2) / polygonSides;
+                let bounced = false;
+
+                // Check each edge of the polygon
+                for (let i = 0; i < polygonSides; i++) {
+                    const angle1 = i * angleStep;
+                    const angle2 = ((i + 1) % polygonSides) * angleStep;
+
+                    const x1 = centerX + Math.cos(angle1) * polygonRadius;
+                    const y1 = centerY + Math.sin(angle1) * polygonRadius;
+                    const x2 = centerX + Math.cos(angle2) * polygonRadius;
+                    const y2 = centerY + Math.sin(angle2) * polygonRadius;
+
+                    // Check if ball crosses this edge
+                    const collision = lineCircleCollision(x1, y1, x2, y2, ball.x, ball.y, ball.radius);
+
+                    if (collision.collides) {
+                        // Calculate normal vector for this edge
+                        const edgeDx = x2 - x1;
+                        const edgeDy = y2 - y1;
+                        const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
+                        const nx = -edgeDy / edgeLen;
+                        const ny = edgeDx / edgeLen;
+
+                        // Determine which way to bounce (toward center)
+                        const toCenterX = centerX - ball.x;
+                        const toCenterY = centerY - ball.y;
+                        if (nx * toCenterX + ny * toCenterY < 0) {
+                            // Flip normal to point toward center
+                            ball.vx = -ball.vx + 2 * (ball.vx * nx + ball.vy * ny) * nx;
+                            ball.vy = -ball.vy + 2 * (ball.vx * nx + ball.vy * ny) * ny;
+                        } else {
+                            ball.vx = ball.vx - 2 * (ball.vx * nx + ball.vy * ny) * nx;
+                            ball.vy = ball.vy - 2 * (ball.vx * nx + ball.vy * ny) * ny;
+                        }
+
+                        // Push ball away from edge
+                        ball.x += nx * collision.overlap;
+                        ball.y += ny * collision.overlap;
+
+                        bounced = true;
+                        break; // Only bounce off one edge at a time
+                    }
+                }
+
+                if (bounced) {
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
+
+                    // Decrease ball speed by 0.1% on each bounce in orbit-gravity mode
+                    if (currentSimulation === 'orbit-gravity') {
+                        ball.vx *= 0.999;
+                        ball.vy *= 0.999;
+                    }
+
+                    // Add a side to the polygon!
+                    polygonSides++;
+                }
+
+                // Check collision with buttons
                 checkButtonCollision(ball);
             } else {
                 // Ring collision
@@ -770,6 +918,12 @@
                     document.querySelector('.game-area').classList.add('fullscreen');
                     document.querySelector('.controls').classList.add('fullscreen-mode');
                     document.querySelector('h1').classList.add('fullscreen-mode');
+                    break;
+                case 'growing-polygon':
+                    gravity = 0;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    polygonSides = 3; // Reset to triangle
                     break;
                 default:
                     // Reset canvas to original size for other modes
