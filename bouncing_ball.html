@@ -520,26 +520,19 @@
                     const collision = lineCircleCollision(x1, y1, x2, y2, ball.x, ball.y, ball.radius);
 
                     if (collision.collides) {
-                        // Calculate normal vector for this edge
+                        // Calculate normal vector for this edge (pointing inward)
                         const edgeDx = x2 - x1;
                         const edgeDy = y2 - y1;
                         const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
                         const nx = -edgeDy / edgeLen;
                         const ny = edgeDx / edgeLen;
 
-                        // Determine which way to bounce (toward center)
-                        const toCenterX = centerX - ball.x;
-                        const toCenterY = centerY - ball.y;
-                        if (nx * toCenterX + ny * toCenterY < 0) {
-                            // Flip normal to point toward center
-                            ball.vx = -ball.vx + 2 * (ball.vx * nx + ball.vy * ny) * nx;
-                            ball.vy = -ball.vy + 2 * (ball.vx * nx + ball.vy * ny) * ny;
-                        } else {
-                            ball.vx = ball.vx - 2 * (ball.vx * nx + ball.vy * ny) * nx;
-                            ball.vy = ball.vy - 2 * (ball.vx * nx + ball.vy * ny) * ny;
-                        }
+                        // Reflect velocity vector
+                        const dotProduct = ball.vx * nx + ball.vy * ny;
+                        ball.vx = ball.vx - 2 * dotProduct * nx;
+                        ball.vy = ball.vy - 2 * dotProduct * ny;
 
-                        // Push ball away from edge
+                        // Push ball back inside polygon
                         ball.x += nx * collision.overlap;
                         ball.y += ny * collision.overlap;
 
@@ -925,7 +918,7 @@
                     gravity = 0.15;
                     spawnBalls = false;
                     speedIncrease = false;
-                    // Don't reset polygonSides so it persists across stop/start
+                    polygonSides = 3; // Reset to triangle
                     break;
                 default:
                     // Reset canvas to original size for other modes
