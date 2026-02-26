@@ -557,10 +557,10 @@
                         ball.vy *= 0.999;
                     }
 
-                    // Increase ball speed by 0.5% and gravity by 0.5% in growing-polygon mode
+                    // Increase ball speed by 0.9% and gravity by 0.5% in growing-polygon mode
                     if (currentSimulation === 'growing-polygon') {
-                        ball.vx *= 1.005;
-                        ball.vy *= 1.005;
+                        ball.vx *= 1.009;
+                        ball.vy *= 1.009;
                         polygonGravityMultiplier *= 1.005;
                     }
 
