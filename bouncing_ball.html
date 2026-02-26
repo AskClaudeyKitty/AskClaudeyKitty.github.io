@@ -204,6 +204,7 @@
         // Growing polygon
         let polygonSides = 3; // Start with triangle
         let polygonRadius = 200;
+        let polygonGravityMultiplier = 1; // Gravity strength multiplier
 
         // Ball array
         let balls = [];
@@ -456,7 +457,11 @@
                 }
             } else if (gravity !== 0) {
                 // Standard downward gravity
-                ball.vy += gravity;
+                if (currentSimulation === 'growing-polygon') {
+                    ball.vy += gravity * polygonGravityMultiplier;
+                } else {
+                    ball.vy += gravity;
+                }
             }
 
             // Update position
@@ -550,6 +555,13 @@
                     if (currentSimulation === 'orbit-gravity') {
                         ball.vx *= 0.999;
                         ball.vy *= 0.999;
+                    }
+
+                    // Increase ball speed by 0.5% and gravity by 0.5% in growing-polygon mode
+                    if (currentSimulation === 'growing-polygon') {
+                        ball.vx *= 1.005;
+                        ball.vy *= 1.005;
+                        polygonGravityMultiplier *= 1.005;
                     }
 
                     // Add a side to the polygon (max 20 sides)
@@ -919,6 +931,7 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     polygonSides = 3; // Reset to triangle
+                    polygonGravityMultiplier = 1; // Reset gravity multiplier
                     break;
                 default:
                     // Reset canvas to original size for other modes
