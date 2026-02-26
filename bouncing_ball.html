@@ -193,7 +193,7 @@
         // Orbiting gravity ball
         let orbitAngle = 0;
         let orbitRadius = 255; // On the edge of the ring (230 + 25 for gravity ball radius)
-        let orbitSpeed = 0; // Stationary at first
+        let orbitSpeed = 0.001; // Barely moving at first
         let gravityMultiplier = 1; // Gravity strength multiplier
         let gravityBall = {
             x: 0,
@@ -852,7 +852,7 @@
 
             // Reset orbit speed and gravity if in orbit-gravity mode
             if (currentSimulation === 'orbit-gravity') {
-                orbitSpeed = 0;
+                orbitSpeed = 0.001;
                 gravityMultiplier = 1;
             }
 
@@ -908,7 +908,7 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     orbitAngle = 0; // Reset orbit position
-                    orbitSpeed = 0; // Reset orbit speed (stationary at first)
+                    orbitSpeed = 0.001; // Reset orbit speed (barely moving)
                     gravityMultiplier = 1; // Reset gravity multiplier
                     break;
                 case 'screen-edges':
