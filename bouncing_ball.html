@@ -50,6 +50,8 @@
         }
         #canvas {
             border: none;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
         }
         .game-area.fullscreen {
             position: fixed;
@@ -190,16 +192,17 @@
         let spawnBalls = true;
         let speedIncrease = false;
 
-        // Orbiting gravity ball
+        // Orbiting gravity balls
         let orbitAngle = 0;
         let orbitRadius = 255; // On the edge of the ring (230 + 25 for gravity ball radius)
         let orbitSpeed = 0.001; // Barely moving at first
         let gravityMultiplier = 1; // Gravity strength multiplier
-        let gravityBall = {
-            x: 0,
-            y: 0,
-            radius: 25
-        };
+        let gravityBalls = [
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 }
+        ];
 
         // Growing polygon
         let polygonSides = 3; // Start with triangle
@@ -211,11 +214,12 @@
 
         // Create a new ball
         function createBall() {
+            const useRandom = currentSimulation === 'no-gravity';
             return {
                 x: centerX,
                 y: centerY,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8,
+                vx: useRandom ? (Math.random() - 0.5) * 8 : 0.1,
+                vy: useRandom ? (Math.random() - 0.5) * 8 : 0,
                 radius: 20,
                 hue: Math.random() * 360
             };
@@ -443,18 +447,20 @@
         function updateBall(ball) {
             // Apply gravity (if enabled)
             if (currentSimulation === 'orbit-gravity') {
-                // Gravitational pull toward the orbiting ball
-                const dx = gravityBall.x - ball.x;
-                const dy = gravityBall.y - ball.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Gravitational pull toward both orbiting balls
+                gravityBalls.forEach(gravityBall => {
+                    const dx = gravityBall.x - ball.x;
+                    const dy = gravityBall.y - ball.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance > 0) {
-                    const force = (2000 * gravityMultiplier) / (distance * distance); // Stronger gravity but not overwhelming
-                    const fx = (dx / distance) * force;
-                    const fy = (dy / distance) * force;
-                    ball.vx += fx;
-                    ball.vy += fy;
-                }
+                    if (distance > 0) {
+                        const force = (2000 * gravityMultiplier) / (distance * distance); // Stronger gravity but not overwhelming
+                        const fx = (dx / distance) * force;
+                        const fy = (dy / distance) * force;
+                        ball.vx += fx;
+                        ball.vy += fy;
+                    }
+                });
             } else if (gravity !== 0) {
                 // Standard downward gravity
                 if (currentSimulation === 'growing-polygon') {
@@ -551,10 +557,10 @@
                     ball.hue = (ball.hue + 30) % 360;
                     bounceCount++;
 
-                    // Decrease ball speed by 0.1% on each bounce in orbit-gravity mode
+                    // Decrease ball speed by 2% on each bounce in orbit-gravity mode
                     if (currentSimulation === 'orbit-gravity') {
-                        ball.vx *= 0.999;
-                        ball.vy *= 0.999;
+                        ball.vx *= 0.98;
+                        ball.vy *= 0.98;
                     }
 
                     // Increase ball speed by 0.9% and gravity by 0.5% in growing-polygon mode
@@ -617,10 +623,10 @@
                     ball.hue = (ball.hue + 30) % 360; // Change color on bounce
                     bounceCount++;
 
-                    // Decrease ball speed by 0.1% on each bounce in orbit-gravity mode
+                    // Decrease ball speed by 2% on each bounce in orbit-gravity mode
                     if (currentSimulation === 'orbit-gravity') {
-                        ball.vx *= 0.999;
-                        ball.vy *= 0.999;
+                        ball.vx *= 0.98;
+                        ball.vy *= 0.98;
                     }
 
                     // Increase orbit speed by 25% and gravity by 1% on bounce in orbit-gravity mode
@@ -753,53 +759,80 @@
             // Update orbit angle
             orbitAngle += orbitSpeed;
 
-            // Calculate gravity ball position (orbiting around center)
-            gravityBall.x = centerX + Math.cos(orbitAngle) * orbitRadius;
-            gravityBall.y = centerY + Math.sin(orbitAngle) * orbitRadius;
+            // Calculate gravity ball positions (evenly spaced around the ring, 90 degrees apart)
+            for (let i = 0; i < gravityBalls.length; i++) {
+                const angleOffset = (Math.PI / 2) * i; // 90 degrees apart
+                gravityBalls[i].x = centerX + Math.cos(orbitAngle + angleOffset) * orbitRadius;
+                gravityBalls[i].y = centerY + Math.sin(orbitAngle + angleOffset) * orbitRadius;
+            }
         }
 
         function drawGravityBall() {
-            ctx.save();
+            gravityBalls.forEach((ball, index) => {
+                ctx.save();
 
-            // Draw gravity ball with glow
-            ctx.beginPath();
-            ctx.arc(gravityBall.x, gravityBall.y, gravityBall.radius, 0, Math.PI * 2);
+                // Draw gravity ball with glow
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
 
-            // Gradient for gravity ball
-            const gradient = ctx.createRadialGradient(
-                gravityBall.x - gravityBall.radius * 0.3,
-                gravityBall.y - gravityBall.radius * 0.3,
-                0,
-                gravityBall.x,
-                gravityBall.y,
-                gravityBall.radius
-            );
-            gradient.addColorStop(0, '#ff6b6b');
-            gradient.addColorStop(1, '#c92a2a');
+                // Gradient for gravity ball (different colors for each)
+                const gradient = ctx.createRadialGradient(
+                    ball.x - ball.radius * 0.3,
+                    ball.y - ball.radius * 0.3,
+                    0,
+                    ball.x,
+                    ball.y,
+                    ball.radius
+                );
 
-            ctx.fillStyle = gradient;
+                if (index === 0) {
+                    gradient.addColorStop(0, '#ff6b6b');
+                    gradient.addColorStop(1, '#c92a2a');
+                    ctx.shadowColor = '#ff6b6b';
+                } else if (index === 1) {
+                    gradient.addColorStop(0, '#4ecdc4');
+                    gradient.addColorStop(1, '#0891b2');
+                    ctx.shadowColor = '#4ecdc4';
+                } else if (index === 2) {
+                    gradient.addColorStop(0, '#ffe66d');
+                    gradient.addColorStop(1, '#f59f00');
+                    ctx.shadowColor = '#ffe66d';
+                } else {
+                    gradient.addColorStop(0, '#ff85a2');
+                    gradient.addColorStop(1, '#d6336c');
+                    ctx.shadowColor = '#ff85a2';
+                }
 
-            // Glow effect
-            ctx.shadowColor = '#ff6b6b';
-            ctx.shadowBlur = 20;
+                ctx.fillStyle = gradient;
 
-            ctx.fill();
+                // Glow effect
+                ctx.shadowBlur = 20;
 
-            // Draw force field indicator
-            ctx.beginPath();
-            ctx.arc(gravityBall.x, gravityBall.y, gravityBall.radius + 15, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 107, 107, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                ctx.fill();
 
-            ctx.restore();
+                // Draw force field indicator
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 15, 0, Math.PI * 2);
+                const strokeColors = [
+                    'rgba(255, 107, 107, 0.3)',
+                    'rgba(78, 205, 196, 0.3)',
+                    'rgba(255, 230, 109, 0.3)',
+                    'rgba(255, 133, 162, 0.3)'
+                ];
+                ctx.strokeStyle = strokeColors[index];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.restore();
+            });
         }
 
         function gameLoop() {
             if (!isRunning) return;
 
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Create trail effect by drawing semi-transparent background
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw ring
             drawRing();
@@ -852,7 +885,7 @@
 
             // Reset orbit speed and gravity if in orbit-gravity mode
             if (currentSimulation === 'orbit-gravity') {
-                orbitSpeed = 0.001;
+                orbitSpeed = 0.005;
                 gravityMultiplier = 1;
             }
 
@@ -908,7 +941,7 @@
                     spawnBalls = false;
                     speedIncrease = false;
                     orbitAngle = 0; // Reset orbit position
-                    orbitSpeed = 0.001; // Reset orbit speed (barely moving)
+                    orbitSpeed = 0.005; // Reset orbit speed
                     gravityMultiplier = 1; // Reset gravity multiplier
                     break;
                 case 'screen-edges':
