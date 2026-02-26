@@ -559,8 +559,10 @@
                         ball.vy *= 0.999;
                     }
 
-                    // Add a side to the polygon!
-                    polygonSides++;
+                    // Add a side to the polygon (max 20 sides)
+                    if (polygonSides < 20) {
+                        polygonSides++;
+                    }
                 }
 
                 // Check collision with buttons
@@ -920,10 +922,10 @@
                     document.querySelector('h1').classList.add('fullscreen-mode');
                     break;
                 case 'growing-polygon':
-                    gravity = 0;
+                    gravity = 0.15;
                     spawnBalls = false;
                     speedIncrease = false;
-                    polygonSides = 3; // Reset to triangle
+                    // Don't reset polygonSides so it persists across stop/start
                     break;
                 default:
                     // Reset canvas to original size for other modes
