@@ -131,6 +131,7 @@
         // ── State ────────────────────────────────────────────────────────────────
         let gold = 100, lives = 20, wave = 1;
         let gameRunning = false, gameSpeed = 1;
+        let waveInProgress = false;
         let selectedTower = 'basic';
         let freeTowers = false;
         let selectedMap = 'easy', selectedDifficulty = 'easy';
@@ -586,10 +587,13 @@
                 return true;
             });
 
-            if (enemies.length === 0) {
+            if (enemies.length === 0 && !waveInProgress) {
+                waveInProgress = true;
                 wave++;
                 updateDisplay();
-                for (let i=0; i<3+wave; i++) setTimeout(()=>spawnEnemy(), i*1000);
+                const count = 3 + wave;
+                for (let i = 0; i < count; i++) setTimeout(() => spawnEnemy(), i * 1000);
+                setTimeout(() => { waveInProgress = false; }, count * 1000);
             }
         }
 
@@ -795,7 +799,9 @@
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('speed-btn').classList.remove('hidden');
             document.getElementById('speed-btn').textContent = '⏩ 2x Speed';
+            waveInProgress = true;
             for (let i=0; i<5; i++) setTimeout(()=>spawnEnemy(), i*1000);
+            setTimeout(() => { waveInProgress = false; }, 5000);
             gameLoop();
         }
 
@@ -805,6 +811,7 @@
             lives = difficultyModifiers[selectedDifficulty].lives;
             wave = 1; towers = []; enemies = []; projectiles = [];
             selectedPlacedTower = null;
+            waveInProgress = false;
             dynamicPath = currentPath;
             updateDisplay(); draw();
             document.getElementById('start-btn').classList.remove('hidden');
