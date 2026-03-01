@@ -14,52 +14,24 @@
             padding: 20px;
             overflow: hidden;
         }
-        h1 { text-align: center; margin-bottom: 1rem; }
         .game-container { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-        #canvas {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 0.5rem;
-            background: #2d3748;
-            cursor: pointer;
-        }
+        #canvas { border: 3px solid rgba(255,255,255,0.3); border-radius: 0.5rem; background: #2d3748; cursor: pointer; }
         .stats { display: flex; gap: 2rem; font-size: 1.2rem; }
         .stat { background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 0.5rem; }
         .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
-        button {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
+        button { padding: 0.75rem 1.5rem; font-size: 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: transform 0.2s; }
         button:hover { transform: translateY(-2px); }
         .tower-btn { background: #48bb78; color: white; }
-        .wall-btn  { background: #8b6914; color: white; }
         .start-btn { background: #4299e1; color: white; padding: 1rem 2rem; font-size: 1.2rem; }
-        .tower-btn.selected, .wall-btn.selected {
-            background: #f6e05e;
-            color: #1a202c;
-            box-shadow: 0 0 10px #f6e05e;
-        }
+        .tower-btn.selected { background: #f6e05e; color: #1a202c; box-shadow: 0 0 10px #f6e05e; }
         .hidden { display: none !important; }
 
-        #main-menu {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; gap: 2rem; padding: 2rem;
-        }
+        #main-menu { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
         #main-menu h1 { font-size: 3rem; margin-bottom: 1rem; }
-        .menu-section {
-            background: rgba(0,0,0,0.3); padding: 1.5rem 2rem;
-            border-radius: 1rem; text-align: center;
-        }
+        .menu-section { background: rgba(0,0,0,0.3); padding: 1.5rem 2rem; border-radius: 1rem; text-align: center; }
         .menu-section h2 { margin-bottom: 1rem; font-size: 1.5rem; }
         .button-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-        .menu-btn {
-            padding: 1rem 2rem; font-size: 1.2rem; border: none;
-            border-radius: 0.5rem; cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s; color: white;
-        }
+        .menu-btn { padding: 1rem 2rem; font-size: 1.2rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; color: white; }
         .menu-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .menu-btn.selected { box-shadow: 0 0 15px currentColor; transform: scale(1.05); }
         .map-btn  { background: #48bb78; } .map-btn.selected  { background: #38a169; }
@@ -73,7 +45,7 @@
             .stats { flex-wrap: wrap; gap: 0.5rem; font-size: 1rem; }
             .stat { padding: 0.3rem 0.6rem; font-size: 0.9rem; }
             button { padding: 0.5rem 1rem; font-size: 0.9rem; }
-            .tower-btn, .wall-btn, .start-btn { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+            .tower-btn, .start-btn { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
             .menu-section { padding: 1rem; }
             .button-group { flex-direction: column; gap: 0.5rem; }
             .menu-btn { width: 100%; padding: 0.8rem; }
@@ -118,7 +90,6 @@
             <button class="tower-btn"          onclick="selectTower('rapid')"  id="rapid-tower"  style="padding:0.4rem 0.8rem;font-size:0.85rem;">Machine Gun (150g)</button>
             <button class="tower-btn"          onclick="selectTower('bomb')"   id="bomb-tower"   style="padding:0.4rem 0.8rem;font-size:0.85rem;">Bomb (200g)</button>
             <button class="tower-btn"          onclick="selectTower('master')" id="master-tower" style="padding:0.4rem 0.8rem;font-size:0.85rem;">Master (10000g)</button>
-            <button class="wall-btn"           onclick="selectTower('wall')"   id="wall-tower"   style="padding:0.4rem 0.8rem;font-size:0.85rem;">🧱 Wall (25g)</button>
             <button class="start-btn" id="start-btn" onclick="startGame()" style="padding:0.4rem 0.8rem;font-size:0.85rem;">▶️ Start Game</button>
             <button class="start-btn hidden" onclick="toggleSpeed()" id="speed-btn" style="background:#ed8936;padding:0.4rem 0.8rem;font-size:0.85rem;">⏩ 2x Speed</button>
         </div>
@@ -128,25 +99,15 @@
         const canvas = document.getElementById('canvas');
         const ctx    = canvas.getContext('2d');
 
-        // ── State ────────────────────────────────────────────────────────────────
         let gold = 100, lives = 20, wave = 1;
-        let gameRunning = false, gameSpeed = 1;
-        let waveInProgress = false;
-        let selectedTower = 'basic';
-        let freeTowers = false;
+        let gameRunning = false, gameSpeed = 1, waveInProgress = false;
+        let selectedTower = 'basic', freeTowers = false;
         let selectedMap = 'easy', selectedDifficulty = 'easy';
         let currentPath = [];
         let selectedPlacedTower = null;
-        let placementBlocked = 0;
         let towers = [], enemies = [], projectiles = [];
-
-        // Pathfinding (only used when walls are placed)
-        const CELL = 20, GCOLS = 40, GROWS = 25;
-        let dynamicPath = [];   // follows currentPath by default; Dijkstra when walls exist
-        let roadCells   = new Set();
         let popupRegions = [];
 
-        // ── Map paths ────────────────────────────────────────────────────────────
         const paths = {
             easy: [
                 {x:0,y:400},{x:100,y:400},{x:100,y:100},{x:200,y:100},
@@ -178,117 +139,8 @@
             sniper: {cost:100,   range:200, damage:50,  fireRate:120, color:'#f6e05e'},
             rapid:  {cost:150,   range:80,  damage:5,   fireRate:10,  color:'#4299e1'},
             bomb:   {cost:200,   range:120, damage:30,  fireRate:90,  color:'#e53e3e', splashRadius:60},
-            master: {cost:10000, range:200, damage:250, fireRate:1,   color:'#9f7aea', splashRadius:80},
-            wall:   {cost:25,    range:0,   damage:0,   fireRate:9999,color:'#a0845c', isWall:true}
+            master: {cost:10000, range:200, damage:250, fireRate:1,   color:'#9f7aea', splashRadius:80}
         };
-
-        // ── Pathfinding (only for walls) ─────────────────────────────────────────
-
-        function initRoadCells() {
-            roadCells = new Set();
-            for (let i = 0; i < currentPath.length - 1; i++) {
-                const p1 = currentPath[i], p2 = currentPath[i+1];
-                const dist  = Math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2);
-                const steps = Math.ceil(dist / (CELL * 0.4));
-                for (let s = 0; s <= steps; s++) {
-                    const t = s / steps;
-                    const cx = Math.floor((p1.x + (p2.x-p1.x)*t) / CELL);
-                    const cy = Math.floor((p1.y + (p2.y-p1.y)*t) / CELL);
-                    for (let dc = -1; dc <= 1; dc++) {
-                        for (let dr = -1; dr <= 1; dr++) {
-                            const nc = cx+dc, nr = cy+dr;
-                            if (nc>=0 && nc<GCOLS && nr>=0 && nr<GROWS)
-                                roadCells.add(`${nc},${nr}`);
-                        }
-                    }
-                }
-            }
-        }
-
-        function getWallBlockedCells() {
-            const blocked = new Set();
-            towers.forEach(t => {
-                if (!t.isWall) return;
-                blocked.add(`${Math.floor(t.x/CELL)},${Math.floor(t.y/CELL)}`);
-            });
-            return blocked;
-        }
-
-        // Dijkstra: prefer road cells (cost 1) over off-road (cost 8)
-        function computeWallPath(blockedCells) {
-            const start = currentPath[0], end = currentPath[currentPath.length-1];
-            const sc = Math.max(0, Math.min(GCOLS-1, Math.floor(start.x/CELL)));
-            const sr = Math.max(0, Math.min(GROWS-1, Math.floor(start.y/CELL)));
-            const ec = Math.max(0, Math.min(GCOLS-1, Math.floor(end.x/CELL)));
-            const er = Math.max(0, Math.min(GROWS-1, Math.floor(end.y/CELL)));
-            const startKey = `${sc},${sr}`, endKey = `${ec},${er}`;
-
-            if (blockedCells.has(startKey) || blockedCells.has(endKey)) return null;
-
-            const dist = new Map([[startKey, 0]]);
-            const prev = new Map();
-            const pq   = [{c:sc, r:sr, cost:0}];
-            const dirs  = [{c:1,r:0},{c:-1,r:0},{c:0,r:1},{c:0,r:-1}];
-
-            while (pq.length > 0) {
-                let mi = 0;
-                for (let i = 1; i < pq.length; i++) if (pq[i].cost < pq[mi].cost) mi = i;
-                const cur = pq.splice(mi, 1)[0];
-                const ck  = `${cur.c},${cur.r}`;
-                if (cur.c === ec && cur.r === er) break;
-                if (cur.cost > (dist.get(ck) ?? Infinity)) continue;
-
-                for (const d of dirs) {
-                    const nc = cur.c+d.c, nr = cur.r+d.r;
-                    if (nc<0||nc>=GCOLS||nr<0||nr>=GROWS) continue;
-                    const nk = `${nc},${nr}`;
-                    if (blockedCells.has(nk)) continue;
-                    const newCost = cur.cost + (roadCells.has(nk) ? 1 : 8);
-                    if (newCost < (dist.get(nk) ?? Infinity)) {
-                        dist.set(nk, newCost);
-                        prev.set(nk, ck);
-                        pq.push({c:nc, r:nr, cost:newCost});
-                    }
-                }
-            }
-
-            if (!prev.has(endKey) && startKey !== endKey) return null;
-
-            const path = [];
-            let key = endKey;
-            const seen = new Set();
-            while (key && !seen.has(key)) {
-                seen.add(key);
-                const [c, r] = key.split(',').map(Number);
-                path.unshift({x: c*CELL + CELL/2, y: r*CELL + CELL/2});
-                if (key === startKey) break;
-                key = prev.get(key);
-            }
-            return path.length > 0 ? path : null;
-        }
-
-        // Recompute dynamicPath. Without walls, enemies just follow currentPath.
-        function recomputePath() {
-            const walls = towers.filter(t => t.isWall);
-            if (walls.length === 0) {
-                dynamicPath = currentPath; // original smooth path
-            } else {
-                const newPath = computeWallPath(getWallBlockedCells());
-                if (newPath) dynamicPath = newPath;
-                // if null (shouldn't happen — wall placement check prevents it) keep old path
-            }
-            enemies.forEach(rerouteEnemy);
-        }
-
-        function rerouteEnemy(enemy) {
-            if (!dynamicPath || dynamicPath.length < 2) return;
-            let minDist = Infinity, minIdx = 0;
-            for (let i = 0; i < dynamicPath.length; i++) {
-                const d = (dynamicPath[i].x-enemy.x)**2 + (dynamicPath[i].y-enemy.y)**2;
-                if (d < minDist) { minDist = d; minIdx = i; }
-            }
-            enemy.pathIndex = Math.min(minIdx, dynamicPath.length - 2);
-        }
 
         // ── Display ──────────────────────────────────────────────────────────────
 
@@ -303,7 +155,7 @@
         function selectTower(type) {
             selectedTower = type;
             selectedPlacedTower = null;
-            document.querySelectorAll('.tower-btn, .wall-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
             document.getElementById(type + '-tower').classList.add('selected');
             if (!gameRunning) draw();
         }
@@ -320,7 +172,6 @@
             gold += Math.floor(t.totalCost * 0.5);
             towers.splice(selectedPlacedTower, 1);
             selectedPlacedTower = null;
-            recomputePath();
             updateDisplay();
             if (!gameRunning) draw();
         }
@@ -328,7 +179,6 @@
         function upgradeTower() {
             if (selectedPlacedTower === null) return;
             const t = towers[selectedPlacedTower];
-            if (t.isWall) return;
             const cost = Math.floor(t.totalCost * 0.5);
             if (!freeTowers && gold < cost) return;
             if (!freeTowers) gold -= cost;
@@ -356,16 +206,13 @@
 
         function playGame() {
             currentPath = paths[selectedMap];
-            const diffMod = difficultyModifiers[selectedDifficulty];
-            lives = diffMod.lives;
+            lives = difficultyModifiers[selectedDifficulty].lives;
             updateTowerPrices();
             document.getElementById('main-menu').classList.add('hidden');
             document.querySelector('.game-container').classList.remove('hidden');
             gold = 100; wave = 1;
             towers = []; enemies = []; projectiles = [];
             selectedPlacedTower = null;
-            initRoadCells();
-            dynamicPath = currentPath;
             updateDisplay();
             draw();
         }
@@ -380,17 +227,14 @@
 
         function updateTowerPrices() {
             const m = difficultyModifiers[selectedDifficulty].costMod;
-            const items = [
-                {id:'basic-tower',  name:'Trainee',     base:50},
-                {id:'sniper-tower', name:'Sniper',       base:100},
-                {id:'rapid-tower',  name:'Machine Gun',  base:150},
-                {id:'bomb-tower',   name:'Bomb',         base:200},
-                {id:'master-tower', name:'Master',       base:10000},
-                {id:'wall-tower',   name:'🧱 Wall',      base:25, fixed:true}
-            ];
-            items.forEach(item => {
-                const cost = item.fixed ? item.base : Math.floor(item.base * m);
-                document.getElementById(item.id).textContent = `${item.name} (${cost}g)`;
+            [
+                {id:'basic-tower',  name:'Trainee',    base:50},
+                {id:'sniper-tower', name:'Sniper',      base:100},
+                {id:'rapid-tower',  name:'Machine Gun', base:150},
+                {id:'bomb-tower',   name:'Bomb',        base:200},
+                {id:'master-tower', name:'Master',      base:10000}
+            ].forEach(({id, name, base}) => {
+                document.getElementById(id).textContent = `${name} (${Math.floor(base * m)}g)`;
             });
         }
 
@@ -401,28 +245,26 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            // Cheat code
+            // Cheat: free towers
             if (x < 50 && y > canvas.height - 50) {
                 freeTowers = !freeTowers;
                 alert(freeTowers ? 'FREE TOWERS ENABLED! 🎉' : 'Free towers disabled');
                 return;
             }
 
-            // Popup region clicks
+            // Popup buttons
             for (const r of popupRegions) {
-                if (x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h) {
-                    if      (r.action==='target')  setTargetPriority(r.value);
-                    else if (r.action==='upgrade') upgradeTower();
-                    else if (r.action==='sell')    sellTower();
+                if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+                    if      (r.action === 'target')  setTargetPriority(r.value);
+                    else if (r.action === 'upgrade') upgradeTower();
+                    else if (r.action === 'sell')    sellTower();
                     return;
                 }
             }
 
-            // Select existing tower/wall
+            // Select existing tower
             for (let i = 0; i < towers.length; i++) {
-                const t = towers[i];
-                const hitR = t.isWall ? 14 : 20;
-                if (Math.sqrt((x-t.x)**2 + (y-t.y)**2) < hitR) {
+                if (Math.sqrt((x - towers[i].x) ** 2 + (y - towers[i].y) ** 2) < 20) {
                     selectedPlacedTower = i;
                     if (!gameRunning) draw();
                     return;
@@ -433,35 +275,18 @@
             selectedPlacedTower = null;
             if (!gameRunning) draw();
 
-            // Place new item
-            const info     = towerTypes[selectedTower];
-            const diffMod  = difficultyModifiers[selectedDifficulty];
-            const cost     = info.isWall ? info.cost : Math.floor(info.cost * diffMod.costMod);
+            // Place tower — not allowed on path
+            if (isOnPath(x, y)) return;
+            const info    = towerTypes[selectedTower];
+            const diffMod = difficultyModifiers[selectedDifficulty];
+            const cost    = Math.floor(info.cost * diffMod.costMod);
             if (!freeTowers && gold < cost) return;
 
-            if (info.isWall) {
-                // Walls can go on the road — but must not fully block path
-                const newWall = {x, y, type:'wall', ...info, cooldown:0, angle:0,
-                                 level:1, totalCost:cost, targetPriority:'first'};
-                towers.push(newWall);
-                const testBlocked = getWallBlockedCells();
-                const testPath    = computeWallPath(testBlocked);
-                if (!testPath) {
-                    towers.pop();
-                    placementBlocked = 60;
-                    if (!gameRunning) draw();
-                    return;
-                }
-                dynamicPath = testPath;
-                enemies.forEach(rerouteEnemy);
-            } else {
-                // Regular towers cannot be placed on the road
-                if (isOnPath(x, y)) return;
-                towers.push({x, y, type:selectedTower, ...info,
-                             cooldown:0, angle:0, level:1, totalCost:cost, targetPriority:'first'});
-                // Regular towers don't affect pathing
-            }
-
+            towers.push({
+                x, y, type: selectedTower, ...info,
+                cooldown: 0, angle: 0, level: 1,
+                totalCost: cost, targetPriority: 'first'
+            });
             if (!freeTowers) gold -= cost;
             updateDisplay();
             if (!gameRunning) draw();
@@ -469,17 +294,13 @@
 
         function isOnPath(x, y) {
             for (let i = 0; i < currentPath.length - 1; i++) {
-                const p1 = currentPath[i], p2 = currentPath[i+1];
-                if (pointToSegDist(x, y, p1.x, p1.y, p2.x, p2.y) < 30) return true;
+                const p1 = currentPath[i], p2 = currentPath[i + 1];
+                const A = x - p1.x, B = y - p1.y, C = p2.x - p1.x, D = p2.y - p1.y;
+                const len2 = C * C + D * D;
+                const t = len2 ? Math.max(0, Math.min(1, (A * C + B * D) / len2)) : 0;
+                if (Math.sqrt((x - (p1.x + t * C)) ** 2 + (y - (p1.y + t * D)) ** 2) < 30) return true;
             }
             return false;
-        }
-
-        function pointToSegDist(px, py, x1, y1, x2, y2) {
-            const A=px-x1, B=py-y1, C=x2-x1, D=y2-y1;
-            const len2 = C*C+D*D;
-            const t    = len2 ? Math.max(0, Math.min(1, (A*C+B*D)/len2)) : 0;
-            return Math.sqrt((px-(x1+t*C))**2 + (py-(y1+t*D))**2);
         }
 
         // ── Enemy ────────────────────────────────────────────────────────────────
@@ -487,9 +308,8 @@
         function spawnEnemy() {
             const diffMod = difficultyModifiers[selectedDifficulty];
             const health  = (20 + wave * 10) * diffMod.healthMod;
-            const start   = dynamicPath[0] || currentPath[0];
             enemies.push({
-                x: start.x, y: start.y,
+                x: currentPath[0].x, y: currentPath[0].y,
                 health, maxHealth: health,
                 speed: (0.5 + wave * 0.05) * diffMod.speedMod,
                 pathIndex: 0,
@@ -501,52 +321,57 @@
 
         function update() {
             if (!gameRunning) return;
-            if (placementBlocked > 0) placementBlocked--;
 
             // Towers fire
             towers.forEach(tower => {
-                if (tower.isWall) return;
                 if (tower.cooldown > 0) { tower.cooldown--; return; }
 
                 let target = null;
                 enemies.forEach(enemy => {
-                    const dist = Math.sqrt((enemy.x-tower.x)**2 + (enemy.y-tower.y)**2);
+                    const dist = Math.sqrt((enemy.x - tower.x) ** 2 + (enemy.y - tower.y) ** 2);
                     if (dist > tower.range) return;
                     if (!target) { target = enemy; return; }
+
                     switch (tower.targetPriority) {
-                        case 'first': {
-                            if (enemy.pathIndex > target.pathIndex) { target=enemy; break; }
-                            if (enemy.pathIndex===target.pathIndex) {
-                                const wp = dynamicPath[enemy.pathIndex+1];
-                                if (wp && (wp.x-enemy.x)**2+(wp.y-enemy.y)**2 <
-                                          (wp.x-target.x)**2+(wp.y-target.y)**2) target=enemy;
+                        case 'first':
+                            if (enemy.pathIndex > target.pathIndex) { target = enemy; break; }
+                            if (enemy.pathIndex === target.pathIndex) {
+                                const wp = currentPath[enemy.pathIndex + 1];
+                                if (wp) {
+                                    const de = (wp.x-enemy.x)**2 + (wp.y-enemy.y)**2;
+                                    const dt = (wp.x-target.x)**2 + (wp.y-target.y)**2;
+                                    if (de < dt) target = enemy;
+                                }
                             }
                             break;
-                        }
-                        case 'last': {
-                            if (enemy.pathIndex < target.pathIndex) { target=enemy; break; }
-                            if (enemy.pathIndex===target.pathIndex) {
-                                const wp = dynamicPath[enemy.pathIndex+1];
-                                if (wp && (wp.x-enemy.x)**2+(wp.y-enemy.y)**2 >
-                                          (wp.x-target.x)**2+(wp.y-target.y)**2) target=enemy;
+                        case 'last':
+                            if (enemy.pathIndex < target.pathIndex) { target = enemy; break; }
+                            if (enemy.pathIndex === target.pathIndex) {
+                                const wp = currentPath[enemy.pathIndex + 1];
+                                if (wp) {
+                                    const de = (wp.x-enemy.x)**2 + (wp.y-enemy.y)**2;
+                                    const dt = (wp.x-target.x)**2 + (wp.y-target.y)**2;
+                                    if (de > dt) target = enemy;
+                                }
                             }
                             break;
-                        }
-                        case 'strong': if (enemy.health > target.health) target=enemy; break;
-                        case 'weak':   if (enemy.health < target.health) target=enemy; break;
+                        case 'strong': if (enemy.health > target.health) target = enemy; break;
+                        case 'weak':   if (enemy.health < target.health) target = enemy; break;
                         case 'close': {
-                            if ((enemy.x-tower.x)**2+(enemy.y-tower.y)**2 <
-                                (target.x-tower.x)**2+(target.y-tower.y)**2) target=enemy;
+                            const de = (enemy.x-tower.x)**2 + (enemy.y-tower.y)**2;
+                            const dt = (target.x-tower.x)**2 + (target.y-tower.y)**2;
+                            if (de < dt) target = enemy;
                             break;
                         }
                     }
                 });
 
                 if (target) {
-                    tower.angle = Math.atan2(target.y-tower.y, target.x-tower.x);
+                    tower.angle = Math.atan2(target.y - tower.y, target.x - tower.x);
                     projectiles.push({
-                        x:tower.x, y:tower.y, targetX:target.x, targetY:target.y,
-                        speed:8, damage:tower.damage, color:tower.color,
+                        x: tower.x, y: tower.y,
+                        targetX: target.x, targetY: target.y,
+                        speed: 8, damage: tower.damage, color: tower.color,
                         splashRadius: tower.splashRadius || 0
                     });
                     tower.cooldown = tower.fireRate;
@@ -555,38 +380,43 @@
 
             // Projectiles
             projectiles = projectiles.filter(proj => {
-                const dx=proj.targetX-proj.x, dy=proj.targetY-proj.y;
-                const dist=Math.sqrt(dx*dx+dy*dy);
+                const dx = proj.targetX - proj.x, dy = proj.targetY - proj.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < 10) {
                     enemies.forEach(enemy => {
-                        const ex=enemy.x-proj.targetX, ey=enemy.y-proj.targetY;
+                        const ex = enemy.x - proj.targetX, ey = enemy.y - proj.targetY;
                         const r = proj.splashRadius > 0 ? proj.splashRadius : 20;
-                        if (Math.sqrt(ex*ex+ey*ey) < r) enemy.health -= proj.damage;
+                        if (Math.sqrt(ex * ex + ey * ey) < r) enemy.health -= proj.damage;
                     });
                     return false;
                 }
-                proj.x += (dx/dist)*proj.speed;
-                proj.y += (dy/dist)*proj.speed;
+                proj.x += (dx / dist) * proj.speed;
+                proj.y += (dy / dist) * proj.speed;
                 return true;
             });
 
-            // Enemies move along dynamicPath
+            // Enemies move
             enemies = enemies.filter(enemy => {
-                const wp = dynamicPath[enemy.pathIndex + 1];
+                const wp = currentPath[enemy.pathIndex + 1];
                 if (!wp) {
                     lives--;
                     updateDisplay();
                     if (lives <= 0) { alert('Game Over! Wave ' + wave); resetGame(); }
                     return false;
                 }
-                const dx=wp.x-enemy.x, dy=wp.y-enemy.y;
-                const dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist < 5) enemy.pathIndex++;
-                else { enemy.x+=(dx/dist)*enemy.speed; enemy.y+=(dy/dist)*enemy.speed; }
-                if (enemy.health <= 0) { gold+=enemy.reward; updateDisplay(); return false; }
+                const dx = wp.x - enemy.x, dy = wp.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 5) {
+                    enemy.pathIndex++;
+                } else {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
+                }
+                if (enemy.health <= 0) { gold += enemy.reward; updateDisplay(); return false; }
                 return true;
             });
 
+            // Next wave (guarded so it only fires once)
             if (enemies.length === 0 && !waveInProgress) {
                 waveInProgress = true;
                 wave++;
@@ -601,99 +431,82 @@
 
         function draw() {
             popupRegions = [];
+
             ctx.fillStyle = '#2d3748';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Road
-            ctx.lineCap='round'; ctx.lineJoin='round';
-            [[44,'#718096'],[40,'#4a5568'],[36,'#a0aec0']].forEach(([lw, col]) => {
-                ctx.strokeStyle=col; ctx.lineWidth=lw;
+            // Road (border → dark fill → lighter surface)
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            [
+                [44, '#718096'],
+                [40, '#4a5568'],
+                [36, '#a0aec0']
+            ].forEach(([lw, col]) => {
+                ctx.strokeStyle = col; ctx.lineWidth = lw;
                 ctx.beginPath();
                 ctx.moveTo(currentPath[0].x, currentPath[0].y);
-                currentPath.forEach(p=>ctx.lineTo(p.x,p.y));
+                currentPath.forEach(p => ctx.lineTo(p.x, p.y));
                 ctx.stroke();
             });
 
-            // Placement-blocked warning
-            if (placementBlocked > 0) {
-                ctx.fillStyle=`rgba(255,0,0,${0.25*placementBlocked/60})`;
-                ctx.fillRect(0,0,canvas.width,canvas.height);
-                ctx.fillStyle='#ff4444'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
-                ctx.fillText('Cannot fully block path!', canvas.width/2, canvas.height/2);
-            }
-
-            // Towers & walls
+            // Towers
             towers.forEach((tower, index) => {
                 const sel = index === selectedPlacedTower;
-
-                if (tower.isWall) {
-                    // Draw wall as a stone block
-                    if (sel) {
-                        ctx.fillStyle='rgba(246,224,94,0.35)';
-                        ctx.fillRect(tower.x-16, tower.y-16, 32, 32);
-                    }
-                    ctx.fillStyle='#a0845c';
-                    ctx.fillRect(tower.x-10, tower.y-10, 20, 20);
-                    ctx.strokeStyle='#5a4510'; ctx.lineWidth=2;
-                    ctx.strokeRect(tower.x-10, tower.y-10, 20, 20);
-                    // Brick lines
-                    ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
-                    ctx.beginPath(); ctx.moveTo(tower.x-10,tower.y); ctx.lineTo(tower.x+10,tower.y); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(tower.x,tower.y-10); ctx.lineTo(tower.x,tower.y+0); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(tower.x-10,tower.y+0); ctx.lineTo(tower.x+0,tower.y+0); ctx.stroke();
-                    return;
-                }
-
                 ctx.save();
                 ctx.translate(tower.x, tower.y);
 
                 if (sel) {
-                    ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2);
-                    ctx.fillStyle='rgba(246,224,94,0.35)'; ctx.fill();
-                    ctx.strokeStyle='#f6e05e'; ctx.lineWidth=2; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(246,224,94,0.35)'; ctx.fill();
+                    ctx.strokeStyle = '#f6e05e'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
-                ctx.beginPath(); ctx.arc(0,0,tower.range,0,Math.PI*2);
-                ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fill();
-                ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=1; ctx.stroke();
+                // Range ring
+                ctx.beginPath(); ctx.arc(0, 0, tower.range, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1; ctx.stroke();
 
-                ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2);
-                ctx.fillStyle=tower.color; ctx.fill();
+                // Body
+                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fillStyle = tower.color; ctx.fill();
 
+                // Barrel
                 ctx.rotate(tower.angle);
-                ctx.fillStyle='#1a202c';
-                ctx.fillRect(-5,-5,20,10);
+                ctx.fillStyle = '#1a202c';
+                ctx.fillRect(-5, -5, 20, 10);
                 ctx.restore();
 
-                ctx.fillStyle='#fff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
-                ctx.fillText(`L${tower.level}`, tower.x, tower.y+5);
+                // Level text
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(`L${tower.level}`, tower.x, tower.y + 5);
 
-                const icons={first:'🎯',last:'🔄',strong:'💪',weak:'🤏',close:'📍'};
-                ctx.font='12px Arial';
-                ctx.fillText(icons[tower.targetPriority]||'🎯', tower.x, tower.y-22);
+                // Target icon
+                const icons = {first:'🎯', last:'🔄', strong:'💪', weak:'🤏', close:'📍'};
+                ctx.font = '12px Arial';
+                ctx.fillText(icons[tower.targetPriority] || '🎯', tower.x, tower.y - 22);
             });
 
             // Enemies
             enemies.forEach(enemy => {
-                ctx.fillStyle='#e53e3e';
-                ctx.beginPath(); ctx.arc(enemy.x,enemy.y,12,0,Math.PI*2); ctx.fill();
-                const hp=enemy.health/enemy.maxHealth;
-                ctx.fillStyle='#1a202c'; ctx.fillRect(enemy.x-15,enemy.y-20,30,5);
-                ctx.fillStyle=hp>.5?'#48bb78':hp>.25?'#ed8936':'#e53e3e';
-                ctx.fillRect(enemy.x-15,enemy.y-20,30*hp,5);
+                ctx.fillStyle = '#e53e3e';
+                ctx.beginPath(); ctx.arc(enemy.x, enemy.y, 12, 0, Math.PI * 2); ctx.fill();
+                const hp = enemy.health / enemy.maxHealth;
+                ctx.fillStyle = '#1a202c'; ctx.fillRect(enemy.x - 15, enemy.y - 20, 30, 5);
+                ctx.fillStyle = hp > 0.5 ? '#48bb78' : hp > 0.25 ? '#ed8936' : '#e53e3e';
+                ctx.fillRect(enemy.x - 15, enemy.y - 20, 30 * hp, 5);
             });
 
             // Projectiles
             projectiles.forEach(proj => {
-                ctx.fillStyle=proj.color;
-                ctx.beginPath(); ctx.arc(proj.x,proj.y,proj.splashRadius>0?8:4,0,Math.PI*2); ctx.fill();
-                if (proj.splashRadius>0) {
-                    ctx.strokeStyle='rgba(229,62,62,0.3)'; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.arc(proj.x,proj.y,proj.splashRadius,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle = proj.color;
+                ctx.beginPath(); ctx.arc(proj.x, proj.y, proj.splashRadius > 0 ? 8 : 4, 0, Math.PI * 2); ctx.fill();
+                if (proj.splashRadius > 0) {
+                    ctx.strokeStyle = 'rgba(229,62,62,0.3)'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(proj.x, proj.y, proj.splashRadius, 0, Math.PI * 2); ctx.stroke();
                 }
             });
 
-            // Canvas popup for selected tower
+            // Tower popup
             if (selectedPlacedTower !== null && selectedPlacedTower < towers.length) {
                 drawTowerPopup(towers[selectedPlacedTower]);
             }
@@ -702,74 +515,58 @@
         // ── Canvas popup ─────────────────────────────────────────────────────────
 
         function drawTowerPopup(tower) {
-            const isWall = tower.isWall;
-            const popupW = 166;
-            // Height: wall only has sell; tower has target grid + upgrade + sell
-            const btnH=22, gap=3;
-            const popupH = isWall
-                ? (8 + btnH + 8)
-                : (18 + 2*(btnH+gap) + 6 + (btnH+gap) + (btnH+gap) + 4);
+            const popupW = 166, btnH = 22, gap = 3;
+            const popupH = 18 + 2 * (btnH + gap) + 6 + (btnH + gap) + (btnH + gap) + 4;
 
-            let px = tower.x - popupW/2;
+            let px = Math.max(4, Math.min(canvas.width - popupW - 4, tower.x - popupW / 2));
             let py = tower.y - 32 - popupH;
-            px = Math.max(4, Math.min(canvas.width - popupW - 4, px));
             if (py < 4) py = tower.y + 32;
-            py = Math.max(4, py);
 
-            ctx.fillStyle='rgba(8,10,22,0.93)';
-            ctx.fillRect(px,py,popupW,popupH);
-            ctx.strokeStyle='#f6e05e'; ctx.lineWidth=2;
-            ctx.strokeRect(px,py,popupW,popupH);
+            // Background
+            ctx.fillStyle = 'rgba(8,10,22,0.93)';
+            ctx.fillRect(px, py, popupW, popupH);
+            ctx.strokeStyle = '#f6e05e'; ctx.lineWidth = 2;
+            ctx.strokeRect(px, py, popupW, popupH);
 
-            const fullBW = popupW - 8;
-
-            if (isWall) {
-                // Just sell
-                const sellVal = Math.floor(tower.totalCost * 0.5);
-                ctx.fillStyle='#8b1a1a';
-                ctx.fillRect(px+4, py+8, fullBW, btnH);
-                ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
-                ctx.fillText(`Sell +${sellVal}g`, px+4+fullBW/2, py+8+15);
-                popupRegions.push({x:px+4, y:py+8, w:fullBW, h:btnH, action:'sell'});
-                return;
-            }
-
-            // Target label
-            ctx.fillStyle='#f6e05e'; ctx.font='bold 10px Arial'; ctx.textAlign='left';
-            ctx.fillText('Target:', px+5, py+13);
+            // "Target:" label
+            ctx.fillStyle = '#f6e05e'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'left';
+            ctx.fillText('Target:', px + 5, py + 13);
 
             // 2×2 targeting buttons
-            const targets=[
+            const targets = [
                 {id:'first', label:'First'}, {id:'last',   label:'Last'},
                 {id:'strong',label:'Strong'},{id:'close',  label:'Close'}
             ];
-            const tBtnW = Math.floor((popupW-12)/2);
-            for (let i=0; i<4; i++) {
-                const col=i%2, row=Math.floor(i/2);
-                const bx=px+4+col*(tBtnW+4), by=py+17+row*(btnH+gap);
-                const sel=tower.targetPriority===targets[i].id;
-                ctx.fillStyle=sel?'rgba(246,224,94,0.5)':'rgba(255,255,255,0.09)';
-                ctx.fillRect(bx,by,tBtnW,btnH);
-                if (sel) { ctx.strokeStyle='#f6e05e'; ctx.lineWidth=1; ctx.strokeRect(bx,by,tBtnW,btnH); }
-                ctx.fillStyle=sel?'#f6e05e':'#bbb'; ctx.font='11px Arial'; ctx.textAlign='center';
-                ctx.fillText(targets[i].label, bx+tBtnW/2, by+15);
+            const tBtnW = Math.floor((popupW - 12) / 2);
+            for (let i = 0; i < 4; i++) {
+                const col = i % 2, row = Math.floor(i / 2);
+                const bx = px + 4 + col * (tBtnW + 4);
+                const by = py + 17 + row * (btnH + gap);
+                const sel = tower.targetPriority === targets[i].id;
+                ctx.fillStyle = sel ? 'rgba(246,224,94,0.5)' : 'rgba(255,255,255,0.09)';
+                ctx.fillRect(bx, by, tBtnW, btnH);
+                if (sel) { ctx.strokeStyle = '#f6e05e'; ctx.lineWidth = 1; ctx.strokeRect(bx, by, tBtnW, btnH); }
+                ctx.fillStyle = sel ? '#f6e05e' : '#bbb'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(targets[i].label, bx + tBtnW / 2, by + 15);
                 popupRegions.push({x:bx, y:by, w:tBtnW, h:btnH, action:'target', value:targets[i].id});
             }
 
-            // Upgrade
+            const fullBW = popupW - 8;
+
+            // Upgrade button
             const upgCost = Math.floor(tower.totalCost * 0.5);
-            const upgY    = py + 17 + 2*(btnH+gap) + 6;
-            ctx.fillStyle='#1a7065'; ctx.fillRect(px+4, upgY, fullBW, btnH);
-            ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
-            ctx.fillText(`Upgrade ${upgCost}g  [Lv ${tower.level}→${tower.level+1}]`, px+4+fullBW/2, upgY+15);
+            const upgY    = py + 17 + 2 * (btnH + gap) + 6;
+            ctx.fillStyle = '#1a7065'; ctx.fillRect(px + 4, upgY, fullBW, btnH);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(`Upgrade ${upgCost}g  [Lv ${tower.level}→${tower.level+1}]`, px + 4 + fullBW / 2, upgY + 15);
             popupRegions.push({x:px+4, y:upgY, w:fullBW, h:btnH, action:'upgrade'});
 
-            // Sell
+            // Sell button
             const sellVal = Math.floor(tower.totalCost * 0.5);
             const sellY   = upgY + btnH + gap;
-            ctx.fillStyle='#8b1a1a'; ctx.fillRect(px+4, sellY, fullBW, btnH);
-            ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
-            ctx.fillText(`Sell +${sellVal}g`, px+4+fullBW/2, sellY+15);
+            ctx.fillStyle = '#8b1a1a'; ctx.fillRect(px + 4, sellY, fullBW, btnH);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(`Sell +${sellVal}g`, px + 4 + fullBW / 2, sellY + 15);
             popupRegions.push({x:px+4, y:sellY, w:fullBW, h:btnH, action:'sell'});
         }
 
@@ -777,8 +574,7 @@
 
         function toggleSpeed() {
             gameSpeed = gameSpeed === 1 ? 2 : 1;
-            document.getElementById('speed-btn').textContent =
-                gameSpeed===1 ? '▶️ 1x Speed' : '⏩ 2x Speed';
+            document.getElementById('speed-btn').textContent = gameSpeed === 1 ? '▶️ 1x Speed' : '⏩ 2x Speed';
         }
 
         function gameLoop() {
@@ -792,7 +588,7 @@
         function startGame() {
             if (gameRunning) return;
             gameRunning = true; gameSpeed = 1;
-            if (towers.filter(t=>!t.isWall).length === 0) gold = 100;
+            if (towers.length === 0) gold = 100;
             wave = 1; enemies = []; projectiles = [];
             selectedPlacedTower = null;
             updateDisplay();
@@ -800,27 +596,23 @@
             document.getElementById('speed-btn').classList.remove('hidden');
             document.getElementById('speed-btn').textContent = '⏩ 2x Speed';
             waveInProgress = true;
-            for (let i=0; i<5; i++) setTimeout(()=>spawnEnemy(), i*1000);
+            for (let i = 0; i < 5; i++) setTimeout(() => spawnEnemy(), i * 1000);
             setTimeout(() => { waveInProgress = false; }, 5000);
             gameLoop();
         }
 
         function resetGame() {
-            gameRunning = false; gameSpeed = 1;
+            gameRunning = false; gameSpeed = 1; waveInProgress = false;
             gold = 100;
             lives = difficultyModifiers[selectedDifficulty].lives;
             wave = 1; towers = []; enemies = []; projectiles = [];
             selectedPlacedTower = null;
-            waveInProgress = false;
-            dynamicPath = currentPath;
             updateDisplay(); draw();
             document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('speed-btn').classList.add('hidden');
         }
 
         // ── Init ─────────────────────────────────────────────────────────────────
-        initRoadCells();
-        dynamicPath = currentPath;
         draw();
     </script>
 </body>
