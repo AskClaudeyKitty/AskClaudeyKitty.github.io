@@ -107,6 +107,7 @@
         let selectedPlacedTower = null;
         let towers = [], enemies = [], projectiles = [];
         let popupRegions = [];
+        let notification = '', notificationTimer = 0;
 
         const paths = {
             easy: [
@@ -141,6 +142,13 @@
             bomb:   {cost:200,   range:120, damage:30,  fireRate:90,  color:'#e53e3e', splashRadius:60},
             master: {cost:10000, range:200, damage:250, fireRate:1,   color:'#9f7aea', splashRadius:80}
         };
+
+        // ── Notification ─────────────────────────────────────────────────────────
+
+        function showNotification(msg) {
+            notification = msg;
+            notificationTimer = 180; // ~3 seconds
+        }
 
         // ── Display ──────────────────────────────────────────────────────────────
 
@@ -248,7 +256,7 @@
             // Cheat: free towers
             if (x < 50 && y > canvas.height - 50) {
                 freeTowers = !freeTowers;
-                alert(freeTowers ? 'FREE TOWERS ENABLED! 🎉' : 'Free towers disabled');
+                showNotification(freeTowers ? 'FREE TOWERS ON! 🎉' : 'Free towers off');
                 return;
             }
 
@@ -401,7 +409,7 @@
                 if (!wp) {
                     lives--;
                     updateDisplay();
-                    if (lives <= 0) { alert('Game Over! Wave ' + wave); resetGame(); }
+                    if (lives <= 0) { resetGame(); showNotification('Game Over! Reached wave ' + wave); }
                     return false;
                 }
                 const dx = wp.x - enemy.x, dy = wp.y - enemy.y;
@@ -509,6 +517,21 @@
             // Tower popup
             if (selectedPlacedTower !== null && selectedPlacedTower < towers.length) {
                 drawTowerPopup(towers[selectedPlacedTower]);
+            }
+
+            // Notification
+            if (notificationTimer > 0) {
+                notificationTimer--;
+                const alpha = Math.min(1, notificationTimer / 30);
+                ctx.fillStyle = `rgba(0,0,0,${0.75 * alpha})`;
+                ctx.fillRect(canvas.width / 2 - 160, canvas.height / 2 - 28, 320, 52);
+                ctx.strokeStyle = `rgba(246,224,94,${alpha})`;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(canvas.width / 2 - 160, canvas.height / 2 - 28, 320, 52);
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(notification, canvas.width / 2, canvas.height / 2 + 7);
             }
         }
 
