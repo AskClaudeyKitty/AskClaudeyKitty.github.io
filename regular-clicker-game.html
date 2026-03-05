@@ -23,7 +23,28 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 #subtitle { font-size: 0.85em; color: #888; margin-bottom: 20px; }
 
 #coin-display { font-size: 3em; font-weight: bold; margin: 10px 0; }
-#multiplier-display { font-size: 1.1em; color: #ffd700; margin-bottom: 24px; min-height: 1.4em; }
+#multiplier-display { font-size: 1.1em; color: #ffd700; margin-bottom: 4px; min-height: 1.4em; }
+#click-counter { font-size: 0.85em; color: #666; margin-bottom: 20px; }
+#prestige-info { font-size: 0.8em; color: #9f7aea; margin-bottom: 10px; min-height: 1.2em; }
+
+#prestige-btn {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 30px;
+    font-size: 1.1em;
+    font-weight: bold;
+    background: linear-gradient(135deg, #9f7aea, #6b46c1);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(159,122,234,0.5);
+    animation: prestige-pulse 1.5s ease-in-out infinite;
+}
+@keyframes prestige-pulse {
+    0%,100% { box-shadow: 0 0 20px rgba(159,122,234,0.5); }
+    50%      { box-shadow: 0 0 40px rgba(159,122,234,0.9); }
+}
 
 #click-btn {
     padding: 18px 44px;
@@ -157,8 +178,11 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 
 <div id="coin-display">🪙 <span id="coins">0</span></div>
 <div id="multiplier-display">×<span id="mult">1</span> per click</div>
+<div id="click-counter">👆 <span id="click-count">0</span> total clicks</div>
+<div id="prestige-info"></div>
 
 <button id="click-btn" onclick="handleClick(event)">Free Coin</button>
+<button id="prestige-btn" onclick="doPrestige()">⭐ PRESTIGE ⭐</button>
 <div id="shop-hint">Press <strong>S</strong> to open shop</div>
 <div id="effects-log"></div>
 
@@ -183,8 +207,11 @@ let coins      = 0;
 let multiplier = 1;
 let coinRainOn = false;
 let autoClickOn = 0;
-let shieldHits  = 0;   // chaos shield charges
-let discount    = 1;   // price multiplier (0.5 = 50% off)
+let shieldHits  = 0;
+let discount    = 1;
+let totalClicks = 0;
+let prestigeCount = 0;
+const PRESTIGE_GOAL = 1_000_000_000_000;
 
 // Track active bad effects so we can clear them
 const badEffects = {
@@ -313,6 +340,8 @@ const allEffects = [
 
 function handleClick(e) {
     coins += multiplier;
+    totalClicks++;
+    document.getElementById('click-count').textContent = totalClicks.toLocaleString();
     updateCoins();
     spawnFloaty(e.clientX, e.clientY);
 
@@ -329,9 +358,41 @@ function handleClick(e) {
 }
 
 function updateCoins() {
-    coinsEl.textContent = coins;
-    document.getElementById('shop-coin-count').textContent = coins;
+    coinsEl.textContent = coins.toLocaleString();
+    document.getElementById('shop-coin-count').textContent = coins.toLocaleString();
     refreshShopButtons();
+    // Show/hide prestige button
+    const pb = document.getElementById('prestige-btn');
+    const pi = document.getElementById('prestige-info');
+    if (coins >= PRESTIGE_GOAL) {
+        pb.style.display = 'block';
+        pi.textContent = '⭐ You can prestige!';
+    } else {
+        pb.style.display = 'none';
+        const pct = Math.min(100, (coins / PRESTIGE_GOAL * 100)).toFixed(6);
+        pi.textContent = prestigeCount > 0
+            ? `⭐ Prestige ×${prestigeCount} | Next prestige: ${pct}% to 1T`
+            : `Next prestige at 1,000,000,000,000 coins (${pct}%)`;
+    }
+}
+
+function doPrestige() {
+    if (coins < PRESTIGE_GOAL) return;
+    prestigeCount++;
+    // Reset everything
+    coins = 0;
+    coinRainOn = false;
+    autoClickOn = 0;
+    shieldHits = 0;
+    discount = 1;
+    clearAllBadEffects();
+    // 10x bonus per prestige
+    multiplier = Math.pow(10, prestigeCount);
+    multEl.textContent = multiplier.toLocaleString();
+    btn.textContent = 'Free Coin';
+    log.innerHTML = '';
+    addToLog(`⭐ PRESTIGED! ×${prestigeCount} — Starting with ×${multiplier.toLocaleString()} multiplier!`);
+    updateCoins();
 }
 
 function addToLog(msg) {
