@@ -182,7 +182,7 @@ const log     = document.getElementById('effects-log');
 let coins      = 0;
 let multiplier = 1;
 let coinRainOn = false;
-let autoClickOn = false;
+let autoClickOn = 0;
 let shieldHits  = 0;   // chaos shield charges
 let discount    = 1;   // price multiplier (0.5 = 50% off)
 
@@ -387,18 +387,15 @@ const shopItems = [
     },
     {
         name: '🤖 Auto-Clicker',
-        desc: 'Automatically clicks once per second forever.',
+        desc: 'Adds +1 click per second. Stacks with more purchases.',
         baseCost: 1000,
         buy() {
-            if (!autoClickOn) {
-                autoClickOn = true;
-                setInterval(() => {
-                    coins += multiplier;
-                    updateCoins();
-                    addToLog('🤖 Auto-click: +' + multiplier + ' 🪙');
-                }, 1000);
-                addToLog('🤖 Auto-clicker started!');
-            }
+            autoClickOn++;
+            setInterval(() => {
+                coins += multiplier;
+                updateCoins();
+            }, 1000);
+            addToLog('🤖 Auto-clicker: now ' + autoClickOn + '/sec');
         }
     },
     {
