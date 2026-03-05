@@ -22,18 +22,8 @@ body {
 h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 #subtitle { font-size: 0.85em; color: #888; margin-bottom: 20px; }
 
-#coin-display {
-    font-size: 3em;
-    font-weight: bold;
-    margin: 10px 0;
-}
-
-#multiplier-display {
-    font-size: 1.1em;
-    color: #ffd700;
-    margin-bottom: 24px;
-    min-height: 1.4em;
-}
+#coin-display { font-size: 3em; font-weight: bold; margin: 10px 0; }
+#multiplier-display { font-size: 1.1em; color: #ffd700; margin-bottom: 24px; min-height: 1.4em; }
 
 #click-btn {
     padding: 18px 44px;
@@ -51,50 +41,73 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 }
 #click-btn:active { transform: scale(0.93) !important; box-shadow: none; }
 
+#shop-hint { font-size: 0.8em; color: #555; margin-top: 10px; }
 
 #effects-log {
-    margin-top: 24px;
-    max-height: 130px;
+    margin-top: 20px;
+    max-height: 120px;
     overflow-y: auto;
     width: min(420px, 90vw);
     font-size: 0.82em;
     scrollbar-width: thin;
 }
-.effect-entry {
-    padding: 2px 4px;
-    color: #4ecdc4;
-    border-left: 2px solid #4ecdc430;
-    margin-bottom: 2px;
-    padding-left: 8px;
-}
+.effect-entry { padding: 2px 8px; color: #4ecdc4; border-left: 2px solid #4ecdc430; margin-bottom: 2px; }
 
-/* Canvas for balls */
-#ball-canvas {
-    position: fixed; top: 0; left: 0;
-    pointer-events: none; z-index: 200;
+/* Shop overlay */
+#shop-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
 }
+#shop-overlay.open { display: flex; }
 
-/* Screen shake levels */
-@keyframes shake {
-    0%,100% { transform: translate(0,0) rotate(0deg); }
-    10%      { transform: translate(-4px,-4px) rotate(-0.5deg); }
-    30%      { transform: translate(4px,-4px) rotate(0.5deg); }
-    50%      { transform: translate(-4px, 4px) rotate(-0.5deg); }
-    70%      { transform: translate(4px, 4px) rotate(0.5deg); }
-    90%      { transform: translate(-4px,-2px) rotate(0deg); }
+#shop-panel {
+    background: #16213e;
+    border: 2px solid #ffd700;
+    border-radius: 16px;
+    padding: 30px;
+    width: min(500px, 92vw);
+    max-height: 85vh;
+    overflow-y: auto;
 }
-.shake-1 { animation: shake 0.6s infinite; }
-.shake-2 { animation: shake 0.35s infinite; }
-.shake-3 { animation: shake 0.15s infinite; }
+#shop-panel h2 { color: #ffd700; margin-bottom: 4px; font-size: 1.6em; }
+#shop-panel .shop-sub { color: #888; font-size: 0.85em; margin-bottom: 20px; }
+#shop-close-hint { color: #555; font-size: 0.8em; margin-bottom: 16px; }
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f3460;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    gap: 12px;
+}
+.shop-item-info { flex: 1; }
+.shop-item-name { font-weight: bold; font-size: 1em; }
+.shop-item-desc { font-size: 0.8em; color: #aaa; margin-top: 2px; }
+.shop-buy-btn {
+    background: linear-gradient(135deg, #ffd700, #ff9900);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.9em;
+}
+.shop-buy-btn:disabled { background: #444; color: #777; cursor: not-allowed; }
 
 /* Disco */
 @keyframes disco {
-    0%  { background:#ff003c; }
-    16% { background:#ff8800; }
-    33% { background:#e8ff00; }
-    50% { background:#00ff88; }
-    66% { background:#0088ff; }
-    83% { background:#cc00ff; }
+    0%  { background:#ff003c; } 16% { background:#ff8800; }
+    33% { background:#e8ff00; } 50% { background:#00ff88; }
+    66% { background:#0088ff; } 83% { background:#cc00ff; }
     100%{ background:#ff003c; }
 }
 .disco { animation: disco 0.45s infinite; }
@@ -102,35 +115,22 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 /* Wobble */
 @keyframes wobble {
     0%,100% { transform: skewX(0deg) skewY(0deg); }
-    25%      { transform: skewX(6deg) skewY(2deg); }
-    75%      { transform: skewX(-6deg) skewY(-2deg); }
+    25%     { transform: skewX(6deg) skewY(2deg); }
+    75%     { transform: skewX(-6deg) skewY(-2deg); }
 }
 .wobbly { animation: wobble 0.5s infinite; }
 
-/* Rainbow text */
+/* Rainbow */
 @keyframes rainbow-text {
-    0%  { color: #ff4444; }
-    20% { color: #ffaa00; }
-    40% { color: #ffff00; }
-    60% { color: #44ff44; }
-    80% { color: #4488ff; }
-    100%{ color: #ff44ff; }
+    0%  { color:#ff4444; } 20% { color:#ffaa00; } 40% { color:#ffff00; }
+    60% { color:#44ff44; } 80% { color:#4488ff; } 100%{ color:#ff44ff; }
 }
 .rainbow { animation: rainbow-text 0.6s infinite; }
 
-/* Spin */
-@keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-.spinning { animation: spin-slow 4s linear infinite !important; transform-origin: center center; }
-
 /* Coin rain */
 .rain-coin {
-    position: fixed;
-    font-size: 1.6em;
-    pointer-events: none;
-    z-index: 150;
+    position: fixed; font-size: 1.6em;
+    pointer-events: none; z-index: 150;
     animation: rain-fall linear forwards;
 }
 @keyframes rain-fall {
@@ -138,14 +138,10 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
     to   { transform: translateY(110vh); opacity: 0.4; }
 }
 
-/* Floating click feedback */
+/* Floaty */
 .floaty {
-    position: fixed;
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #ffd700;
-    pointer-events: none;
-    z-index: 999;
+    position: fixed; font-size: 1.4em; font-weight: bold;
+    color: #ffd700; pointer-events: none; z-index: 999;
     animation: floaty-up 0.9s ease-out forwards;
 }
 @keyframes floaty-up {
@@ -155,7 +151,6 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 </style>
 </head>
 <body id="body">
-<canvas id="ball-canvas"></canvas>
 
 <h1 id="title">Regular Clicker Game</h1>
 <div id="subtitle">A completely normal, regular clicker game.</div>
@@ -164,165 +159,163 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 <div id="multiplier-display">×<span id="mult">1</span> per click</div>
 
 <button id="click-btn" onclick="handleClick(event)">Free Coin</button>
+<div id="shop-hint">Press <strong>S</strong> to open shop</div>
 <div id="effects-log"></div>
 
+<!-- Shop -->
+<div id="shop-overlay">
+    <div id="shop-panel">
+        <h2>🛒 Shop</h2>
+        <div class="shop-sub">🪙 <span id="shop-coin-count">0</span> coins available</div>
+        <div id="shop-close-hint">Press S or click outside to close</div>
+        <div id="shop-items"></div>
+    </div>
+</div>
+
 <script>
-const body      = document.getElementById('body');
-const btn       = document.getElementById('click-btn');
-const coinsEl   = document.getElementById('coins');
-const multEl    = document.getElementById('mult');
-const log       = document.getElementById('effects-log');
-const canvas    = document.getElementById('ball-canvas');
-const ctx       = canvas.getContext('2d');
+const body    = document.getElementById('body');
+const btn     = document.getElementById('click-btn');
+const coinsEl = document.getElementById('coins');
+const multEl  = document.getElementById('mult');
+const log     = document.getElementById('effects-log');
 
-let coins       = 0;
-let multiplier  = 1;
-let shakeLevel  = 0;
-let balls       = [];
-let coinRainOn  = false;
-let spinOn      = false;
-let zoomLevel   = 1;
+let coins      = 0;
+let multiplier = 1;
+let coinRainOn = false;
+let autoClickOn = false;
+let shieldHits  = 0;   // chaos shield charges
+let discount    = 1;   // price multiplier (0.5 = 50% off)
 
-canvas.width  = window.innerWidth;
-canvas.height = window.innerHeight;
-window.addEventListener('resize', () => {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+// Track active bad effects so we can clear them
+const badEffects = {
+    disco:    false,
+    upside:   false,
+    invert:   false,
+    wobbly:   false,
+    rainbow:  false,
+    shrunk:   false,
+    hugeBtnFontSize: null,
+    coinColor: false,
+    bgRotate:  false,
+};
+let bgRotateInterval = null;
 
-// ─── Effects ───────────────────────────────────────────────────────────────
+// ─── Effects pool ──────────────────────────────────────────────────────────
 
 const allEffects = [
     {
-        name: '📳 Screen is now shaking',
-        apply() {
-            shakeLevel = Math.min(shakeLevel + 1, 3);
-            body.classList.remove('shake-1','shake-2','shake-3');
-            body.classList.add('shake-' + shakeLevel);
-        }
-    },
-    {
-        name: '🔴 A ball is now bouncing around',
-        apply() { spawnBall(); }
-    },
-    {
         name: '✨ 2× coin multiplier!',
-        apply() {
-            multiplier *= 2;
-            multEl.textContent = multiplier;
-        }
+        bad: false,
+        apply() { multiplier *= 2; multEl.textContent = multiplier; }
     },
     {
         name: '🕺 DISCO MODE ACTIVATED',
-        apply() { body.classList.add('disco'); }
+        bad: true,
+        apply() { body.classList.add('disco'); badEffects.disco = true; }
     },
     {
         name: '🙃 Screen flipped upside down',
+        bad: true,
         apply() {
-            body.style.transform = body.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
+            const flipped = body.style.transform === 'rotate(180deg)';
+            body.style.transform = flipped ? '' : 'rotate(180deg)';
+            badEffects.upside = !flipped;
         }
     },
     {
         name: '🔄 Colors inverted',
+        bad: true,
         apply() {
             const on = body.style.filter.includes('invert');
             body.style.filter = on ? '' : 'invert(1)';
+            badEffects.invert = !on;
         }
     },
     {
         name: '🌧️ It is now raining coins',
+        bad: false,
         apply() {
-            if (!coinRainOn) {
-                coinRainOn = true;
-                setInterval(spawnRainCoin, 350);
-            }
+            if (!coinRainOn) { coinRainOn = true; setInterval(spawnRainCoin, 350); }
         }
     },
     {
         name: '🌊 Everything is wobbly',
-        apply() { body.classList.add('wobbly'); }
+        bad: true,
+        apply() { body.classList.add('wobbly'); badEffects.wobbly = true; }
     },
     {
         name: '🌈 Text is now rainbow',
+        bad: true,
         apply() {
             document.getElementById('title').classList.add('rainbow');
             coinsEl.parentElement.classList.add('rainbow');
-        }
-    },
-    {
-        name: '🔍 Zooming in...',
-        apply() {
-            zoomLevel += 0.25;
-            body.style.zoom = zoomLevel;
-        }
-    },
-    {
-        name: '🌀 Button is spinning',
-        apply() {
-            if (!spinOn) {
-                spinOn = true;
-                btn.classList.add('spinning');
-            }
+            badEffects.rainbow = true;
         }
     },
     {
         name: '💰 BONUS: +100 free coins!',
-        apply() {
-            coins += 100;
-            updateCoins();
-        }
+        bad: false,
+        apply() { coins += 100; updateCoins(); }
     },
     {
         name: '😈 Button renamed itself',
+        bad: false,
         apply() {
             const names = ['Totally Free Coin','Trust Me','Click Me','No Tricks Here','Free Real Estate','1 Coin Guaranteed*','Definitely Coin'];
             btn.textContent = names[Math.floor(Math.random() * names.length)];
         }
     },
     {
-        name: '⚽ Extra ball joined the chaos',
-        apply() { spawnBall(); spawnBall(); }
-    },
-    {
         name: '🤏 Everything shrunk',
+        bad: true,
         apply() {
             const cur = parseFloat(body.style.fontSize) || 16;
-            body.style.fontSize = Math.max(cur * 0.75, 6) + 'px';
+            body.style.fontSize = Math.max(cur * 0.75, 8) + 'px';
+            badEffects.shrunk = true;
         }
     },
     {
         name: '🃏 Button got HUGE',
+        bad: true,
         apply() {
-            btn.style.fontSize   = (parseFloat(btn.style.fontSize) || 1.5) * 1.5 + 'em';
-            btn.style.padding    = '30px 60px';
+            const cur = parseFloat(btn.style.fontSize) || 1.5;
+            btn.style.fontSize = (cur * 1.5) + 'em';
+            btn.style.padding = '30px 60px';
+            badEffects.hugeBtnFontSize = true;
         }
     },
     {
         name: '🐌 "Coins are 50% slower now" (they are not)',
-        apply() {
-            addToLog('jk lol nothing happened 😂');
-        }
+        bad: false,
+        apply() { addToLog('jk lol nothing happened 😂'); }
     },
     {
         name: '👻 Coin counter changed color',
+        bad: true,
         apply() {
             coinsEl.style.color = '#' + Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');
             coinsEl.style.fontFamily = 'Comic Sans MS, cursive';
+            badEffects.coinColor = true;
         }
     },
     {
-        name: '🎆 A second ball appeared... wait, three?',
-        apply() { spawnBall(); spawnBall(); spawnBall(); }
-    },
-    {
-        name: '🔃 Background is rotating slowly',
+        name: '🔃 Background is rotating',
+        bad: true,
         apply() {
-            let deg = 0;
-            setInterval(() => {
-                deg += 0.3;
-                body.style.backgroundImage = `conic-gradient(from ${deg}deg, #1a1a2e, #2a2a4e, #1a1a2e)`;
-            }, 50);
+            if (!bgRotateInterval) {
+                let deg = 0;
+                bgRotateInterval = setInterval(() => {
+                    deg += 0.3;
+                    body.style.backgroundImage = `conic-gradient(from ${deg}deg, #1a1a2e, #2a2a4e, #1a1a2e)`;
+                }, 50);
+                badEffects.bgRotate = true;
+            }
         }
+    },
+    {
+        name: '💎 BONUS: +500 free coins!',
+        bad: false,
+        apply() { coins += 500; updateCoins(); }
     },
 ];
 
@@ -334,11 +327,22 @@ function handleClick(e) {
     spawnFloaty(e.clientX, e.clientY);
 
     const effect = allEffects[Math.floor(Math.random() * allEffects.length)];
+
+    if (effect.bad && shieldHits > 0) {
+        shieldHits--;
+        addToLog(`🛡️ Chaos shield blocked: ${effect.name} (${shieldHits} left)`);
+        return;
+    }
+
     effect.apply();
     addToLog(effect.name);
 }
 
-function updateCoins() { coinsEl.textContent = coins; }
+function updateCoins() {
+    coinsEl.textContent = coins;
+    document.getElementById('shop-coin-count').textContent = coins;
+    refreshShopButtons();
+}
 
 function addToLog(msg) {
     const d = document.createElement('div');
@@ -346,6 +350,150 @@ function addToLog(msg) {
     d.textContent = '+ ' + msg;
     log.prepend(d);
 }
+
+// ─── Clear bad effects ───────────────────────────────────────────────────────
+
+function clearAllBadEffects() {
+    body.classList.remove('disco','wobbly');
+    body.style.transform = '';
+    body.style.filter    = '';
+    body.style.fontSize  = '';
+    body.style.backgroundImage = '';
+    document.getElementById('title').classList.remove('rainbow');
+    coinsEl.parentElement.classList.remove('rainbow');
+    coinsEl.style.color = '';
+    coinsEl.style.fontFamily = '';
+    btn.style.fontSize = '';
+    btn.style.padding  = '';
+    if (bgRotateInterval) { clearInterval(bgRotateInterval); bgRotateInterval = null; }
+    Object.keys(badEffects).forEach(k => badEffects[k] = false);
+    addToLog('✅ All chaos cleared!');
+}
+
+// ─── Shop ────────────────────────────────────────────────────────────────────
+
+const shopItems = [
+    {
+        name: '🧹 Clear All Chaos',
+        desc: 'Removes every active bad effect instantly.',
+        baseCost: 500,
+        buy() { clearAllBadEffects(); }
+    },
+    {
+        name: '🚀 1,000× Multiplier',
+        desc: 'Sets your coin multiplier to 1,000× per click.',
+        baseCost: 50000,
+        buy() { multiplier = 1000; multEl.textContent = multiplier; addToLog('🚀 Multiplier set to 1,000×!'); }
+    },
+    {
+        name: '🤖 Auto-Clicker',
+        desc: 'Automatically clicks once per second forever.',
+        baseCost: 1000,
+        buy() {
+            if (!autoClickOn) {
+                autoClickOn = true;
+                setInterval(() => {
+                    coins += multiplier;
+                    updateCoins();
+                    addToLog('🤖 Auto-click: +' + multiplier + ' 🪙');
+                }, 1000);
+                addToLog('🤖 Auto-clicker started!');
+            }
+        }
+    },
+    {
+        name: '🛡️ Chaos Shield ×5',
+        desc: 'Blocks the next 5 bad effects automatically.',
+        baseCost: 2000,
+        buy() { shieldHits += 5; addToLog('🛡️ Chaos shield charged! ×' + shieldHits); }
+    },
+    {
+        name: '💸 5,000 Free Coins',
+        desc: 'A bag of coins, no strings attached.',
+        baseCost: 2500,
+        buy() { coins += 5000; updateCoins(); addToLog('💸 +5,000 coins!'); }
+    },
+    {
+        name: '🏷️ Half Price Everything',
+        desc: 'All future shop purchases cost 50% less.',
+        baseCost: 3000,
+        buy() { discount = 0.5; buildShop(); addToLog('🏷️ Shop prices halved!'); }
+    },
+    {
+        name: '💥 10× Multiplier Boost',
+        desc: 'Multiplies your current multiplier by 10.',
+        baseCost: 5000,
+        buy() { multiplier *= 10; multEl.textContent = multiplier; addToLog('💥 Multiplier ×10!'); }
+    },
+    {
+        name: '🌧️ Coin Rain',
+        desc: 'Starts the coin rain if not already running.',
+        baseCost: 300,
+        buy() {
+            if (!coinRainOn) { coinRainOn = true; setInterval(spawnRainCoin, 350); }
+            addToLog('🌧️ Coin rain started!');
+        }
+    },
+];
+
+function cost(item) { return Math.floor(item.baseCost * discount); }
+
+function buildShop() {
+    const container = document.getElementById('shop-items');
+    container.innerHTML = '';
+    shopItems.forEach((item, i) => {
+        const c = cost(item);
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+            <div class="shop-item-info">
+                <div class="shop-item-name">${item.name}</div>
+                <div class="shop-item-desc">${item.desc}</div>
+            </div>
+            <button class="shop-buy-btn" id="sbtn-${i}" onclick="buyItem(${i})">
+                🪙 ${c.toLocaleString()}
+            </button>`;
+        container.appendChild(div);
+    });
+}
+
+function refreshShopButtons() {
+    shopItems.forEach((item, i) => {
+        const b = document.getElementById('sbtn-' + i);
+        if (b) b.disabled = coins < cost(item);
+    });
+}
+
+function buyItem(i) {
+    const item = shopItems[i];
+    const c = cost(item);
+    if (coins < c) return;
+    coins -= c;
+    updateCoins();
+    item.buy();
+    closeShop();
+}
+
+function openShop() {
+    document.getElementById('shop-coin-count').textContent = coins;
+    buildShop();
+    refreshShopButtons();
+    document.getElementById('shop-overlay').classList.add('open');
+}
+function closeShop() { document.getElementById('shop-overlay').classList.remove('open'); }
+
+// Close shop when clicking outside panel
+document.getElementById('shop-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('shop-overlay')) closeShop();
+});
+
+// S key toggle
+document.addEventListener('keydown', e => {
+    if (e.key === 's' || e.key === 'S') {
+        const overlay = document.getElementById('shop-overlay');
+        overlay.classList.contains('open') ? closeShop() : openShop();
+    }
+});
 
 // ─── Floaty coin text ────────────────────────────────────────────────────────
 
@@ -359,46 +507,6 @@ function spawnFloaty(x, y) {
     setTimeout(() => el.remove(), 900);
 }
 
-// ─── Bouncing balls ──────────────────────────────────────────────────────────
-
-function spawnBall() {
-    const speed = 4 + Math.random() * 5;
-    const angle = Math.random() * Math.PI * 2;
-    balls.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        r: 16 + Math.random() * 28,
-        hue: Math.random() * 360
-    });
-}
-
-function animateBalls() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const b of balls) {
-        b.x += b.vx;
-        b.y += b.vy;
-        if (b.x - b.r < 0)               { b.x = b.r;               b.vx = Math.abs(b.vx); }
-        if (b.x + b.r > canvas.width)    { b.x = canvas.width - b.r; b.vx = -Math.abs(b.vx); }
-        if (b.y - b.r < 0)               { b.y = b.r;               b.vy = Math.abs(b.vy); }
-        if (b.y + b.r > canvas.height)   { b.y = canvas.height - b.r; b.vy = -Math.abs(b.vy); }
-
-        const grad = ctx.createRadialGradient(b.x - b.r*0.3, b.y - b.r*0.3, 0, b.x, b.y, b.r);
-        grad.addColorStop(0, `hsl(${b.hue},90%,80%)`);
-        grad.addColorStop(1, `hsl(${b.hue},80%,40%)`);
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.strokeStyle = `hsla(${b.hue},60%,70%,0.6)`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
-    requestAnimationFrame(animateBalls);
-}
-animateBalls();
-
 // ─── Coin rain ───────────────────────────────────────────────────────────────
 
 function spawnRainCoin() {
@@ -411,7 +519,6 @@ function spawnRainCoin() {
     document.body.appendChild(el);
     setTimeout(() => el.remove(), dur * 1000 + 200);
 }
-
 </script>
 </body>
 </html>
