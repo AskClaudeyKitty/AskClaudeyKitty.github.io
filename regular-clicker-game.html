@@ -193,7 +193,6 @@ const badEffects = {
     invert:   false,
     wobbly:   false,
     rainbow:  false,
-    shrunk:   false,
     hugeBtnFontSize: null,
     coinColor: false,
     bgRotate:  false,
@@ -263,15 +262,6 @@ const allEffects = [
         apply() {
             const names = ['Totally Free Coin','Trust Me','Click Me','No Tricks Here','Free Real Estate','1 Coin Guaranteed*','Definitely Coin'];
             btn.textContent = names[Math.floor(Math.random() * names.length)];
-        }
-    },
-    {
-        name: '🤏 Everything shrunk',
-        bad: true,
-        apply() {
-            const cur = parseFloat(body.style.fontSize) || 16;
-            body.style.fontSize = Math.max(cur * 0.75, 8) + 'px';
-            badEffects.shrunk = true;
         }
     },
     {
@@ -357,7 +347,6 @@ function clearAllBadEffects() {
     body.classList.remove('disco','wobbly');
     body.style.transform = '';
     body.style.filter    = '';
-    body.style.fontSize  = '';
     body.style.backgroundImage = '';
     document.getElementById('title').classList.remove('rainbow');
     coinsEl.parentElement.classList.remove('rainbow');
