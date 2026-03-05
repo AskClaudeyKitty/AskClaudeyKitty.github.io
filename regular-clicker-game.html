@@ -179,6 +179,7 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 <div id="coin-display">🪙 <span id="coins">0</span></div>
 <div id="multiplier-display">×<span id="mult">1</span> per click</div>
 <div id="click-counter">👆 <span id="click-count">0</span> total clicks</div>
+<div id="vault-display" style="font-size:0.85em;color:#4ecdc4;margin-bottom:4px;display:none;">🏦 Vault: <span id="vault-coins">0</span> / <span id="vault-max">0</span></div>
 <div id="prestige-info"></div>
 
 <button id="click-btn" onclick="handleClick(event)">Free Coin</button>
@@ -212,8 +213,10 @@ let shieldHits  = 0;
 let discount    = 1;
 let totalClicks = 0;
 let prestigeCount = 0;
+let vaultCoins = 0;
 const PRESTIGE_BASE = 1_000_000_000_000;
 function prestigeGoal() { return PRESTIGE_BASE * Math.pow(1000, prestigeCount); }
+function vaultMax() { return prestigeGoal() / 1000; }
 
 // Track active bad effects so we can clear them
 const badEffects = {
@@ -383,8 +386,9 @@ function updateCoins() {
 function doPrestige() {
     if (coins < prestigeGoal()) return;
     prestigeCount++;
-    // Reset everything
-    coins = 0;
+    // Reset everything (vault survives)
+    coins = vaultCoins;
+    vaultCoins = 0;
     coinRainOn = false;
     autoClickIntervals.forEach(clearInterval);
     autoClickIntervals = [];
@@ -399,6 +403,17 @@ function doPrestige() {
     log.innerHTML = '';
     addToLog(`⭐ PRESTIGED! ×${prestigeCount} — Starting with ×${multiplier.toLocaleString()} multiplier!`);
     updateCoins();
+    updateVaultDisplay();
+}
+
+function updateVaultDisplay() {
+    const max = vaultMax();
+    const el = document.getElementById('vault-display');
+    if (vaultCoins > 0 || prestigeCount > 0) {
+        el.style.display = 'block';
+        document.getElementById('vault-coins').textContent = vaultCoins.toLocaleString();
+        document.getElementById('vault-max').textContent = max.toLocaleString();
+    }
 }
 
 function addToLog(msg) {
@@ -485,6 +500,25 @@ const shopItems = [
         buy() {
             if (!coinRainOn) { coinRainOn = true; setInterval(spawnRainCoin, 350); }
             addToLog('🌧️ Coin rain started!');
+        }
+    },
+    {
+        name: '🏦 Deposit to Vault',
+        desc: 'Deposit all current coins into the vault. Vaulted coins survive prestige.',
+        baseCost: 0,
+        buy() {
+            const max = vaultMax();
+            const space = Math.max(0, max - vaultCoins);
+            const deposit = Math.min(coins, space);
+            if (deposit <= 0) {
+                addToLog('🏦 Vault is full! (' + vaultCoins.toLocaleString() + ' / ' + max.toLocaleString() + ')');
+                return;
+            }
+            coins -= deposit;
+            vaultCoins += deposit;
+            updateCoins();
+            updateVaultDisplay();
+            addToLog('🏦 Deposited ' + deposit.toLocaleString() + ' coins to vault!');
         }
     },
 ];
