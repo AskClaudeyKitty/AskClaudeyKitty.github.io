@@ -207,6 +207,7 @@ let coins      = 0;
 let multiplier = 1;
 let coinRainOn = false;
 let autoClickOn = 0;
+let autoClickIntervals = [];
 let shieldHits  = 0;
 let discount    = 1;
 let totalClicks = 0;
@@ -385,6 +386,8 @@ function doPrestige() {
     // Reset everything
     coins = 0;
     coinRainOn = false;
+    autoClickIntervals.forEach(clearInterval);
+    autoClickIntervals = [];
     autoClickOn = 0;
     shieldHits = 0;
     discount = 1;
@@ -444,10 +447,10 @@ const shopItems = [
         baseCost: 1000,
         buy() {
             autoClickOn++;
-            setInterval(() => {
+            autoClickIntervals.push(setInterval(() => {
                 coins += multiplier;
                 updateCoins();
-            }, 1000);
+            }, 1000));
             addToLog('🤖 Auto-clicker: now ' + autoClickOn + '/sec');
         }
     },
