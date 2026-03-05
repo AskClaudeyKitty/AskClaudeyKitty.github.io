@@ -211,7 +211,8 @@ let shieldHits  = 0;
 let discount    = 1;
 let totalClicks = 0;
 let prestigeCount = 0;
-const PRESTIGE_GOAL = 1_000_000_000_000;
+const PRESTIGE_BASE = 1_000_000_000_000;
+function prestigeGoal() { return PRESTIGE_BASE * Math.pow(1000, prestigeCount); }
 
 // Track active bad effects so we can clear them
 const badEffects = {
@@ -364,20 +365,22 @@ function updateCoins() {
     // Show/hide prestige button
     const pb = document.getElementById('prestige-btn');
     const pi = document.getElementById('prestige-info');
-    if (coins >= PRESTIGE_GOAL) {
+    const goal = prestigeGoal();
+    if (coins >= goal) {
         pb.style.display = 'block';
         pi.textContent = '⭐ You can prestige!';
     } else {
         pb.style.display = 'none';
-        const pct = Math.min(100, (coins / PRESTIGE_GOAL * 100)).toFixed(6);
+        const pct = Math.min(100, (coins / goal * 100)).toFixed(6);
+        const goalStr = goal.toLocaleString();
         pi.textContent = prestigeCount > 0
-            ? `⭐ Prestige ×${prestigeCount} | Next prestige: ${pct}% to 1T`
-            : `Next prestige at 1,000,000,000,000 coins (${pct}%)`;
+            ? `⭐ Prestige ×${prestigeCount} | Next: ${pct}% to ${goalStr} (shop -${prestigeCount*10}%)`
+            : `Next prestige at ${goalStr} coins (${pct}%)`;
     }
 }
 
 function doPrestige() {
-    if (coins < PRESTIGE_GOAL) return;
+    if (coins < prestigeGoal()) return;
     prestigeCount++;
     // Reset everything
     coins = 0;
@@ -483,7 +486,8 @@ const shopItems = [
     },
 ];
 
-function cost(item) { return Math.floor(item.baseCost * discount); }
+function prestigeDiscount() { return Math.max(0.1, 1 - prestigeCount * 0.1); }
+function cost(item) { return Math.floor(item.baseCost * discount * prestigeDiscount()); }
 
 function buildShop() {
     const container = document.getElementById('shop-items');
