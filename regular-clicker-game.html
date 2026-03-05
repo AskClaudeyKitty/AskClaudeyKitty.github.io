@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Regular Clicker Game</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #1a1a2e;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.3s;
+}
+
+h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
+#subtitle { font-size: 0.85em; color: #888; margin-bottom: 20px; }
+
+#coin-display {
+    font-size: 3em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+#multiplier-display {
+    font-size: 1.1em;
+    color: #ffd700;
+    margin-bottom: 24px;
+    min-height: 1.4em;
+}
+
+#click-btn {
+    padding: 18px 44px;
+    font-size: 1.5em;
+    font-weight: bold;
+    background: linear-gradient(135deg, #ffd700, #ff9900);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    z-index: 500;
+    box-shadow: 0 4px 20px rgba(255,200,0,0.4);
+    transition: transform 0.08s, box-shadow 0.1s;
+    user-select: none;
+}
+#click-btn:active { transform: scale(0.93) !important; box-shadow: none; }
+
+#fake-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 600px;
+    margin-top: 14px;
+    gap: 6px;
+}
+.fake-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    background: linear-gradient(135deg, #ffd700, #ff9900);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(255,200,0,0.3);
+}
+
+#effects-log {
+    margin-top: 24px;
+    max-height: 130px;
+    overflow-y: auto;
+    width: min(420px, 90vw);
+    font-size: 0.82em;
+    scrollbar-width: thin;
+}
+.effect-entry {
+    padding: 2px 4px;
+    color: #4ecdc4;
+    border-left: 2px solid #4ecdc430;
+    margin-bottom: 2px;
+    padding-left: 8px;
+}
+
+/* Canvas for balls */
+#ball-canvas {
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 200;
+}
+
+/* Screen shake levels */
+@keyframes shake {
+    0%,100% { transform: translate(0,0) rotate(0deg); }
+    10%      { transform: translate(-4px,-4px) rotate(-0.5deg); }
+    30%      { transform: translate(4px,-4px) rotate(0.5deg); }
+    50%      { transform: translate(-4px, 4px) rotate(-0.5deg); }
+    70%      { transform: translate(4px, 4px) rotate(0.5deg); }
+    90%      { transform: translate(-4px,-2px) rotate(0deg); }
+}
+.shake-1 { animation: shake 0.6s infinite; }
+.shake-2 { animation: shake 0.35s infinite; }
+.shake-3 { animation: shake 0.15s infinite; }
+
+/* Disco */
+@keyframes disco {
+    0%  { background:#ff003c; }
+    16% { background:#ff8800; }
+    33% { background:#e8ff00; }
+    50% { background:#00ff88; }
+    66% { background:#0088ff; }
+    83% { background:#cc00ff; }
+    100%{ background:#ff003c; }
+}
+.disco { animation: disco 0.45s infinite; }
+
+/* Wobble */
+@keyframes wobble {
+    0%,100% { transform: skewX(0deg) skewY(0deg); }
+    25%      { transform: skewX(6deg) skewY(2deg); }
+    75%      { transform: skewX(-6deg) skewY(-2deg); }
+}
+.wobbly { animation: wobble 0.5s infinite; }
+
+/* Rainbow text */
+@keyframes rainbow-text {
+    0%  { color: #ff4444; }
+    20% { color: #ffaa00; }
+    40% { color: #ffff00; }
+    60% { color: #44ff44; }
+    80% { color: #4488ff; }
+    100%{ color: #ff44ff; }
+}
+.rainbow { animation: rainbow-text 0.6s infinite; }
+
+/* Spin */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.spinning { animation: spin-slow 4s linear infinite !important; transform-origin: center center; }
+
+/* Coin rain */
+.rain-coin {
+    position: fixed;
+    font-size: 1.6em;
+    pointer-events: none;
+    z-index: 150;
+    animation: rain-fall linear forwards;
+}
+@keyframes rain-fall {
+    from { transform: translateY(-60px); opacity: 1; }
+    to   { transform: translateY(110vh); opacity: 0.4; }
+}
+
+/* Floating click feedback */
+.floaty {
+    position: fixed;
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #ffd700;
+    pointer-events: none;
+    z-index: 999;
+    animation: floaty-up 0.9s ease-out forwards;
+}
+@keyframes floaty-up {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-70px) scale(1.4); }
+}
+</style>
+</head>
+<body id="body">
+<canvas id="ball-canvas"></canvas>
+
+<h1 id="title">Regular Clicker Game</h1>
+<div id="subtitle">A completely normal, regular clicker game.</div>
+
+<div id="coin-display">🪙 <span id="coins">0</span></div>
+<div id="multiplier-display">×<span id="mult">1</span> per click</div>
+
+<button id="click-btn" onclick="handleClick(event)">Free Coin</button>
+<div id="fake-buttons"></div>
+<div id="effects-log"></div>
+
+<script>
+const body      = document.getElementById('body');
+const btn       = document.getElementById('click-btn');
+const coinsEl   = document.getElementById('coins');
+const multEl    = document.getElementById('mult');
+const log       = document.getElementById('effects-log');
+const canvas    = document.getElementById('ball-canvas');
+const ctx       = canvas.getContext('2d');
+
+let coins       = 0;
+let multiplier  = 1;
+let shakeLevel  = 0;
+let balls       = [];
+let coinRainOn  = false;
+let runAwayOn   = false;
+let spinOn      = false;
+let blurLevel   = 0;
+let zoomLevel   = 1;
+let fakeBtns    = 0;
+
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// ─── Effects ───────────────────────────────────────────────────────────────
+
+const allEffects = [
+    {
+        name: '📳 Screen is now shaking',
+        apply() {
+            shakeLevel = Math.min(shakeLevel + 1, 3);
+            body.classList.remove('shake-1','shake-2','shake-3');
+            body.classList.add('shake-' + shakeLevel);
+        }
+    },
+    {
+        name: '🔴 A ball is now bouncing around',
+        apply() { spawnBall(); }
+    },
+    {
+        name: '✨ 2× coin multiplier!',
+        apply() {
+            multiplier *= 2;
+            multEl.textContent = multiplier;
+        }
+    },
+    {
+        name: '🕺 DISCO MODE ACTIVATED',
+        apply() { body.classList.add('disco'); }
+    },
+    {
+        name: '🙃 Screen flipped upside down',
+        apply() {
+            body.style.transform = body.style.transform === 'rotate(180deg)' ? '' : 'rotate(180deg)';
+        }
+    },
+    {
+        name: '🔄 Colors inverted',
+        apply() {
+            const f = body.style.filter || '';
+            body.style.filter = f.includes('invert') ? f.replace('invert(1)','') : f + ' invert(1)';
+        }
+    },
+    {
+        name: '🌧️ It is now raining coins',
+        apply() {
+            if (!coinRainOn) {
+                coinRainOn = true;
+                setInterval(spawnRainCoin, 350);
+            }
+        }
+    },
+    {
+        name: '🎭 A suspicious button appeared',
+        apply() { addFakeButton(); }
+    },
+    {
+        name: '🌊 Everything is wobbly',
+        apply() { body.classList.add('wobbly'); }
+    },
+    {
+        name: '🏃 Button runs away from your cursor',
+        apply() {
+            if (!runAwayOn) {
+                runAwayOn = true;
+                btn.addEventListener('mousemove', () => {
+                    const maxX = window.innerWidth  - btn.offsetWidth  - 20;
+                    const maxY = window.innerHeight - btn.offsetHeight - 20;
+                    btn.style.position = 'fixed';
+                    btn.style.left = (Math.random() * maxX) + 'px';
+                    btn.style.top  = (Math.random() * maxY) + 'px';
+                });
+            }
+        }
+    },
+    {
+        name: '🌈 Text is now rainbow',
+        apply() {
+            document.getElementById('title').classList.add('rainbow');
+            coinsEl.parentElement.classList.add('rainbow');
+        }
+    },
+    {
+        name: '😵 Screen is getting blurry',
+        apply() {
+            blurLevel += 1.5;
+            const f = body.style.filter || '';
+            const cleaned = f.replace(/blur\([^)]*\)/g, '').trim();
+            body.style.filter = cleaned + ` blur(${blurLevel}px)`;
+        }
+    },
+    {
+        name: '🔍 Zooming in...',
+        apply() {
+            zoomLevel += 0.25;
+            body.style.zoom = zoomLevel;
+        }
+    },
+    {
+        name: '🌀 Button is spinning',
+        apply() {
+            if (!spinOn) {
+                spinOn = true;
+                btn.classList.add('spinning');
+            }
+        }
+    },
+    {
+        name: '💰 BONUS: +100 free coins!',
+        apply() {
+            coins += 100;
+            updateCoins();
+        }
+    },
+    {
+        name: '😈 Button renamed itself',
+        apply() {
+            const names = ['Totally Free Coin','Trust Me','Click Me','No Tricks Here','Free Real Estate','1 Coin Guaranteed*','Definitely Coin'];
+            btn.textContent = names[Math.floor(Math.random() * names.length)];
+        }
+    },
+    {
+        name: '⚽ Extra ball joined the chaos',
+        apply() { spawnBall(); spawnBall(); }
+    },
+    {
+        name: '🤏 Everything shrunk',
+        apply() {
+            const cur = parseFloat(body.style.fontSize) || 16;
+            body.style.fontSize = Math.max(cur * 0.75, 6) + 'px';
+        }
+    },
+    {
+        name: '🃏 Button got HUGE',
+        apply() {
+            btn.style.fontSize   = (parseFloat(btn.style.fontSize) || 1.5) * 1.5 + 'em';
+            btn.style.padding    = '30px 60px';
+        }
+    },
+    {
+        name: '🐌 "Coins are 50% slower now" (they are not)',
+        apply() {
+            addToLog('jk lol nothing happened 😂');
+        }
+    },
+    {
+        name: '👻 Coin counter changed color',
+        apply() {
+            coinsEl.style.color = '#' + Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');
+            coinsEl.style.fontFamily = 'Comic Sans MS, cursive';
+        }
+    },
+    {
+        name: '🎆 A second ball appeared... wait, three?',
+        apply() { spawnBall(); spawnBall(); spawnBall(); }
+    },
+    {
+        name: '🔃 Background is rotating slowly',
+        apply() {
+            let deg = 0;
+            setInterval(() => {
+                deg += 0.3;
+                body.style.backgroundImage = `conic-gradient(from ${deg}deg, #1a1a2e, #2a2a4e, #1a1a2e)`;
+            }, 50);
+        }
+    },
+];
+
+// ─── Main click ─────────────────────────────────────────────────────────────
+
+function handleClick(e) {
+    coins += multiplier;
+    updateCoins();
+    spawnFloaty(e.clientX, e.clientY);
+
+    const effect = allEffects[Math.floor(Math.random() * allEffects.length)];
+    effect.apply();
+    addToLog(effect.name);
+}
+
+function updateCoins() { coinsEl.textContent = coins; }
+
+function addToLog(msg) {
+    const d = document.createElement('div');
+    d.className = 'effect-entry';
+    d.textContent = '+ ' + msg;
+    log.prepend(d);
+}
+
+// ─── Floaty coin text ────────────────────────────────────────────────────────
+
+function spawnFloaty(x, y) {
+    const el = document.createElement('div');
+    el.className = 'floaty';
+    el.textContent = multiplier > 1 ? `+${multiplier} 🪙` : '+1 🪙';
+    el.style.left = (x - 20) + 'px';
+    el.style.top  = (y - 10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+}
+
+// ─── Bouncing balls ──────────────────────────────────────────────────────────
+
+function spawnBall() {
+    const speed = 4 + Math.random() * 5;
+    const angle = Math.random() * Math.PI * 2;
+    balls.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: 16 + Math.random() * 28,
+        hue: Math.random() * 360
+    });
+}
+
+function animateBalls() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const b of balls) {
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.x - b.r < 0)               { b.x = b.r;               b.vx = Math.abs(b.vx); }
+        if (b.x + b.r > canvas.width)    { b.x = canvas.width - b.r; b.vx = -Math.abs(b.vx); }
+        if (b.y - b.r < 0)               { b.y = b.r;               b.vy = Math.abs(b.vy); }
+        if (b.y + b.r > canvas.height)   { b.y = canvas.height - b.r; b.vy = -Math.abs(b.vy); }
+
+        const grad = ctx.createRadialGradient(b.x - b.r*0.3, b.y - b.r*0.3, 0, b.x, b.y, b.r);
+        grad.addColorStop(0, `hsl(${b.hue},90%,80%)`);
+        grad.addColorStop(1, `hsl(${b.hue},80%,40%)`);
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = `hsla(${b.hue},60%,70%,0.6)`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+    requestAnimationFrame(animateBalls);
+}
+animateBalls();
+
+// ─── Coin rain ───────────────────────────────────────────────────────────────
+
+function spawnRainCoin() {
+    const el = document.createElement('div');
+    el.className = 'rain-coin';
+    el.textContent = '🪙';
+    el.style.left = Math.random() * 100 + 'vw';
+    const dur = 2 + Math.random() * 2.5;
+    el.style.animationDuration = dur + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), dur * 1000 + 200);
+}
+
+// ─── Fake buttons ────────────────────────────────────────────────────────────
+
+function addFakeButton() {
+    fakeBtns++;
+    const fb = document.createElement('button');
+    fb.className = 'fake-btn';
+    const labels = ['Free Coin', 'Bonus Coins!', 'Extra Coin!', '2x Click!', 'Free Money'];
+    fb.textContent = labels[Math.floor(Math.random() * labels.length)];
+    fb.onclick = () => {
+        const steal = Math.floor(Math.random() * 30) + 10;
+        coins = Math.max(0, coins - steal);
+        updateCoins();
+        addToLog(`😈 Fake button #${fakeBtns} stole ${steal} coins!`);
+    };
+    document.getElementById('fake-buttons').appendChild(fb);
+}
+</script>
+</body>
+</html>
