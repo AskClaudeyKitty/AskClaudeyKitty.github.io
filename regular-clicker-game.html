@@ -383,7 +383,7 @@ const shopItems = [
         name: '🚀 1,000× Multiplier',
         desc: 'Sets your coin multiplier to 1,000× per click.',
         baseCost: 50000,
-        buy() { multiplier = 1000; multEl.textContent = multiplier; addToLog('🚀 Multiplier set to 1,000×!'); }
+        buy() { multiplier += 1000; multEl.textContent = multiplier; addToLog('🚀 +1,000 added to multiplier!'); }
     },
     {
         name: '🤖 Auto-Clicker',
