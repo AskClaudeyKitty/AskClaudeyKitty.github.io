@@ -51,25 +51,6 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 }
 #click-btn:active { transform: scale(0.93) !important; box-shadow: none; }
 
-#fake-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 600px;
-    margin-top: 14px;
-    gap: 6px;
-}
-.fake-btn {
-    padding: 10px 20px;
-    font-size: 1em;
-    font-weight: bold;
-    background: linear-gradient(135deg, #ffd700, #ff9900);
-    color: #1a1a2e;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(255,200,0,0.3);
-}
 
 #effects-log {
     margin-top: 24px;
@@ -183,7 +164,6 @@ h1 { font-size: 2em; margin-bottom: 6px; letter-spacing: 1px; }
 <div id="multiplier-display">×<span id="mult">1</span> per click</div>
 
 <button id="click-btn" onclick="handleClick(event)">Free Coin</button>
-<div id="fake-buttons"></div>
 <div id="effects-log"></div>
 
 <script>
@@ -200,11 +180,8 @@ let multiplier  = 1;
 let shakeLevel  = 0;
 let balls       = [];
 let coinRainOn  = false;
-let runAwayOn   = false;
 let spinOn      = false;
-let blurLevel   = 0;
 let zoomLevel   = 1;
-let fakeBtns    = 0;
 
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -248,8 +225,8 @@ const allEffects = [
     {
         name: '🔄 Colors inverted',
         apply() {
-            const f = body.style.filter || '';
-            body.style.filter = f.includes('invert') ? f.replace('invert(1)','') : f + ' invert(1)';
+            const on = body.style.filter.includes('invert');
+            body.style.filter = on ? '' : 'invert(1)';
         }
     },
     {
@@ -262,42 +239,14 @@ const allEffects = [
         }
     },
     {
-        name: '🎭 A suspicious button appeared',
-        apply() { addFakeButton(); }
-    },
-    {
         name: '🌊 Everything is wobbly',
         apply() { body.classList.add('wobbly'); }
-    },
-    {
-        name: '🏃 Button runs away from your cursor',
-        apply() {
-            if (!runAwayOn) {
-                runAwayOn = true;
-                btn.addEventListener('mousemove', () => {
-                    const maxX = window.innerWidth  - btn.offsetWidth  - 20;
-                    const maxY = window.innerHeight - btn.offsetHeight - 20;
-                    btn.style.position = 'fixed';
-                    btn.style.left = (Math.random() * maxX) + 'px';
-                    btn.style.top  = (Math.random() * maxY) + 'px';
-                });
-            }
-        }
     },
     {
         name: '🌈 Text is now rainbow',
         apply() {
             document.getElementById('title').classList.add('rainbow');
             coinsEl.parentElement.classList.add('rainbow');
-        }
-    },
-    {
-        name: '😵 Screen is getting blurry',
-        apply() {
-            blurLevel += 1.5;
-            const f = body.style.filter || '';
-            const cleaned = f.replace(/blur\([^)]*\)/g, '').trim();
-            body.style.filter = cleaned + ` blur(${blurLevel}px)`;
         }
     },
     {
@@ -463,22 +412,6 @@ function spawnRainCoin() {
     setTimeout(() => el.remove(), dur * 1000 + 200);
 }
 
-// ─── Fake buttons ────────────────────────────────────────────────────────────
-
-function addFakeButton() {
-    fakeBtns++;
-    const fb = document.createElement('button');
-    fb.className = 'fake-btn';
-    const labels = ['Free Coin', 'Bonus Coins!', 'Extra Coin!', '2x Click!', 'Free Money'];
-    fb.textContent = labels[Math.floor(Math.random() * labels.length)];
-    fb.onclick = () => {
-        const steal = Math.floor(Math.random() * 30) + 10;
-        coins = Math.max(0, coins - steal);
-        updateCoins();
-        addToLog(`😈 Fake button #${fakeBtns} stole ${steal} coins!`);
-    };
-    document.getElementById('fake-buttons').appendChild(fb);
-}
 </script>
 </body>
 </html>
