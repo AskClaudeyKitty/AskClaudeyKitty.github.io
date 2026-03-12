@@ -86,6 +86,39 @@
         a:nth-child(7):hover {
             background: #c53030;
         }
+        #code-section {
+            margin-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+        #code-section p { font-size: 0.85rem; color: #a0aec0; margin-bottom: 0.5rem; }
+        #code-input {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            width: 140px;
+            text-align: center;
+            letter-spacing: 4px;
+        }
+        #code-input:focus { outline: none; border-color: #667eea; }
+        #source-links { display: none; margin-top: 1.5rem; }
+        #source-links h3 { color: #4a5568; margin-bottom: 1rem; font-size: 1rem; }
+        .src-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .src-row span { flex: 1; text-align: left; font-size: 0.85rem; color: #4a5568; }
+        .src-copy {
+            padding: 6px 12px !important;
+            font-size: 0.8rem !important;
+            background: #4a5568 !important;
+            color: white !important;
+            border-radius: 6px !important;
+            cursor: pointer;
+            border: none;
+            flex: 0 0 auto;
+        }
+        .src-copy:hover { background: #2d3748 !important; }
+        .src-copy.copied { background: #48bb78 !important; }
+        #wrong-code { color: #e53e3e; font-size: 0.8rem; margin-top: 4px; min-height: 1em; }
     </style>
 </head>
 <body>
@@ -101,6 +134,62 @@
             <a href="tower-defense.html">Tower Defense Game for Lincoln</a>
             <a href="regular-clicker-game.html">Regular Clicker Game</a>
         </div>
+
+        <div id="code-section">
+            <p>🔒 Enter code for source links</p>
+            <input id="code-input" type="password" maxlength="6" placeholder="······" oninput="checkCode(this.value)" autocomplete="off">
+            <div id="wrong-code"></div>
+            <div id="source-links">
+                <h3>📋 Source Code Links</h3>
+                <div id="src-list"></div>
+            </div>
+        </div>
     </div>
+
+<script>
+const base = 'https://askclaudeykitty.github.io/';
+const sources = [
+    ['Index Page',               'source_index.txt'],
+    ['Lag Simulator',            'source_lag_simulator.txt'],
+    ['Guessing Game',            'source_guessing_game.txt'],
+    ['Explosion Button',         'source_explosion-button.txt'],
+    ['Explosion Button (WebGL)', 'source_explosion-button-webgl.txt'],
+    ['Ball in a Ring',           'source_bouncing_ball.txt'],
+    ['Tower Defense',            'source_tower-defense.txt'],
+    ['Regular Clicker Game',     'source_regular-clicker-game.txt'],
+];
+
+function checkCode(val) {
+    const msg = document.getElementById('wrong-code');
+    if (val.length < 6) { msg.textContent = ''; return; }
+    if (val === '396967') {
+        document.getElementById('source-links').style.display = 'block';
+        msg.textContent = '';
+        buildSources();
+    } else {
+        msg.textContent = 'Wrong code.';
+        document.getElementById('source-links').style.display = 'none';
+    }
+}
+
+function buildSources() {
+    const list = document.getElementById('src-list');
+    if (list.children.length) return;
+    sources.forEach(([name, file]) => {
+        const url = base + file;
+        const row = document.createElement('div');
+        row.className = 'src-row';
+        row.innerHTML = `<span>${name}</span><button class="src-copy" onclick="copyUrl(this,'${url}')">Copy link</button>`;
+        list.appendChild(row);
+    });
+}
+
+function copyUrl(btn, url) {
+    navigator.clipboard.writeText(url);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 1500);
+}
+</script>
 </body>
 </html>
