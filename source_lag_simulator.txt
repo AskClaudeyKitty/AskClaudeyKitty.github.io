@@ -348,7 +348,7 @@
         const themeKeys = Object.keys(confettiThemes);
 
         const GRAVITY = 0.9;
-        const BOUNCINESS = 0.55;
+        const BOUNCINESS = 0.68;
         const AIR_FRICTION = 0.992;
         const TRAIL_LENGTH = 8;
 
