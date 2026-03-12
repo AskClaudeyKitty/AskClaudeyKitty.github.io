@@ -419,9 +419,6 @@
             for (let i = confettiParticles.length - 1; i >= 0; i--) {
                 const p = confettiParticles[i];
 
-                // Apply gravity
-                p.speedY += GRAVITY * p.mass;
-
                 // Air friction
                 p.speedX *= AIR_FRICTION;
                 p.speedY *= AIR_FRICTION;
