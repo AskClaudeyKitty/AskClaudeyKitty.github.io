@@ -347,40 +347,90 @@
         let currentThemeIdx = 0;
         const themeKeys = Object.keys(confettiThemes);
 
+        const GRAVITY = 0.18;
+        const BOUNCINESS = 0.72;
+        const AIR_FRICTION = 0.995;
+
         function spawnConfettiBatch(count) {
             const colorFunc = confettiThemes[themeKeys[currentThemeIdx % themeKeys.length]];
             for (let i = 0; i < count; i++) {
+                const size = Math.random() * 12 + 4;
                 confettiParticles.push({
                     x: Math.random() * confettiCanvas.width,
-                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
-                    size: Math.random() * 12 + 4,
-                    speedX: Math.random() * 4 - 2,
-                    speedY: Math.random() * 4 + 2,
+                    y: -size,
+                    size,
+                    mass: size * size * 0.01 + Math.random() * 0.5,  // heavier = less bouncy
+                    speedX: (Math.random() - 0.5) * 6,
+                    speedY: Math.random() * 2 + 1,
                     rotation: Math.random() * 360,
                     rotationSpeed: Math.random() * 12 - 6,
+                    angularDamping: 0.97 + Math.random() * 0.02,
                     color: colorFunc(),
+                    bounceCount: 0,
                 });
             }
         }
 
         function drawConfetti() {
             confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            const W = confettiCanvas.width, H = confettiCanvas.height;
+
             for (let i = confettiParticles.length - 1; i >= 0; i--) {
                 const p = confettiParticles[i];
-                p.y += p.speedY;
+
+                // Apply gravity
+                p.speedY += GRAVITY * p.mass;
+
+                // Air friction
+                p.speedX *= AIR_FRICTION;
+                p.speedY *= AIR_FRICTION;
+
+                // Update position
                 p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Spin with angular damping
                 p.rotation += p.rotationSpeed;
+                p.rotationSpeed *= p.angularDamping;
+
+                const half = p.size / 2;
+
+                // Bounce off left/right walls
+                if (p.x - half < 0) {
+                    p.x = half;
+                    p.speedX = Math.abs(p.speedX) * BOUNCINESS;
+                    p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounceCount++;
+                } else if (p.x + half > W) {
+                    p.x = W - half;
+                    p.speedX = -Math.abs(p.speedX) * BOUNCINESS;
+                    p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounceCount++;
+                }
+
+                // Bounce off floor
+                if (p.y + half > H) {
+                    p.y = H - half;
+                    p.speedY = -Math.abs(p.speedY) * (BOUNCINESS - p.mass * 0.05);
+                    p.speedX *= 0.88;  // floor friction
+                    p.rotationSpeed += (Math.random() - 0.5) * 12;
+                    p.bounceCount++;
+                }
+
+                // Bounce off ceiling
+                if (p.y - half < 0) {
+                    p.y = half;
+                    p.speedY = Math.abs(p.speedY) * BOUNCINESS;
+                    p.rotationSpeed += (Math.random() - 0.5) * 6;
+                }
+
+                // Draw
                 confettiCtx.save();
                 confettiCtx.translate(p.x, p.y);
                 confettiCtx.rotate(p.rotation * Math.PI / 180);
                 confettiCtx.fillStyle = p.color;
-                confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                confettiCtx.fillRect(-half, -half, p.size, p.size);
                 confettiCtx.restore();
-                if (p.y > confettiCanvas.height) {
-                    // Respawn at top instead of dying — keeps count growing
-                    p.y = -20;
-                    p.x = Math.random() * confettiCanvas.width;
-                }
             }
         }
 
