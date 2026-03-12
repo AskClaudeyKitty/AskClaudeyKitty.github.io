@@ -272,10 +272,12 @@
             heavyPhysics();
 
             // Spawn confetti — rate grows with time
-            const confettiBatch = Math.floor(elapsedTime * 3) + 5;
+            const confettiBatch = Math.floor(elapsedTime * 1.5) + 2;
             spawnConfettiBatch(confettiBatch);
             if (elapsedTime > 5) currentThemeIdx++;  // cycle themes
+            updateGravBall();
             drawConfetti();
+            drawGravBall();
 
             updateDisplay(currentTime);
 
@@ -293,6 +295,7 @@
             startBtn.style.display = 'none';
             stopBtn.style.display = 'inline-block';
 
+            initGravBall();
             animationId = requestAnimationFrame(gameLoop);
         }
 
@@ -339,6 +342,41 @@
         });
 
         let confettiParticles = [];
+
+        // ── GRAVITY BALL ──────────────────────────────────────────────────────
+        const gravBall = {
+            x: 0, y: 0, r: 22,
+            vx: 4.5, vy: 3.2,
+        };
+        function initGravBall() {
+            gravBall.x = confettiCanvas.width / 2;
+            gravBall.y = confettiCanvas.height / 2;
+        }
+        function updateGravBall() {
+            const W = confettiCanvas.width, H = confettiCanvas.height;
+            gravBall.x += gravBall.vx;
+            gravBall.y += gravBall.vy;
+            if (gravBall.x - gravBall.r < 0)  { gravBall.x = gravBall.r;  gravBall.vx =  Math.abs(gravBall.vx); }
+            if (gravBall.x + gravBall.r > W)   { gravBall.x = W - gravBall.r; gravBall.vx = -Math.abs(gravBall.vx); }
+            if (gravBall.y - gravBall.r < 0)   { gravBall.y = gravBall.r;  gravBall.vy =  Math.abs(gravBall.vy); }
+            if (gravBall.y + gravBall.r > H)   { gravBall.y = H - gravBall.r; gravBall.vy = -Math.abs(gravBall.vy); }
+        }
+        function drawGravBall() {
+            const ctx = confettiCtx;
+            ctx.save();
+            const grad = ctx.createRadialGradient(gravBall.x - gravBall.r * 0.3, gravBall.y - gravBall.r * 0.3, 2, gravBall.x, gravBall.y, gravBall.r);
+            grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+            grad.addColorStop(0.4, 'rgba(180,120,255,0.85)');
+            grad.addColorStop(1, 'rgba(80,0,180,0.7)');
+            ctx.beginPath();
+            ctx.arc(gravBall.x, gravBall.y, gravBall.r, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.shadowColor = '#a855f7';
+            ctx.shadowBlur = 24;
+            ctx.fill();
+            ctx.restore();
+        }
+
         const confettiThemes = {
             rainbow: () => `hsl(${Math.random() * 360}, 70%, 50%)`,
             gold:    () => `hsl(${45 + Math.random() * 15}, 90%, ${50 + Math.random() * 20}%)`,
@@ -459,26 +497,21 @@
         }
 
         // ── HEAVY PHYSICS (extra CPU load) ───────────────────────────────────
-        // O(n²) N-body gravity between confetti particles + matrix math per frame
+        // Gravity toward the gravity ball + matrix math per frame
         function heavyPhysics() {
             const n = confettiParticles.length;
-            if (n < 2) return;
+            if (n < 1) return;
 
-            // O(n²) gravity between every pair of confetti particles
+            // Pull every confetti particle toward the gravity ball
             for (let i = 0; i < n; i++) {
-                for (let j = i + 1; j < n; j++) {
-                    const dx = confettiParticles[j].x - confettiParticles[i].x;
-                    const dy = confettiParticles[j].y - confettiParticles[i].y;
-                    const distSq = dx * dx + dy * dy + 1;
-                    const dist = Math.sqrt(distSq);
-                    const force = 0.0002 / distSq;
-                    const fx = force * dx / dist;
-                    const fy = force * dy / dist;
-                    confettiParticles[i].speedX += fx;
-                    confettiParticles[i].speedY += fy;
-                    confettiParticles[j].speedX -= fx;
-                    confettiParticles[j].speedY -= fy;
-                }
+                const p = confettiParticles[i];
+                const dx = gravBall.x - p.x;
+                const dy = gravBall.y - p.y;
+                const distSq = dx * dx + dy * dy + 1;
+                const dist = Math.sqrt(distSq);
+                const force = 18000 / distSq;   // strong central pull
+                p.speedX += force * dx / dist;
+                p.speedY += force * dy / dist;
             }
 
             // Fake matrix multiplications to burn CPU
