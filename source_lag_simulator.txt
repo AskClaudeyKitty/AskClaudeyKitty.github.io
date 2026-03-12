@@ -502,24 +502,7 @@
             const n = confettiParticles.length;
             if (n < 1) return;
 
-            // O(n²) gravity between every pair of confetti particles
-            for (let i = 0; i < n; i++) {
-                for (let j = i + 1; j < n; j++) {
-                    const dx = confettiParticles[j].x - confettiParticles[i].x;
-                    const dy = confettiParticles[j].y - confettiParticles[i].y;
-                    const distSq = dx * dx + dy * dy + 1;
-                    const dist = Math.sqrt(distSq);
-                    const force = 0.0002 / distSq;
-                    const fx = force * dx / dist;
-                    const fy = force * dy / dist;
-                    confettiParticles[i].speedX += fx;
-                    confettiParticles[i].speedY += fy;
-                    confettiParticles[j].speedX -= fx;
-                    confettiParticles[j].speedY -= fy;
-                }
-            }
-
-            // Secondary pull toward the gravity ball
+            // Pull toward the gravity ball (only gravity source)
             for (let i = 0; i < n; i++) {
                 const p = confettiParticles[i];
                 const dx = gravBall.x - p.x;
