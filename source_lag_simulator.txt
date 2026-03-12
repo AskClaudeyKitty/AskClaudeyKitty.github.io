@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lag Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .fps-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            font-family: system-ui, sans-serif;
+        }
+        .fps-display.good {
+            color: #48bb78;
+        }
+        .fps-display.ok {
+            color: #f6e05e;
+        }
+        .fps-display.bad {
+            color: #f56565;
+        }
+        .fps-display.terrible {
+            color: #ff0066;
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        button {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #startBtn {
+            background: #48bb78;
+            color: white;
+        }
+        #stopBtn {
+            background: #f56565;
+            color: white;
+        }
+        #resetBtn {
+            background: #4299e1;
+            color: white;
+        }
+        .lag-indicator {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+        .lag-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .lag-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #f6e05e, #f56565, #ff0066);
+            transition: width 0.3s;
+            border-radius: 1rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .fps-display {
+                font-size: 2.5rem;
+            }
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .stat-box {
+                padding: 0.6rem;
+            }
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            button {
+                padding: 0.7rem 1.5rem;
+                font-size: 1rem;
+                margin: 0.3rem;
+            }
+            .lag-indicator {
+                padding: 0.6rem;
+            }
+            .lag-bar {
+                height: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lag Simulator</h1>
+        <p>Watch your FPS crumble over time!</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.9rem;">
+            ⌨️ Press <strong>1</strong> to Start | <strong>2</strong> to Stop | <strong>3</strong> to Reset
+        </p>
+
+        <div class="fps-display good" id="fpsDisplay">60 FPS</div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Time Elapsed</div>
+                <div class="stat-value" id="timeElapsed">0s</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Ball Count</div>
+                <div class="stat-value" id="lagFactor">0 balls</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Frame Time</div>
+                <div class="stat-value" id="frameTime">16.67ms</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Target Balls</div>
+                <div class="stat-value" id="operations">0</div>
+            </div>
+        </div>
+
+        <div class="lag-indicator">
+            <div style="margin-bottom: 0.5rem;">LAG INTENSITY</div>
+            <div class="lag-bar">
+                <div class="lag-fill" id="lagFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button id="startBtn" onclick="startSimulation()">▶️ Start Lag</button>
+            <button id="stopBtn" onclick="stopSimulation()" style="display: none;">⏸️ Stop</button>
+            <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let animationId = null;
+        let startTime = null;
+        let frameCount = 0;
+        let lastFrameTime = performance.now();
+        let fps = 60;
+        let lagFactor = 1;
+
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const timeElapsed = document.getElementById('timeElapsed');
+        const lagFactorDisplay = document.getElementById('lagFactor');
+        const frameTimeDisplay = document.getElementById('frameTime');
+        const operationsDisplay = document.getElementById('operations');
+        const lagFill = document.getElementById('lagFill');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // Ball management
+        let balls = [];
+        let ballSpawnTimer = 0;
+        let ballsPerSecond = 10;
+        const gravity = 0.3;
+        const bounciness = 0.9;
+        const maxBallSize = 300;
+
+        function createBall() {
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+
+            const size = Math.random() * 40 + 20;
+            const x = Math.random() * (window.innerWidth - size);
+            const y = Math.random() * 100 + 50;
+            const vx = (Math.random() - 0.5) * 8;
+            const vy = Math.random() * 3;
+            const color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+
+            ball.style.cssText = `
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                left: ${x}px;
+                top: ${y}px;
+                box-shadow: 0 0 10px ${color};
+            `;
+
+            document.body.appendChild(ball);
+            balls.push({
+                element: ball,
+                x: x,
+                y: y,
+                vx: vx,
+                vy: vy,
+                size: size,
+                lastBounceTime: 0
+            });
+        }
+
+        function updateBalls() {
+            const ballsToRemove = [];
+            const currentTime = performance.now();
+
+            balls.forEach((ball, index) => {
+                // Apply gravity
+                ball.vy += gravity;
+
+                // Update position
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Bounce off walls
+                if (ball.x <= 0 || ball.x + ball.size >= window.innerWidth) {
+                    ball.vx = -ball.vx * bounciness;
+                    ball.x = Math.max(0, Math.min(ball.x, window.innerWidth - ball.size));
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.25; // Grow 25% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
+                    // Spawn 3 new balls on bounce (with cooldown)
+                    if (currentTime - ball.lastBounceTime > 100) {
+                        ball.lastBounceTime = currentTime;
+                        for (let i = 0; i < 3; i++) {
+                            createBall();
+                        }
+                    }
+                }
+
+                // Bounce off floor
+                if (ball.y + ball.size >= window.innerHeight) {
+                    ball.vy = -ball.vy * bounciness;
+                    ball.y = window.innerHeight - ball.size;
+                    // Add friction on ground
+                    ball.vx *= 0.99;
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.25; // Grow 25% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
+                    // Spawn 3 new balls on bounce (with cooldown)
+                    if (currentTime - ball.lastBounceTime > 100) {
+                        ball.lastBounceTime = currentTime;
+                        for (let i = 0; i < 3; i++) {
+                            createBall();
+                        }
+                    }
+                }
+                // Bounce off ceiling
+                else if (ball.y <= 0) {
+                    ball.vy = -ball.vy * bounciness;
+                    ball.y = 0;
+                    if (ball.size < maxBallSize) {
+                        ball.size *= 1.25; // Grow 25% on bounce
+                        ball.element.style.width = ball.size + 'px';
+                        ball.element.style.height = ball.size + 'px';
+                    }
+                    // Spawn 3 new balls on bounce (with cooldown)
+                    if (currentTime - ball.lastBounceTime > 100) {
+                        ball.lastBounceTime = currentTime;
+                        for (let i = 0; i < 3; i++) {
+                            createBall();
+                        }
+                    }
+                }
+
+                ball.element.style.left = ball.x + 'px';
+                ball.element.style.top = ball.y + 'px';
+
+                // Check if ball has stopped bouncing (very low velocity and on ground)
+                const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                const isOnGround = ball.y + ball.size >= window.innerHeight - 5;
+
+                if (speed < 0.5 && isOnGround && balls.length > 50) {
+                    ballsToRemove.push(index);
+                }
+            });
+
+            // Remove stopped balls and spawn replacements (5 new balls per stopped ball)
+            if (ballsToRemove.length > 0) {
+                // Remove from highest index first to avoid shifting issues
+                ballsToRemove.sort((a, b) => b - a).forEach(index => {
+                    balls[index].element.remove();
+                    balls.splice(index, 1);
+                });
+
+                // Spawn 5 new balls for each removed ball
+                for (let i = 0; i < ballsToRemove.length * 5; i++) {
+                    createBall();
+                }
+            }
+        }
+
+        function clearAllBalls() {
+            balls.forEach(ball => ball.element.remove());
+            balls = [];
+        }
+
+        function calculateLagFactor(elapsedTime) {
+            // Linear growth - 10 balls per second
+            return Math.floor(elapsedTime * ballsPerSecond);
+        }
+
+        function updateDisplay(currentTime) {
+            const elapsedTime = (currentTime - startTime) / 1000;
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+
+            frameCount++;
+
+            // Calculate FPS every 10 frames
+            if (frameCount % 10 === 0) {
+                fps = Math.round(1000 / deltaTime);
+                timeElapsed.textContent = elapsedTime.toFixed(1) + 's';
+                lagFactorDisplay.textContent = balls.length + ' balls';
+                frameTimeDisplay.textContent = deltaTime.toFixed(2) + 'ms';
+                operationsDisplay.textContent = balls.length.toLocaleString();
+
+                // Update FPS display color
+                fpsDisplay.className = 'fps-display';
+                if (fps >= 50) fpsDisplay.classList.add('good');
+                else if (fps >= 30) fpsDisplay.classList.add('ok');
+                else if (fps >= 15) fpsDisplay.classList.add('bad');
+                else fpsDisplay.classList.add('terrible');
+
+                fpsDisplay.textContent = fps + ' FPS';
+
+                // Update lag bar
+                const lagPercentage = Math.min((elapsedTime / 60) * 100, 100);
+                lagFill.style.width = lagPercentage + '%';
+            }
+        }
+
+        function gameLoop(currentTime) {
+            if (!isRunning) return;
+
+            const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
+            const targetBallCount = calculateLagFactor(elapsedTime);
+
+            // Spawn new balls if needed
+            while (balls.length < targetBallCount) {
+                createBall();
+            }
+
+            // Update all ball positions
+            updateBalls();
+
+            updateDisplay(currentTime);
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startSimulation() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startTime = performance.now();
+            lastFrameTime = startTime;
+            frameCount = 0;
+            lagFactor = 1;
+            ballSpawnTimer = 0;
+
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+
+            // Reset the simulation
+            clearAllBalls();
+            frameCount = 0;
+            fps = 60;
+            lagFactor = 1;
+            startTime = null;
+            lastFrameTime = performance.now();
+            ballSpawnTimer = 0;
+
+            fpsDisplay.className = 'fps-display good';
+            fpsDisplay.textContent = '60 FPS';
+            timeElapsed.textContent = '0s';
+            lagFactorDisplay.textContent = '0 balls';
+            frameTimeDisplay.textContent = '16.67ms';
+            operationsDisplay.textContent = '0';
+            lagFill.style.width = '0%';
+        }
+
+        function resetSimulation() {
+            stopSimulation();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') {
+                startSimulation();
+            } else if (e.key === '2') {
+                stopSimulation();
+            } else if (e.key === '3') {
+                resetSimulation();
+            }
+        });
+
+        // Initialize
+        resetSimulation();
+    </script>
+</body>
+</html>

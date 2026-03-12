@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Explosion - WebGL</title>
+    <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        #explosion-btn {
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        #explosion-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        #explosion-btn:active {
+            transform: scale(0.95);
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="explosion-btn">☢️ NUKE! (WebGL)</button>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // ============== WebGL Setup ==============
+        const canvas = document.getElementById('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        });
+
+        if (!gl) {
+            alert('WebGL not supported!');
+            throw new Error('WebGL not supported');
+        }
+
+        // Vertex shader
+        const vsSource = `
+            attribute vec2 a_position;
+            attribute vec4 a_color;
+            attribute float a_size;
+
+            uniform vec2 u_resolution;
+
+            varying vec4 v_color;
+
+            void main() {
+                vec2 clipSpace = (a_position / u_resolution) * 2.0 - 1.0;
+                gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+                gl_PointSize = a_size;
+                v_color = a_color;
+            }
+        `;
+
+        // Fragment shader for glowing particles
+        const fsSource = `
+            precision mediump float;
+            varying vec4 v_color;
+
+            void main() {
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
+
+                if (dist > 0.5) {
+                    discard;
+                }
+
+                // Create glow effect
+                float alpha = 1.0 - (dist * 2.0);
+                alpha = pow(alpha, 1.5);
+
+                gl_FragColor = vec4(v_color.rgb, v_color.a * alpha);
+            }
+        `;
+
+        // Compile shaders
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+        // Create program
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Program link error:', gl.getProgramInfoLog(program));
+        }
+
+        // Get attribute and uniform locations
+        const positionLoc = gl.getAttribLocation(program, 'a_position');
+        const colorLoc = gl.getAttribLocation(program, 'a_color');
+        const sizeLoc = gl.getAttribLocation(program, 'a_size');
+        const resolutionLoc = gl.getUniformLocation(program, 'u_resolution');
+
+        // Create buffers
+        const positionBuffer = gl.createBuffer();
+        const colorBuffer = gl.createBuffer();
+        const sizeBuffer = gl.createBuffer();
+
+        // Enable blending for glow effect
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+        // ============== Particle System ==============
+        class Particle {
+            constructor(x, y, type = 'explosion') {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.002 + 0.001;
+
+                if (type === 'explosion') {
+                    this.size = Math.random() * 80 + 40;
+                    this.speedX = (Math.random() - 0.5) * 50;
+                    this.speedY = (Math.random() - 0.5) * 50;
+                    this.color = this.getRandomExplosionColor();
+                }
+            }
+
+            getRandomExplosionColor() {
+                const colors = [
+                    [1.0, 0.3, 0.2, 1.0],  // Red-orange
+                    [1.0, 0.5, 0.0, 1.0],  // Orange
+                    [1.0, 0.8, 0.2, 1.0],  // Yellow-orange
+                    [1.0, 0.2, 0.3, 1.0],  // Red
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update(dt) {
+                this.x += this.speedX * dt;
+                this.y += this.speedY * dt;
+
+                if (this.type === 'explosion') {
+                    this.speedY += 20 * dt; // gravity
+                    this.life -= this.decay;
+                    this.size *= 0.995;
+                }
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        class NuclearBomb {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 40 + 30;
+                this.speedX = (Math.random() - 0.5) * 80;
+                this.speedY = (Math.random() - 0.5) * 80 - 20;
+                this.color = Math.random() > 0.5 ? [1.0, 0.3, 0.2, 1.0] : [1.0, 0.6, 0.0, 1.0];
+                this.life = 1.0;
+                this.decay = Math.random() * 0.002 + 0.001;
+                this.exploded = false;
+            }
+
+            update(dt) {
+                this.x += this.speedX * dt;
+                this.y += this.speedY * dt;
+                this.speedY += 15 * dt;
+                this.life -= this.decay;
+
+                // Check screen edge collision
+                if (!this.exploded && (
+                    this.x < 0 ||
+                    this.x > canvas.width ||
+                    this.y < 0 ||
+                    this.y > canvas.height
+                )) {
+                    this.exploded = true;
+                    createExplosion(this.x, this.y, 30);
+                    createTinyBombs(this.x, this.y);
+                    playMiniExplosionSound();
+                }
+            }
+
+            isDead() {
+                return this.exploded || this.life <= 0;
+            }
+        }
+
+        class TinyBomb {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 10 + 8;
+                this.speedX = (Math.random() - 0.5) * 120;
+                this.speedY = (Math.random() - 0.5) * 120;
+                this.color = [1.0, 0.8, 0.2, 1.0];
+                this.life = 1.0;
+                this.decay = Math.random() * 0.003 + 0.002;
+                this.exploded = false;
+            }
+
+            update(dt) {
+                this.x += this.speedX * dt;
+                this.y += this.speedY * dt;
+                this.speedY += 25 * dt;
+                this.life -= this.decay;
+
+                // Check screen edge collision
+                if (!this.exploded && (
+                    this.x < 0 ||
+                    this.x > canvas.width ||
+                    this.y < 0 ||
+                    this.y > canvas.height
+                )) {
+                    this.exploded = true;
+                    createExplosion(this.x, this.y, 15);
+                    playTinyBombSound();
+                }
+            }
+
+            isDead() {
+                return this.exploded || this.life <= 0;
+            }
+        }
+
+        let particles = [];
+        let bombs = [];
+        let tinyBombs = [];
+
+        function createExplosion(x, y, count = 300) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, 'explosion'));
+            }
+        }
+
+        function createNuclearExplosion(x, y) {
+            createExplosion(x, y, 500);
+            for (let i = 0; i < 300; i++) {
+                bombs.push(new NuclearBomb(x, y));
+            }
+        }
+
+        function createTinyBombs(x, y) {
+            for (let i = 0; i < 6; i++) {
+                tinyBombs.push(new TinyBomb(x, y));
+            }
+        }
+
+        // ============== Rendering ==============
+        function render() {
+            // Resize canvas if needed
+            if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            // Clear canvas
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.useProgram(program);
+            gl.uniform2f(resolutionLoc, canvas.width, canvas.height);
+
+            // Collect all particles
+            const allParticles = [...particles, ...bombs, ...tinyBombs];
+
+            if (allParticles.length === 0) {
+                requestAnimationFrame(render);
+                return;
+            }
+
+            // Prepare data arrays
+            const positions = [];
+            const colors = [];
+            const sizes = [];
+
+            allParticles.forEach(p => {
+                positions.push(p.x, p.y);
+                colors.push(...p.color.map((c, i) => i === 3 ? c * p.life : c));
+                sizes.push(p.size);
+            });
+
+            // Upload position data
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
+            gl.enableVertexAttribArray(positionLoc);
+            gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+            // Upload color data
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
+            gl.enableVertexAttribArray(colorLoc);
+            gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+
+            // Upload size data
+            gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sizes), gl.DYNAMIC_DRAW);
+            gl.enableVertexAttribArray(sizeLoc);
+            gl.vertexAttribPointer(sizeLoc, 1, gl.FLOAT, false, 0, 0);
+
+            // Draw particles
+            gl.drawArrays(gl.POINTS, 0, allParticles.length);
+
+            requestAnimationFrame(render);
+        }
+
+        // ============== Update Loop ==============
+        let lastTime = 0;
+
+        function update(currentTime) {
+            const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
+
+            // Update particles
+            particles = particles.filter(p => !p.isDead());
+            particles.forEach(p => p.update(dt));
+
+            // Update bombs
+            bombs = bombs.filter(b => !b.isDead());
+            bombs.forEach(b => b.update(dt));
+
+            // Update tiny bombs
+            tinyBombs = tinyBombs.filter(t => !t.isDead());
+            tinyBombs.forEach(t => t.update(dt));
+
+            requestAnimationFrame(update);
+        }
+
+        // Start loops
+        render();
+        requestAnimationFrame(update);
+
+        // ============== Sound ==============
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playExplosionSound() {
+            const audioCtx = getAudioContext();
+
+            const bufferSize = audioCtx.sampleRate * 2.0;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 2.0);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(1.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.0);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 2.0);
+        }
+
+        function playMiniExplosionSound() {
+            const audioCtx = getAudioContext();
+
+            const bufferSize = audioCtx.sampleRate * 0.3;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1500, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playTinyBombSound() {
+            const audioCtx = getAudioContext();
+
+            const bufferSize = audioCtx.sampleRate * 0.15;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.15);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // ============== Button Handler ==============
+        const btn = document.getElementById('explosion-btn');
+
+        btn.addEventListener('click', () => {
+            const x = window.innerWidth / 2;
+            const y = window.innerHeight / 2;
+
+            createNuclearExplosion(x, y);
+            playExplosionSound();
+
+            document.body.classList.add('shake');
+            setTimeout(() => {
+                document.body.classList.remove('shake');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

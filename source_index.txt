@@ -80,12 +80,6 @@
         a:nth-child(6):hover {
             background: #805ad5;
         }
-        a:nth-child(7) {
-            background: #e53e3e;
-        }
-        a:nth-child(7):hover {
-            background: #c53030;
-        }
     </style>
 </head>
 <body>
