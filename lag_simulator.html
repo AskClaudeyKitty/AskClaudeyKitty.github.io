@@ -129,6 +129,11 @@
             transition: width 0.3s;
             border-radius: 1rem;
         }
+        #confetti-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+        }
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
@@ -172,6 +177,7 @@
     </style>
 </head>
 <body>
+    <canvas id="confetti-canvas"></canvas>
     <div class="container">
         <h1>Lag Simulator</h1>
         <p>Watch your FPS crumble over time!</p>
@@ -420,6 +426,15 @@
             // Update all ball positions
             updateBalls();
 
+            // Heavy N-body physics + matrix math
+            heavyPhysics();
+
+            // Spawn confetti — rate grows with time
+            const confettiBatch = Math.floor(elapsedTime * 3) + 5;
+            spawnConfettiBatch(confettiBatch);
+            if (elapsedTime > 5) currentThemeIdx++;  // cycle themes
+            drawConfetti();
+
             updateDisplay(currentTime);
 
             animationId = requestAnimationFrame(gameLoop);
@@ -460,6 +475,10 @@
             lastFrameTime = performance.now();
             ballSpawnTimer = 0;
 
+            confettiParticles = [];
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            currentThemeIdx = 0;
+
             fpsDisplay.className = 'fps-display good';
             fpsDisplay.textContent = '60 FPS';
             timeElapsed.textContent = '0s';
@@ -471,6 +490,115 @@
 
         function resetSimulation() {
             stopSimulation();
+        }
+
+        // ── CONFETTI SYSTEM (from guessing game) ─────────────────────────────
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        });
+
+        let confettiParticles = [];
+        const confettiThemes = {
+            rainbow: () => `hsl(${Math.random() * 360}, 70%, 50%)`,
+            gold:    () => `hsl(${45 + Math.random() * 15}, 90%, ${50 + Math.random() * 20}%)`,
+            fire:    () => `hsl(${10 + Math.random() * 30}, 100%, ${50 + Math.random() * 30}%)`,
+        };
+        let currentThemeIdx = 0;
+        const themeKeys = Object.keys(confettiThemes);
+
+        function spawnConfettiBatch(count) {
+            const colorFunc = confettiThemes[themeKeys[currentThemeIdx % themeKeys.length]];
+            for (let i = 0; i < count; i++) {
+                confettiParticles.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    size: Math.random() * 12 + 4,
+                    speedX: Math.random() * 4 - 2,
+                    speedY: Math.random() * 4 + 2,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 12 - 6,
+                    color: colorFunc(),
+                });
+            }
+        }
+
+        function drawConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.rotation * Math.PI / 180);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                confettiCtx.restore();
+                if (p.y > confettiCanvas.height) {
+                    // Respawn at top instead of dying — keeps count growing
+                    p.y = -20;
+                    p.x = Math.random() * confettiCanvas.width;
+                }
+            }
+        }
+
+        // ── HEAVY PHYSICS (extra CPU load) ───────────────────────────────────
+        // N-body gravity between all balls + matrix math per frame
+        function heavyPhysics() {
+            const n = balls.length;
+            if (n < 2) return;
+
+            // O(n²) gravity between every pair of balls
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    const dx = balls[j].x - balls[i].x;
+                    const dy = balls[j].y - balls[i].y;
+                    const distSq = dx * dx + dy * dy + 1;
+                    const dist = Math.sqrt(distSq);
+                    const force = 0.0002 / distSq;
+                    const fx = force * dx / dist;
+                    const fy = force * dy / dist;
+                    balls[i].vx += fx;
+                    balls[i].vy += fy;
+                    balls[j].vx -= fx;
+                    balls[j].vy -= fy;
+                }
+            }
+
+            // Fake matrix multiplications to burn CPU
+            const iters = Math.min(n * 2, 500);
+            for (let k = 0; k < iters; k++) {
+                const a = [Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random()];
+                const b = [Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random()];
+                // 4x4 matrix multiply
+                const c = new Array(16);
+                for (let r = 0; r < 4; r++)
+                    for (let col = 0; col < 4; col++) {
+                        let s = 0;
+                        for (let m = 0; m < 4; m++) s += a[r*4+m] * b[m*4+col];
+                        c[r*4+col] = s;
+                    }
+                // Ray-sphere intersection checks
+                for (let ray = 0; ray < 4; ray++) {
+                    const rx = Math.random(), ry = Math.random();
+                    const bx = balls[k % n].x, by = balls[k % n].y, br = balls[k % n].size;
+                    const ocx = rx - bx, ocy = ry - by;
+                    const discriminant = (ocx*rx + ocy*ry)**2 - (rx*rx+ry*ry)*(ocx*ocx+ocy*ocy - br*br);
+                    void Math.sqrt(Math.abs(discriminant));
+                }
+            }
         }
 
         // Keyboard shortcuts

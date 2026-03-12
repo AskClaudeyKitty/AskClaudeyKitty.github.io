@@ -104,20 +104,9 @@
         #code-input:focus { outline: none; border-color: #667eea; }
         #source-links { display: none; margin-top: 1.5rem; }
         #source-links h3 { color: #4a5568; margin-bottom: 1rem; font-size: 1rem; }
-        .src-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .src-row span { flex: 1; text-align: left; font-size: 0.85rem; color: #4a5568; }
-        .src-copy {
-            padding: 6px 12px !important;
-            font-size: 0.8rem !important;
-            background: #4a5568 !important;
-            color: white !important;
-            border-radius: 6px !important;
-            cursor: pointer;
-            border: none;
-            flex: 0 0 auto;
-        }
-        .src-copy:hover { background: #2d3748 !important; }
-        .src-copy.copied { background: #48bb78 !important; }
+        .src-row { margin-bottom: 8px; text-align: left; }
+        .src-row span { font-size: 0.85rem; color: #4a5568; display: block; margin-bottom: 2px; font-weight: bold; }
+        .src-row a { display: inline !important; padding: 0 !important; background: none !important; color: #667eea !important; font-size: 0.78rem; word-break: break-all; }
         #wrong-code { color: #e53e3e; font-size: 0.8rem; margin-top: 4px; min-height: 1em; }
     </style>
 </head>
@@ -179,16 +168,9 @@ function buildSources() {
         const url = base + file;
         const row = document.createElement('div');
         row.className = 'src-row';
-        row.innerHTML = `<span>${name}</span><button class="src-copy" onclick="copyUrl(this,'${url}')">Copy link</button>`;
+        row.innerHTML = `<span>${name}</span><a href="${url}" target="_blank">${url}</a>`;
         list.appendChild(row);
     });
-}
-
-function copyUrl(btn, url) {
-    navigator.clipboard.writeText(url);
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 1500);
 }
 </script>
 </body>
