@@ -368,6 +368,7 @@
                     angularDamping: 0.97 + Math.random() * 0.02,
                     color: colorFunc(),
                     bounceCount: 0,
+                    bounciness: BOUNCINESS,
                     trail: [],
                 });
             }
@@ -400,30 +401,34 @@
                 // Bounce off left/right walls
                 if (p.x - half < 0) {
                     p.x = half;
-                    p.speedX = Math.abs(p.speedX) * BOUNCINESS;
+                    p.speedX = Math.abs(p.speedX) * p.bounciness;
                     p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
                     p.bounceCount++;
                 } else if (p.x + half > W) {
                     p.x = W - half;
-                    p.speedX = -Math.abs(p.speedX) * BOUNCINESS;
+                    p.speedX = -Math.abs(p.speedX) * p.bounciness;
                     p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
                     p.bounceCount++;
                 }
 
                 // Bounce off floor
                 if (p.y + half > H) {
                     p.y = H - half;
-                    p.speedY = -Math.abs(p.speedY) * (BOUNCINESS - p.mass * 0.05);
+                    p.speedY = -Math.abs(p.speedY) * (p.bounciness - p.mass * 0.05);
                     p.speedX *= 0.88;  // floor friction
                     p.rotationSpeed += (Math.random() - 0.5) * 12;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
                     p.bounceCount++;
                 }
 
                 // Bounce off ceiling
                 if (p.y - half < 0) {
                     p.y = half;
-                    p.speedY = Math.abs(p.speedY) * BOUNCINESS;
+                    p.speedY = Math.abs(p.speedY) * p.bounciness;
                     p.rotationSpeed += (Math.random() - 0.5) * 6;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
                 }
 
                 // Record trail
