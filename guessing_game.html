@@ -4754,7 +4754,8 @@
                 reverseScroll: reverseScroll,
                 shopItems: ownedItems,
                 coins: coins,
-                gameHistory: gameHistory
+                gameHistory: gameHistory,
+                guessbotOwned: guessbotOwned
             };
 
             // Check if save already exists
@@ -4855,6 +4856,13 @@
             if (data.shopItems) {
                 ownedItems = data.shopItems;
                 updateSettingsDropdowns();
+            }
+
+            // Load GuessBot ownership
+            if (data.guessbotOwned) {
+                guessbotOwned = true;
+                const btn = document.getElementById('guessbot-btn');
+                if (btn) btn.style.display = 'inline-block';
             }
 
             // Load game history
@@ -4967,7 +4975,8 @@
                 achievements: achievements,
                 reverseScroll: reverseScroll,
                 shopItems: ownedItems,
-                coins: coins
+                coins: coins,
+                guessbotOwned: guessbotOwned
             };
 
             localStorage.setItem('quickSave_' + name, JSON.stringify(saveData));
@@ -5717,7 +5726,7 @@
         // =====================================================
         // GUESSBOT AI
         // =====================================================
-        let guessbotOwned = localStorage.getItem('gg_guessbot') === 'true';
+        let guessbotOwned = false;
         let guessbotActive = false;
         let guessbotTimer = null;
         let gbLow = 1, gbHigh = 100;
@@ -5754,7 +5763,6 @@
             coins -= price;
             updateCoinDisplay();
             guessbotOwned = true;
-            localStorage.setItem('gg_guessbot', 'true');
             document.getElementById('guessbot-btn').style.display = 'inline-block';
             updateShopDisplay();
         }
@@ -5813,8 +5821,7 @@
             if (btn) { btn.textContent = '🤖 GuessBot AI'; btn.disabled = false; }
         }
 
-        // Show button if already owned
-        if (guessbotOwned) document.getElementById('guessbot-btn').style.display = 'inline-block';
+        // Button shown on load if owned (via save data)
 
         // =====================================================
         // SIGN-IN SYSTEM
