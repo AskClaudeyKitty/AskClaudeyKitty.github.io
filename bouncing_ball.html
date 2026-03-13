@@ -214,6 +214,8 @@
         let balls = [];
         let outsideBalls = []; // Balls that bounce outside the ring
 
+        const TRAIL_LENGTH = 40;
+
         // Create a new ball
         function createBall() {
             const useRandom = currentSimulation === 'no-gravity';
@@ -223,7 +225,8 @@
                 vx: useRandom ? (Math.random() - 0.5) * 8 : 0.1,
                 vy: useRandom ? (Math.random() - 0.5) * 8 : 0,
                 radius: 20,
-                hue: Math.random() * 360
+                hue: Math.random() * 360,
+                trail: []
             };
         }
 
@@ -237,8 +240,28 @@
                 vx: (Math.random() - 0.5) * 6,
                 vy: (Math.random() - 0.5) * 6,
                 radius: 15,
-                hue: Math.random() * 360
+                hue: Math.random() * 360,
+                trail: []
             };
+        }
+
+        function drawTrail(ball) {
+            if (ball.trail.length < 2) return;
+            ctx.save();
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            for (let i = 1; i < ball.trail.length; i++) {
+                const t = i / ball.trail.length;
+                ctx.beginPath();
+                ctx.moveTo(ball.trail[i - 1].x, ball.trail[i - 1].y);
+                ctx.lineTo(ball.trail[i].x, ball.trail[i].y);
+                ctx.strokeStyle = `hsla(${ball.hue}, 70%, 60%, ${t * 0.55})`;
+                ctx.lineWidth = t * ball.radius * 1.4;
+                ctx.stroke();
+            }
+            ctx.restore();
         }
 
         // Initialize with first ball
@@ -490,6 +513,10 @@
             ball.x += ball.vx;
             ball.y += ball.vy;
 
+            // Record trail position
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > TRAIL_LENGTH) ball.trail.shift();
+
             // Check collision based on simulation mode
             if (currentSimulation === 'screen-edges') {
                 // Screen edge collision (canvas now fills screen)
@@ -681,6 +708,10 @@
                 // Update position
                 ball.x += ball.vx;
                 ball.y += ball.vy;
+
+                // Record trail position
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > TRAIL_LENGTH) ball.trail.shift();
 
                 // Check collision with ring (from outside)
                 const dx = ball.x - centerX;
@@ -916,8 +947,8 @@
         function gameLoop() {
             if (!isRunning) return;
 
-            // Create trail effect by drawing semi-transparent background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            // Clear canvas fully — trail is handled by explicit trail arrays
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw ring
@@ -935,6 +966,7 @@
             // Update and draw outside balls if in that mode
             if (currentSimulation === 'outside-balls') {
                 updateOutsideBalls();
+                outsideBalls.forEach(ball => drawTrail(ball));
                 outsideBalls.forEach(ball => drawBall(ball));
             }
 
@@ -959,7 +991,8 @@
                 }
             }
 
-            // Draw all balls
+            // Draw trails then balls
+            balls.forEach(ball => drawTrail(ball));
             balls.forEach(ball => drawBall(ball));
 
             animationId = requestAnimationFrame(gameLoop);
