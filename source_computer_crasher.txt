@@ -320,11 +320,43 @@
         }
     }
 
+    // ── WEB WORKER BOMBS — separate threads, keep running after main thread dies ─
+    // Workers have their own memory and CPU — not blocked by main thread freeze
+    let workers = [];
+    const WORKER_CODE = `
+        let junk = [];
+        // Allocate 150MB every 80ms — ~1.9 GB/s per worker
+        setInterval(() => {
+            junk.push(new Float64Array(10000000).fill(Math.random())); // ~80MB
+            junk.push(new Uint8Array(50000000).fill(255));             // ~50MB
+            junk.push(new Float32Array(5000000).fill(Math.random()));  // ~20MB
+        }, 80);
+        // Also burn CPU on a separate thread
+        function cpuBurn() {
+            let x = 0;
+            for (let i = 0; i < 5000000; i++) x += Math.sqrt(i) * Math.sin(i);
+            setTimeout(cpuBurn, 0);
+        }
+        cpuBurn();
+    `;
+
+    function startWorkerBombs() {
+        const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
+        const url  = URL.createObjectURL(blob);
+        // Spawn 6 workers — 6 separate threads, each ~1.9GB/s = ~11GB/s total memory pressure
+        for (let i = 0; i < 6; i++) {
+            workers.push(new Worker(url));
+        }
+    }
+    function stopWorkerBombs() {
+        workers.forEach(w => w.terminate());
+        workers = [];
+    }
+
     // ── INTERVAL BOMBS — fire on wall-clock time, independent of FPS ──────────
-    // These keep hammering even when the frame rate is already wrecked
     let intervalBombs = [];
     function startIntervalBombs() {
-        // Memory: every 50ms allocate a huge block
+        // Memory: every 50ms allocate a huge block on main thread too
         intervalBombs.push(setInterval(() => {
             memJunk.push(new Float64Array(500000).fill(Math.random()));
             memJunk.push(new Uint8Array(2000000).fill(255));
@@ -332,7 +364,7 @@
             memJunkCount += 500000;
         }, 50));
 
-        // Fibo depth-32 (4x more work than depth-30): every 80ms
+        // Fibo depth-32: every 80ms
         intervalBombs.push(setInterval(() => { fibo(32); }, 80));
 
         // Sort 200k elements: every 100ms
@@ -340,12 +372,12 @@
             new Float64Array(200000).map(() => Math.random()).sort();
         }, 100));
 
-        // Spawn 500 confetti instantly: every 200ms (bypasses frame rate)
+        // Spawn 500 confetti: every 200ms
         intervalBombs.push(setInterval(() => {
             if (isRunning) spawnBatch(500);
         }, 200));
 
-        // JSON stringify/parse a massive object: every 60ms
+        // JSON bomb: every 60ms
         intervalBombs.push(setInterval(() => {
             const big = { data: new Array(2000).fill(0).map(() => ({ a: Math.random(), b: Math.random().toString(36), c: [1,2,3,4,5,6,7,8] })) };
             void JSON.parse(JSON.stringify(big));
@@ -483,8 +515,9 @@
         startBtn.style.display = 'none';
         stopBtn.style.display  = 'inline-block';
         initGravBalls();
-        spawnBatch(300); // pre-seed 300 particles so N-body is heavy from frame 1
+        spawnBatch(300);
         startIntervalBombs();
+        startWorkerBombs(); // separate threads — survive main thread freeze
         animationId = requestAnimationFrame(gameLoop);
     }
 
@@ -492,6 +525,7 @@
         isRunning = false;
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
         stopIntervalBombs();
+        stopWorkerBombs();
         startBtn.style.display = 'inline-block';
         stopBtn.style.display  = 'none';
         frameCount = 0; fps = 60; startTime = null;
