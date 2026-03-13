@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Crasher</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 100vh;
+            background: #0a0a0a;
+            color: white; padding: 20px;
+            overflow: hidden; position: relative;
+        }
+        .container {
+            background: rgba(200,0,0,0.15);
+            border: 2px solid #ff0000;
+            padding: 3rem; border-radius: 1rem;
+            text-align: center;
+            backdrop-filter: blur(4px);
+            z-index: 10; position: relative;
+        }
+        h1 { font-size: 2.8rem; color: #ff2200; text-shadow: 0 0 20px #ff0000; }
+        .warning { color: #ff6600; font-size: 1rem; margin-top: 0.5rem; animation: blink 0.4s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        .fps-display { font-size: 4rem; font-weight: bold; margin: 1.5rem 0; }
+        .fps-display.good    { color: #48bb78; }
+        .fps-display.ok      { color: #f6e05e; }
+        .fps-display.bad     { color: #f56565; }
+        .fps-display.terrible{ color: #ff0066; animation: shake 0.2s infinite; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        .stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.8rem; margin: 1.5rem 0; text-align: left; }
+        .stat-box { background: rgba(255,0,0,0.1); padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #ff000044; }
+        .stat-label { font-size: 0.8rem; opacity: 0.7; }
+        .stat-value { font-size: 1.3rem; font-weight: bold; margin-top: 0.3rem; color: #ff6666; }
+        button { padding: 1rem 3rem; font-size: 1.2rem; border: none; border-radius: 0.5rem; cursor: pointer; margin: 0.5rem; }
+        #startBtn { background: #ff2200; color: white; font-weight: bold; }
+        #stopBtn  { background: #555; color: white; }
+        #resetBtn { background: #333; color: white; }
+        .lag-indicator { margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.4); border-radius: 0.5rem; }
+        .lag-bar { width: 100%; height: 30px; background: rgba(255,255,255,0.05); border-radius: 1rem; overflow: hidden; margin-top: 0.5rem; }
+        .lag-fill { height: 100%; background: linear-gradient(90deg,#48bb78,#f6e05e,#f56565,#ff0066); transition: width 0.1s; border-radius: 1rem; }
+        #confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
+        #dom-bombs { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:hidden; }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div id="dom-bombs"></div>
+    <div class="container">
+        <h1>💀 Computer Crasher</h1>
+        <p class="warning">⚠️ WARNING: THIS WILL CRASH YOUR BROWSER ⚠️</p>
+
+        <div class="fps-display good" id="fpsDisplay">60 FPS</div>
+
+        <div class="stats">
+            <div class="stat-box"><div class="stat-label">Confetti Count</div><div class="stat-value" id="lagFactor">0</div></div>
+            <div class="stat-box"><div class="stat-label">Frame Time</div><div class="stat-value" id="frameTime">16.67ms</div></div>
+            <div class="stat-box"><div class="stat-label">Time Elapsed</div><div class="stat-value" id="timeElapsed">0s</div></div>
+            <div class="stat-box"><div class="stat-label">Physics Ops</div><div class="stat-value" id="operations">0</div></div>
+            <div class="stat-box"><div class="stat-label">DOM Bombs</div><div class="stat-value" id="domCount">0</div></div>
+            <div class="stat-box"><div class="stat-label">Memory Junk</div><div class="stat-value" id="memCount">0</div></div>
+        </div>
+
+        <div class="lag-indicator">
+            <div style="margin-bottom:0.5rem;color:#ff4444;">DESTRUCTION LEVEL</div>
+            <div class="lag-bar"><div class="lag-fill" id="lagFill" style="width:0%"></div></div>
+        </div>
+
+        <div style="margin-top:1.5rem;">
+            <button id="startBtn" onclick="startSimulation()">💀 START CRASH</button>
+            <button id="stopBtn" onclick="stopSimulation()" style="display:none;">⏸️ Stop</button>
+            <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+    </div>
+
+<script>
+    let isRunning = false;
+    let animationId = null;
+    let startTime = null;
+    let frameCount = 0;
+    let lastFrameTime = performance.now();
+    let fps = 60;
+    let domBombCount = 0;
+    let memJunkCount = 0;
+    let memJunk = []; // never cleared — memory leak
+
+    const fpsDisplay    = document.getElementById('fpsDisplay');
+    const timeElapsed   = document.getElementById('timeElapsed');
+    const lagFactorDisp = document.getElementById('lagFactor');
+    const frameTimeDisp = document.getElementById('frameTime');
+    const operationsDisp= document.getElementById('operations');
+    const lagFill       = document.getElementById('lagFill');
+    const domCountDisp  = document.getElementById('domCount');
+    const memCountDisp  = document.getElementById('memCount');
+    const startBtn      = document.getElementById('startBtn');
+    const stopBtn       = document.getElementById('stopBtn');
+    const domBombsEl    = document.getElementById('dom-bombs');
+
+    // ── CANVAS ────────────────────────────────────────────────────────────────
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const ctx = confettiCanvas.getContext('2d');
+    confettiCanvas.width  = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+    window.addEventListener('resize', () => {
+        confettiCanvas.width  = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+    });
+
+    // ── 4 GRAVITY BALLS ───────────────────────────────────────────────────────
+    const gravBalls = [
+        { x:0, y:0, r:22, vx: 5.5, vy: 3.2, color:'rgba(180,120,255,0.85)', glow:'#a855f7' },
+        { x:0, y:0, r:18, vx:-4.1, vy: 6.7, color:'rgba(255,160,40,0.85)',  glow:'#f97316' },
+        { x:0, y:0, r:20, vx: 7.2, vy:-3.8, color:'rgba(40,200,255,0.85)',  glow:'#06b6d4' },
+        { x:0, y:0, r:16, vx:-6.0, vy:-5.3, color:'rgba(255,60,120,0.85)',  glow:'#ec4899' },
+    ];
+
+    function initGravBalls() {
+        const W = confettiCanvas.width, H = confettiCanvas.height;
+        gravBalls[0].x = W*0.5;  gravBalls[0].y = H*0.5;
+        gravBalls[1].x = W*0.25; gravBalls[1].y = H*0.3;
+        gravBalls[2].x = W*0.75; gravBalls[2].y = H*0.7;
+        gravBalls[3].x = W*0.6;  gravBalls[3].y = H*0.2;
+    }
+
+    function updateGravBalls() {
+        const W = confettiCanvas.width, H = confettiCanvas.height;
+        for (const b of gravBalls) {
+            b.x += b.vx; b.y += b.vy;
+            if (b.x - b.r < 0)  { b.x = b.r;    b.vx =  Math.abs(b.vx); }
+            if (b.x + b.r > W)  { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
+            if (b.y - b.r < 0)  { b.y = b.r;    b.vy =  Math.abs(b.vy); }
+            if (b.y + b.r > H)  { b.y = H - b.r; b.vy = -Math.abs(b.vy); }
+        }
+    }
+
+    function drawGravBalls() {
+        for (const b of gravBalls) {
+            ctx.save();
+            ctx.shadowColor = b.glow;
+            ctx.shadowBlur  = 40;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fillStyle = b.color;
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // ── CONFETTI ──────────────────────────────────────────────────────────────
+    let confettiParticles = [];
+    const BOUNCINESS   = 0.68;
+    const AIR_FRICTION = 0.992;
+    const TRAIL_LENGTH = 20;
+
+    const themes = [
+        () => `hsl(${Math.random()*360},70%,50%)`,
+        () => `hsl(${45+Math.random()*15},90%,${50+Math.random()*20}%)`,
+        () => `hsl(${10+Math.random()*30},100%,${50+Math.random()*30}%)`,
+        () => `hsl(${120+Math.random()*60},80%,${40+Math.random()*30}%)`,
+    ];
+    let themeIdx = 0;
+
+    function spawnBatch(count) {
+        const colorFn = themes[themeIdx % themes.length];
+        for (let i = 0; i < count; i++) {
+            const size = Math.random() * 14 + 4;
+            confettiParticles.push({
+                x: Math.random() * confettiCanvas.width,
+                y: -size,
+                size,
+                mass: size * size * 0.01 + Math.random() * 0.5,
+                speedX: (Math.random() - 0.5) * 8,
+                speedY: Math.random() * 3 + 1,
+                rotation: Math.random() * 360,
+                rotationSpeed: Math.random() * 14 - 7,
+                angularDamping: 0.97 + Math.random() * 0.02,
+                color: colorFn(),
+                bounciness: BOUNCINESS,
+                bounceCount: 0,
+                trail: [],
+                junk1: new Float64Array(8),   // bloat each particle object
+                junk2: Math.random() * 999999,
+            });
+        }
+    }
+
+    function drawConfetti() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        const W = confettiCanvas.width, H = confettiCanvas.height;
+
+        for (let i = confettiParticles.length - 1; i >= 0; i--) {
+            const p = confettiParticles[i];
+
+            p.speedX *= AIR_FRICTION;
+            p.speedY *= AIR_FRICTION;
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.rotation += p.rotationSpeed;
+            p.rotationSpeed *= p.angularDamping;
+
+            const half = p.size / 2;
+
+            if (p.x - half < 0) {
+                p.x = half;
+                p.speedX = Math.abs(p.speedX) * p.bounciness;
+                p.rotationSpeed += (Math.random() - 0.5) * 10;
+                p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                p.bounceCount++;
+            } else if (p.x + half > W) {
+                p.x = W - half;
+                p.speedX = -Math.abs(p.speedX) * p.bounciness;
+                p.rotationSpeed += (Math.random() - 0.5) * 10;
+                p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                p.bounceCount++;
+            }
+            if (p.y + half > H) {
+                p.y = H - half;
+                p.speedY = -Math.abs(p.speedY) * (p.bounciness - p.mass * 0.05);
+                p.speedX *= 0.88;
+                p.rotationSpeed += (Math.random() - 0.5) * 14;
+                p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                p.bounceCount++;
+            }
+            if (p.y - half < 0) {
+                p.y = half;
+                p.speedY = Math.abs(p.speedY) * p.bounciness;
+                p.rotationSpeed += (Math.random() - 0.5) * 8;
+                p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+            }
+
+            p.trail.push({ x: p.x, y: p.y });
+            if (p.trail.length > TRAIL_LENGTH) p.trail.shift();
+
+            // shadowBlur on every trail segment — very GPU expensive
+            for (let t = 0; t < p.trail.length; t++) {
+                const alpha = (t / p.trail.length) * 0.4;
+                const tSize = p.size * (t / p.trail.length) * 0.8;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur  = 8;
+                ctx.translate(p.trail[t].x, p.trail[t].y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-tSize/2, -tSize/2, tSize, tSize);
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur  = 12;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-half, -half, p.size, p.size);
+            ctx.restore();
+        }
+    }
+
+    // ── HEAVY PHYSICS ─────────────────────────────────────────────────────────
+    function heavyPhysics() {
+        const n = confettiParticles.length;
+        if (n < 1) return;
+
+        // O(n²) N-body gravity between ALL particles
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const dx = confettiParticles[j].x - confettiParticles[i].x;
+                const dy = confettiParticles[j].y - confettiParticles[i].y;
+                const distSq = dx*dx + dy*dy + 1;
+                const dist   = Math.sqrt(distSq);
+                const force  = 0.0003 / distSq;
+                const fx = force * dx / dist;
+                const fy = force * dy / dist;
+                confettiParticles[i].speedX += fx;
+                confettiParticles[i].speedY += fy;
+                confettiParticles[j].speedX -= fx;
+                confettiParticles[j].speedY -= fy;
+            }
+        }
+
+        // Pull toward all 4 gravity balls
+        for (const b of gravBalls) {
+            for (let i = 0; i < n; i++) {
+                const p  = confettiParticles[i];
+                const dx = b.x - p.x;
+                const dy = b.y - p.y;
+                const distSq = dx*dx + dy*dy + 1;
+                const dist   = Math.sqrt(distSq);
+                const force  = 18000 / distSq;
+                p.speedX += force * dx / dist;
+                p.speedY += force * dy / dist;
+            }
+        }
+
+        // Uncapped 8x8 matrix multiplications — n*4 iterations, no limit
+        const iters = n * 4;
+        for (let k = 0; k < iters; k++) {
+            const sz = 8;
+            const a = new Float64Array(sz*sz).map(() => Math.random());
+            const b = new Float64Array(sz*sz).map(() => Math.random());
+            const c = new Float64Array(sz*sz);
+            for (let r = 0; r < sz; r++)
+                for (let col = 0; col < sz; col++) {
+                    let s = 0;
+                    for (let m = 0; m < sz; m++) s += a[r*sz+m] * b[m*sz+col];
+                    c[r*sz+col] = s;
+                }
+            const p = confettiParticles[k % n];
+            for (let ray = 0; ray < 8; ray++) {
+                const rx = Math.random(), ry = Math.random();
+                const ocx = rx - p.x, ocy = ry - p.y;
+                const disc = (ocx*rx+ocy*ry)**2 - (rx*rx+ry*ry)*(ocx*ocx+ocy*ocy - p.size*p.size);
+                void Math.sqrt(Math.abs(disc));
+            }
+        }
+    }
+
+    // ── DOM BOMB — creates DOM elements every frame, never removes them ───────
+    function domBomb(elapsedTime) {
+        const count = Math.floor(elapsedTime * 2) + 3;
+        for (let i = 0; i < count; i++) {
+            const el = document.createElement('div');
+            el.style.cssText = `
+                position:absolute;
+                width:${Math.random()*30+5}px; height:${Math.random()*30+5}px;
+                left:${Math.random()*100}%; top:${Math.random()*100}%;
+                background:hsl(${Math.random()*360},70%,50%);
+                border-radius:50%; opacity:${Math.random()*0.3};
+                transform:rotate(${Math.random()*360}deg);
+                filter:blur(${Math.random()*3}px);
+                box-shadow:0 0 ${Math.random()*20}px currentColor;
+            `;
+            domBombsEl.appendChild(el);
+            domBombCount++;
+        }
+    }
+
+    // ── MEMORY BOMB — large allocations pushed to array, never freed ──────────
+    function memBomb(elapsedTime) {
+        const size = Math.floor(elapsedTime * 500) + 1000;
+        memJunk.push(new Float64Array(size).fill(Math.random()));
+        memJunk.push(new Uint8Array(size * 4).fill(255));
+        memJunk.push('x'.repeat(size * 2));
+        const objs = [];
+        for (let i = 0; i < 50; i++) objs.push({ a: Math.random(), b: new Float32Array(20), c: Math.random().toString(36) });
+        memJunk.push(objs);
+        memJunkCount += size;
+    }
+
+    // ── SORT BOMB — sort a large random array every frame ─────────────────────
+    function sortBomb(n) {
+        const size = Math.min(n * 10, 50000);
+        const arr = new Float64Array(size).map(() => Math.random());
+        arr.sort();
+    }
+
+    // ── JSON BOMB — stringify and parse a huge object every frame ─────────────
+    function jsonBomb() {
+        const obj = {};
+        for (let i = 0; i < 500; i++) obj['key_'+i] = { value: Math.random(), nested: { a: Math.random(), b: [1,2,3,4,5] } };
+        void JSON.parse(JSON.stringify(obj));
+    }
+
+    // ── IMAGE DATA BOMB — read and write pixels every frame ───────────────────
+    function imageDataBomb() {
+        const W = Math.min(confettiCanvas.width, 400);
+        const H = Math.min(confettiCanvas.height, 300);
+        const imgData = ctx.getImageData(0, 0, W, H);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            imgData.data[i]   = 255 - imgData.data[i];
+            imgData.data[i+1] = 255 - imgData.data[i+1];
+            imgData.data[i+2] = 255 - imgData.data[i+2];
+        }
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // ── FIBO BOMB — naive recursive fibonacci ─────────────────────────────────
+    function fibo(n) { return n <= 1 ? n : fibo(n-1) + fibo(n-2); }
+    function fiboBomb(elapsedTime) {
+        const depth = Math.min(20 + Math.floor(elapsedTime / 3), 28);
+        fibo(depth);
+    }
+
+    // ── DISPLAY ───────────────────────────────────────────────────────────────
+    function updateDisplay(currentTime) {
+        const elapsedTime = (currentTime - startTime) / 1000;
+        const deltaTime   = currentTime - lastFrameTime;
+        lastFrameTime = currentTime;
+        frameCount++;
+
+        if (frameCount % 10 === 0) {
+            fps = Math.round(1000 / deltaTime);
+            timeElapsed.textContent    = elapsedTime.toFixed(1) + 's';
+            lagFactorDisp.textContent  = confettiParticles.length.toLocaleString();
+            frameTimeDisp.textContent  = deltaTime.toFixed(2) + 'ms';
+            operationsDisp.textContent = (confettiParticles.length * 4).toLocaleString();
+            domCountDisp.textContent   = domBombCount.toLocaleString();
+            memCountDisp.textContent   = (memJunkCount / 1000).toFixed(0) + 'K';
+
+            fpsDisplay.className = 'fps-display';
+            if      (fps >= 50) fpsDisplay.classList.add('good');
+            else if (fps >= 30) fpsDisplay.classList.add('ok');
+            else if (fps >= 15) fpsDisplay.classList.add('bad');
+            else                fpsDisplay.classList.add('terrible');
+            fpsDisplay.textContent = fps + ' FPS';
+
+            lagFill.style.width = Math.min(Math.max((1 - fps/60)*100, 0), 100) + '%';
+        }
+    }
+
+    // ── GAME LOOP ─────────────────────────────────────────────────────────────
+    function gameLoop(currentTime) {
+        if (!isRunning) return;
+        const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
+
+        // Quadratic spawn — grows explosively
+        const batch = Math.floor(elapsedTime * elapsedTime * 0.8) + 8;
+        spawnBatch(batch);
+        themeIdx += Math.floor(elapsedTime / 3);
+
+        updateGravBalls();
+        heavyPhysics();
+        domBomb(elapsedTime);
+        memBomb(elapsedTime);
+        sortBomb(confettiParticles.length);
+        jsonBomb();
+        imageDataBomb();
+        fiboBomb(elapsedTime);
+        drawConfetti();
+        drawGravBalls();
+        updateDisplay(currentTime);
+
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function startSimulation() {
+        if (isRunning) return;
+        isRunning = true;
+        startTime = performance.now();
+        lastFrameTime = startTime;
+        frameCount = 0;
+        startBtn.style.display = 'none';
+        stopBtn.style.display  = 'inline-block';
+        initGravBalls();
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function stopSimulation() {
+        isRunning = false;
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display  = 'none';
+        frameCount = 0; fps = 60; startTime = null;
+        lastFrameTime = performance.now();
+        confettiParticles = [];
+        domBombCount = 0; memJunk = []; memJunkCount = 0;
+        domBombsEl.innerHTML = '';
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        themeIdx = 0;
+        fpsDisplay.className = 'fps-display good';
+        fpsDisplay.textContent = '60 FPS';
+        timeElapsed.textContent = '0s';
+        lagFactorDisp.textContent = '0';
+        frameTimeDisp.textContent = '16.67ms';
+        operationsDisp.textContent = '0';
+        domCountDisp.textContent = '0';
+        memCountDisp.textContent = '0K';
+        lagFill.style.width = '0%';
+    }
+
+    function resetSimulation() { stopSimulation(); }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === '1') startSimulation();
+        else if (e.key === '2') stopSimulation();
+        else if (e.key === '3') resetSimulation();
+    });
+
+    resetSimulation();
+</script>
+</body>
+</html>
