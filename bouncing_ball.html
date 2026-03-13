@@ -947,7 +947,9 @@
         function gameLoop() {
             if (!isRunning) return;
 
-            // Don't clear — trail stays permanently on canvas
+            // Fade trail
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw ring
             drawRing();
