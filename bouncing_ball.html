@@ -947,9 +947,7 @@
         function gameLoop() {
             if (!isRunning) return;
 
-            // Clear canvas fully — trail is handled by explicit trail arrays
-            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Don't clear — trail stays permanently on canvas
 
             // Draw ring
             drawRing();
