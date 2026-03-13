@@ -795,13 +795,108 @@
                 padding: 0.6rem;
             }
         }
+
+        /* ── SIGN-IN MODAL ─────────────────────────────────── */
+        #signin-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        #signin-box {
+            background: var(--bg-secondary, #fff);
+            color: var(--text-primary, #222);
+            padding: 2.5rem 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            text-align: center;
+            min-width: 320px;
+        }
+        #signin-box h2 { margin-bottom: 0.3rem; }
+        #signin-box p  { margin-bottom: 1.5rem; opacity: 0.7; font-size: 0.9rem; }
+        #signin-box input {
+            display: block; width: 100%; padding: 0.7rem 1rem;
+            margin-bottom: 0.8rem; border-radius: 0.5rem;
+            border: 1px solid #ccc; font-size: 1rem;
+            box-sizing: border-box;
+        }
+        #signin-box .btn-row { display: flex; gap: 0.7rem; margin-top: 0.5rem; }
+        #signin-box button {
+            flex: 1; padding: 0.7rem; font-size: 1rem;
+            border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold;
+        }
+        #btn-signin  { background: #48bb78; color: #fff; }
+        #btn-create  { background: #667eea; color: #fff; }
+        #signin-msg  { margin-top: 0.8rem; font-size: 0.9rem; min-height: 1.2em; color: #e53e3e; }
+        #signin-skip { background: none; border: none; color: #888; font-size: 0.8rem;
+                       cursor: pointer; margin-top: 0.8rem; text-decoration: underline; }
+
+        /* ── AD OVERLAY ────────────────────────────────────── */
+        #ad-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            display: none; align-items: center; justify-content: center;
+            z-index: 9998;
+        }
+        #ad-overlay.visible { display: flex; }
+        #ad-box {
+            background: #fff; color: #222;
+            width: min(480px, 90vw);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        #ad-header {
+            background: #e2e8f0; padding: 0.4rem 1rem;
+            font-size: 0.75rem; color: #666;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        #ad-content { padding: 3rem 2rem; min-height: 200px; font-size: 1.1rem; color: #888; }
+        #ad-close {
+            padding: 0.5rem 1.2rem;
+            background: #e53e3e; color: #fff;
+            border: none; border-radius: 0.4rem;
+            cursor: not-allowed; font-size: 0.85rem;
+        }
+        #ad-close.ready { cursor: pointer; background: #48bb78; }
     </style>
 </head>
 <body data-theme="default">
     <canvas id="confetti-canvas"></canvas>
     <div id="background-effects"></div>
 
+    <!-- SIGN-IN MODAL -->
+    <div id="signin-overlay">
+        <div id="signin-box">
+            <h2>🎮 Sign In</h2>
+            <p>Sign in to play ad-free!</p>
+            <input type="text"     id="si-username" placeholder="Username" autocomplete="username">
+            <input type="password" id="si-password" placeholder="Password" autocomplete="current-password">
+            <div class="btn-row">
+                <button id="btn-signin" onclick="doSignIn()">Sign In</button>
+                <button id="btn-create" onclick="doCreateAccount()">Create Account</button>
+            </div>
+            <div id="signin-msg"></div>
+            <button id="signin-skip" onclick="dismissSignIn()">Continue without signing in</button>
+        </div>
+    </div>
+
+    <!-- AD OVERLAY -->
+    <div id="ad-overlay">
+        <div id="ad-box">
+            <div id="ad-header">
+                <span>Advertisement — sign in to remove ads</span>
+                <button id="ad-close" onclick="closeAd()">Close (5)</button>
+            </div>
+            <div id="ad-content">
+                <!-- Ad content goes here -->
+            </div>
+        </div>
+    </div>
+
     <button class="achievements-btn" onclick="openAchievements()">🏆</button>
+    <button id="signin-open-btn" onclick="document.getElementById('signin-overlay').style.display='flex'" title="Sign In" style="position:fixed;bottom:1rem;right:1rem;z-index:9990;background:#667eea;color:white;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.85rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">👤 Sign In</button>
     <button class="shop-btn" onclick="openShop()">🛒</button>
     <button class="saves-btn" onclick="openSaves()">💾</button>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
@@ -5612,6 +5707,208 @@
             const canvas = document.getElementById('confetti-canvas');
             resizeConfettiCanvas(canvas);
         });
+
+        // =====================================================
+        // SIGN-IN SYSTEM
+        // =====================================================
+        function getAccounts() {
+            return JSON.parse(localStorage.getItem('gg_accounts') || '{}');
+        }
+        function saveAccounts(obj) {
+            localStorage.setItem('gg_accounts', JSON.stringify(obj));
+        }
+        function getCurrentUser() {
+            return localStorage.getItem('gg_current_user') || null;
+        }
+        function setCurrentUser(name) {
+            if (name) localStorage.setItem('gg_current_user', name);
+            else localStorage.removeItem('gg_current_user');
+        }
+
+        function doSignIn() {
+            const u = document.getElementById('si-username').value.trim();
+            const p = document.getElementById('si-password').value;
+            const msg = document.getElementById('signin-msg');
+            if (!u || !p) { msg.textContent = 'Enter a username and password.'; return; }
+            const accounts = getAccounts();
+            if (!accounts[u]) { msg.textContent = 'Account not found. Create one first.'; return; }
+            if (accounts[u] !== p) { msg.textContent = 'Wrong password.'; return; }
+            setCurrentUser(u);
+            document.getElementById('signin-overlay').style.display = 'none';
+            document.getElementById('signin-open-btn').style.display = 'none';
+            stopAdSystem();
+        }
+
+        function doCreateAccount() {
+            const u = document.getElementById('si-username').value.trim();
+            const p = document.getElementById('si-password').value;
+            const msg = document.getElementById('signin-msg');
+            if (!u || !p) { msg.textContent = 'Enter a username and password.'; return; }
+            if (u.length < 3) { msg.textContent = 'Username must be at least 3 characters.'; return; }
+            if (p.length < 4) { msg.textContent = 'Password must be at least 4 characters.'; return; }
+            const accounts = getAccounts();
+            if (accounts[u]) { msg.textContent = 'Username already taken.'; return; }
+            accounts[u] = p;
+            saveAccounts(accounts);
+            setCurrentUser(u);
+            document.getElementById('signin-overlay').style.display = 'none';
+            document.getElementById('signin-open-btn').style.display = 'none';
+            document.getElementById('signin-msg').textContent = '';
+            stopAdSystem();
+        }
+
+        function dismissSignIn() {
+            document.getElementById('signin-overlay').style.display = 'none';
+            startAdSystem();
+        }
+
+        // Always require sign-in on load — clear session but keep accounts
+        setCurrentUser(null);
+
+        // =====================================================
+        // AD SYSTEM  (only runs when not signed in)
+        // =====================================================
+        const _adPageStart = Date.now();
+        function _adMinutes() { return Math.max(1, Math.round((Date.now() - _adPageStart) / 60000)); }
+
+        const ADS = [
+            // GuessBot AI™
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🤖</div>
+                    <h2 style="margin:0 0 0.3rem;color:#667eea;font-size:1.5rem;">GuessBot AI™</h2>
+                    <p style="color:#555;margin:0 0 1rem;font-size:0.95rem;">Too lazy to guess numbers yourself?<br>Let artificial intelligence do it for you.</p>
+                    <div style="background:#f0f4ff;border-radius:0.5rem;padding:0.8rem;margin-bottom:1rem;font-size:0.85rem;color:#444;text-align:left;">
+                        ✅ 99.7% accuracy*<br>✅ Never loses<br>✅ Doesn't need sleep<br>
+                        <span style="font-size:0.7rem;color:#aaa;">*accuracy may vary. by "vary" we mean it guesses randomly.</span>
+                    </div>
+                    <button style="background:#667eea;color:white;border:none;padding:0.6rem 2rem;border-radius:0.5rem;font-size:1rem;cursor:pointer;" onclick="alert('GuessBot AI™ is not real. You have been bamboozled.')">Download Free Trial</button>
+                    <p style="font-size:0.7rem;color:#bbb;margin-top:0.5rem;">GuessBot AI™ is a product of GuessBot Industries LLC (not real)</p>
+                </div>
+            ` },
+
+            // Touch grass
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;">
+                    <div style="font-size:3rem;margin-bottom:0.5rem;">🌿</div>
+                    <h2 style="margin:0 0 0.5rem;color:#22c55e;font-size:1.4rem;">Hey. Look up.</h2>
+                    <p style="color:#555;font-size:1rem;margin:0 0 0.8rem;">You've been playing for <strong id="ad-minutes-display" style="color:#22c55e;">?</strong> minute(s).</p>
+                    <p style="color:#777;font-size:0.9rem;margin:0 0 1.2rem;">Go outside. Touch some grass. Pet a dog.<br>The number will still be here when you get back.</p>
+                    <div style="font-size:2rem;">🌳🌻🐕☀️</div>
+                    <p style="font-size:0.75rem;color:#bbb;margin-top:0.8rem;">This message brought to you by Grass™ — it's outside.</p>
+                </div>
+            ` },
+
+            // Lag Simulator
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;margin:-1px;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🌀</div>
+                    <h2 style="margin:0 0 0.3rem;color:#a78bfa;">Lag Simulator</h2>
+                    <p style="color:#c4b5fd;font-size:0.9rem;margin:0 0 1rem;">Watch confetti rain down with heavy physics,<br>trails, and a gravity ball pulling everything.</p>
+                    <a href="lag_simulator.html" style="display:inline-block;background:#7c3aed;color:white;padding:0.6rem 2rem;border-radius:0.5rem;text-decoration:none;font-size:0.95rem;">▶ Play Now</a>
+                    <p style="font-size:0.75rem;color:#888;margin-top:0.8rem;">Free • no download • works in browser</p>
+                </div>
+            ` },
+
+            // Explosion Button
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1c0a00,#3b1200);color:white;margin:-1px;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">💥</div>
+                    <h2 style="margin:0 0 0.3rem;color:#fb923c;">Explosion Button</h2>
+                    <p style="color:#fdba74;font-size:0.9rem;margin:0 0 1rem;">A button. You press it. Things explode.<br>That's it. That's the whole game.</p>
+                    <a href="explosion-button.html" style="display:inline-block;background:#ea580c;color:white;padding:0.6rem 2rem;border-radius:0.5rem;text-decoration:none;font-size:0.95rem;">💣 Press the Button</a>
+                    <p style="font-size:0.75rem;color:#888;margin-top:0.8rem;">Also try the WebGL version for extra explosions</p>
+                </div>
+            ` },
+
+            // Ball in a Ring
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0a0a0a,#1a1a2e);color:white;margin:-1px;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">⚽</div>
+                    <h2 style="margin:0 0 0.3rem;color:#60a5fa;">Ball in a Ring</h2>
+                    <p style="color:#93c5fd;font-size:0.9rem;margin:0 0 1rem;">Satisfying physics. Orbiting gravity balls.<br>Trail effects. Watch it forever.</p>
+                    <a href="bouncing_ball.html" style="display:inline-block;background:#2563eb;color:white;padding:0.6rem 2rem;border-radius:0.5rem;text-decoration:none;font-size:0.95rem;">▶ Watch</a>
+                    <p style="font-size:0.75rem;color:#888;margin-top:0.8rem;">Oddly satisfying • no skill required</p>
+                </div>
+            ` },
+
+            // Regular Clicker
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;margin:-1px;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">👆</div>
+                    <h2 style="margin:0 0 0.3rem;color:#34d399;">Regular Clicker Game</h2>
+                    <p style="color:#6ee7b7;font-size:0.9rem;margin:0 0 1rem;">Click. Get numbers. Buy upgrades.<br>A perfectly regular clicker game.</p>
+                    <a href="regular-clicker-game.html" style="display:inline-block;background:#059669;color:white;padding:0.6rem 2rem;border-radius:0.5rem;text-decoration:none;font-size:0.95rem;">👆 Start Clicking</a>
+                    <p style="font-size:0.75rem;color:#888;margin-top:0.8rem;">100% regular • no surprises</p>
+                </div>
+            ` },
+
+            // Tower Defense
+            { content: `
+                <div style="padding:2rem;font-family:system-ui,sans-serif;background:linear-gradient(135deg,#052e16,#14532d);color:white;margin:-1px;">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🏰</div>
+                    <h2 style="margin:0 0 0.3rem;color:#86efac;">Tower Defense</h2>
+                    <p style="color:#bbf7d0;font-size:0.9rem;margin:0 0 1rem;">Build towers. Defend your base.<br>Strategy meets action.</p>
+                    <a href="tower-defense.html" style="display:inline-block;background:#16a34a;color:white;padding:0.6rem 2rem;border-radius:0.5rem;text-decoration:none;font-size:0.95rem;">🏰 Play</a>
+                    <p style="font-size:0.75rem;color:#888;margin-top:0.8rem;">Free • no download • works in browser</p>
+                </div>
+            ` },
+        ];
+
+        let adInterval       = null;
+        let adCloseTimeout   = null;
+        let lastAdTime       = Date.now();
+        let adCountdown      = 5;
+        let adCountdownTimer = null;
+
+        function startAdSystem() {
+            lastAdTime = Date.now();
+            adInterval = setInterval(() => {
+                if (Date.now() - lastAdTime >= 60000 && Math.random() < 0.80) {
+                    showAd();
+                }
+            }, 2000);
+        }
+
+        function stopAdSystem() {
+            clearInterval(adInterval);
+            clearInterval(adCountdownTimer);
+            clearTimeout(adCloseTimeout);
+            adInterval = null;
+        }
+
+        function showAd() {
+            const ad = ADS[Math.floor(Math.random() * ADS.length)];
+            document.getElementById('ad-content').innerHTML = ad.content || '<p style="padding:2rem;color:#aaa;">(Ad space)</p>';
+            const minEl = document.getElementById('ad-minutes-display');
+            if (minEl) minEl.textContent = _adMinutes();
+            const closeBtn = document.getElementById('ad-close');
+            closeBtn.classList.remove('ready');
+            closeBtn.disabled = true;
+            adCountdown = 5;
+            closeBtn.textContent = 'Close (' + adCountdown + ')';
+            document.getElementById('ad-overlay').classList.add('visible');
+
+            adCountdownTimer = setInterval(() => {
+                adCountdown--;
+                if (adCountdown <= 0) {
+                    clearInterval(adCountdownTimer);
+                    closeBtn.textContent = 'Close';
+                    closeBtn.classList.add('ready');
+                    closeBtn.disabled = false;
+                } else {
+                    closeBtn.textContent = 'Close (' + adCountdown + ')';
+                }
+            }, 1000);
+        }
+
+        function closeAd() {
+            const closeBtn = document.getElementById('ad-close');
+            if (!closeBtn.classList.contains('ready')) return;
+            document.getElementById('ad-overlay').classList.remove('visible');
+            clearInterval(adCountdownTimer);
+            lastAdTime = Date.now(); // reset 1-min timer
+        }
     </script>
 </body>
 </html>
