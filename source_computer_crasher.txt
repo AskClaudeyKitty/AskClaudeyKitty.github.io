@@ -320,9 +320,45 @@
         }
     }
 
+    // ── INTERVAL BOMBS — fire on wall-clock time, independent of FPS ──────────
+    // These keep hammering even when the frame rate is already wrecked
+    let intervalBombs = [];
+    function startIntervalBombs() {
+        // Memory: every 50ms allocate a huge block
+        intervalBombs.push(setInterval(() => {
+            memJunk.push(new Float64Array(500000).fill(Math.random()));
+            memJunk.push(new Uint8Array(2000000).fill(255));
+            memJunk.push('X'.repeat(1000000));
+            memJunkCount += 500000;
+        }, 50));
+
+        // Fibo depth-32 (4x more work than depth-30): every 80ms
+        intervalBombs.push(setInterval(() => { fibo(32); }, 80));
+
+        // Sort 200k elements: every 100ms
+        intervalBombs.push(setInterval(() => {
+            new Float64Array(200000).map(() => Math.random()).sort();
+        }, 100));
+
+        // Spawn 500 confetti instantly: every 200ms (bypasses frame rate)
+        intervalBombs.push(setInterval(() => {
+            if (isRunning) spawnBatch(500);
+        }, 200));
+
+        // JSON stringify/parse a massive object: every 60ms
+        intervalBombs.push(setInterval(() => {
+            const big = { data: new Array(2000).fill(0).map(() => ({ a: Math.random(), b: Math.random().toString(36), c: [1,2,3,4,5,6,7,8] })) };
+            void JSON.parse(JSON.stringify(big));
+        }, 60));
+    }
+    function stopIntervalBombs() {
+        intervalBombs.forEach(clearInterval);
+        intervalBombs = [];
+    }
+
     // ── DOM BOMB — creates DOM elements every frame, never removes them ───────
     function domBomb(elapsedTime) {
-        const count = Math.floor(elapsedTime * 2) + 3;
+        const count = Math.floor(elapsedTime * 5) + 10;
         for (let i = 0; i < count; i++) {
             const el = document.createElement('div');
             el.style.cssText = `
@@ -342,19 +378,19 @@
 
     // ── MEMORY BOMB — large allocations pushed to array, never freed ──────────
     function memBomb(elapsedTime) {
-        const size = Math.floor(elapsedTime * 500) + 1000;
+        const size = Math.floor(elapsedTime * 2000) + 5000;
         memJunk.push(new Float64Array(size).fill(Math.random()));
-        memJunk.push(new Uint8Array(size * 4).fill(255));
-        memJunk.push('x'.repeat(size * 2));
+        memJunk.push(new Uint8Array(size * 8).fill(255));
+        memJunk.push('x'.repeat(size * 4));
         const objs = [];
-        for (let i = 0; i < 50; i++) objs.push({ a: Math.random(), b: new Float32Array(20), c: Math.random().toString(36) });
+        for (let i = 0; i < 200; i++) objs.push({ a: Math.random(), b: new Float32Array(50), c: Math.random().toString(36) });
         memJunk.push(objs);
         memJunkCount += size;
     }
 
     // ── SORT BOMB — sort a large random array every frame ─────────────────────
     function sortBomb(n) {
-        const size = Math.min(n * 10, 50000);
+        const size = Math.min(n * 20, 200000);
         const arr = new Float64Array(size).map(() => Math.random());
         arr.sort();
     }
@@ -382,7 +418,7 @@
     // ── FIBO BOMB — naive recursive fibonacci ─────────────────────────────────
     function fibo(n) { return n <= 1 ? n : fibo(n-1) + fibo(n-2); }
     function fiboBomb(elapsedTime) {
-        const depth = Math.min(20 + Math.floor(elapsedTime / 3), 28);
+        const depth = Math.min(26 + Math.floor(elapsedTime / 2), 32);
         fibo(depth);
     }
 
@@ -419,7 +455,7 @@
         const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
 
         // Quadratic spawn — grows explosively
-        const batch = Math.floor(elapsedTime * elapsedTime * 0.8) + 8;
+        const batch = Math.floor(elapsedTime * elapsedTime * 4) + 30;
         spawnBatch(batch);
         themeIdx += Math.floor(elapsedTime / 3);
 
@@ -428,8 +464,8 @@
         domBomb(elapsedTime);
         memBomb(elapsedTime);
         sortBomb(confettiParticles.length);
-        jsonBomb();
-        imageDataBomb();
+        jsonBomb(); jsonBomb();         // run twice per frame
+        imageDataBomb(); imageDataBomb(); // run twice per frame
         fiboBomb(elapsedTime);
         drawConfetti();
         drawGravBalls();
@@ -447,12 +483,15 @@
         startBtn.style.display = 'none';
         stopBtn.style.display  = 'inline-block';
         initGravBalls();
+        spawnBatch(300); // pre-seed 300 particles so N-body is heavy from frame 1
+        startIntervalBombs();
         animationId = requestAnimationFrame(gameLoop);
     }
 
     function stopSimulation() {
         isRunning = false;
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        stopIntervalBombs();
         startBtn.style.display = 'inline-block';
         stopBtn.style.display  = 'none';
         frameCount = 0; fps = 60; startTime = null;
