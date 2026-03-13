@@ -5864,10 +5864,10 @@
         function startAdSystem() {
             lastAdTime = Date.now();
             adInterval = setInterval(() => {
-                if (Date.now() - lastAdTime >= 60000 && Math.random() < 0.80) {
+                if (Date.now() - lastAdTime >= 15000 && Math.random() < 0.80) {
                     showAd();
                 }
-            }, 2000);
+            }, 1000);
         }
 
         function stopAdSystem() {
