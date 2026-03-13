@@ -5864,7 +5864,8 @@
         function startAdSystem() {
             lastAdTime = Date.now();
             adInterval = setInterval(() => {
-                if (Date.now() - lastAdTime >= 15000 && Math.random() < 0.80) {
+                const adVisible = document.getElementById('ad-overlay').classList.contains('visible');
+                if (!adVisible && Date.now() - lastAdTime >= 15000 && Math.random() < 0.80) {
                     showAd();
                 }
             }, 1000);
