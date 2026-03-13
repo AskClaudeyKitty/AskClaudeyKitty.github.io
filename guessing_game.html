@@ -5800,11 +5800,30 @@
             const mid = Math.floor((gbLow + gbHigh) / 2);
             input.value = mid;
             guess();
-            const msg = document.getElementById('message').textContent.toLowerCase();
-            if (msg.includes('too low') || msg.includes('getting warmer') && gbLow < mid) {
-                gbLow = mid + 1;
-            } else if (msg.includes('too high')) {
-                gbHigh = mid - 1;
+            const msg = document.getElementById('message').textContent;
+
+            if (msg.includes('Too low... but you\'re close')) {
+                // secret is mid+1 or mid+2
+                gbLow = Math.max(gbLow, mid + 1);
+                gbHigh = Math.min(gbHigh, mid + 2);
+            } else if (msg.includes('Too low... getting warmer')) {
+                // secret is mid+3 to mid+10
+                gbLow = Math.max(gbLow, mid + 3);
+                gbHigh = Math.min(gbHigh, mid + 10);
+            } else if (msg.includes('Too low')) {
+                // secret is mid+11 or higher
+                gbLow = Math.max(gbLow, mid + 11);
+            } else if (msg.includes('Too high... but you\'re close')) {
+                // secret is mid-1 or mid-2
+                gbHigh = Math.min(gbHigh, mid - 1);
+                gbLow = Math.max(gbLow, mid - 2);
+            } else if (msg.includes('Too high... getting warmer')) {
+                // secret is mid-3 to mid-10
+                gbHigh = Math.min(gbHigh, mid - 3);
+                gbLow = Math.max(gbLow, mid - 10);
+            } else if (msg.includes('Too high')) {
+                // secret is mid-11 or lower
+                gbHigh = Math.min(gbHigh, mid - 11);
             } else {
                 // Won, lost, or special case — stop
                 stopGuessbot();
