@@ -4033,6 +4033,7 @@
                 coins = 9999999999;
             }
             document.getElementById('coin-balance-display').textContent = formatNumber(coins);
+            saveShopData();
         }
 
         // =====================================================
@@ -5703,6 +5704,9 @@
 
         // Update dropdowns with default owned items
         updateSettingsDropdowns();
+
+        // Load persisted coins/shop data
+        loadShopData();
 
         // Initialize coin display
         updateCoinDisplay();
