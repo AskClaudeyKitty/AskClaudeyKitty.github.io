@@ -6,7 +6,6 @@
     <title>Running Python Script</title>
     <script src="mini-coi.js"></script>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css" />
-    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -45,15 +44,6 @@
             flex: 1;
         }
     </style>
-    <script>
-        // Set the title before page renders
-        const params = new URLSearchParams(window.location.search);
-        const scriptFile = params.get('script');
-        if (scriptFile) {
-            const displayName = scriptFile.replace(/\.py$/, '');
-            document.title = displayName + ' — Python Script';
-        }
-    </script>
 </head>
 <body>
     <div class="header">
@@ -62,26 +52,42 @@
     </div>
     <div id="loading">Loading Python environment... this may take a moment on first load.</div>
 
-    <script type="py" terminal worker>
-        from pyodide.http import pyfetch
-        from pyscript import window, document
+    <!-- This script type="py" is just a DOM element to the browser (unknown type).
+         The inline script below sets its src BEFORE PyScript's module script runs,
+         since module scripts are deferred until after DOM parsing. -->
+    <script type="py" terminal worker id="runner"></script>
 
-        # Get script filename from URL parameters
-        params = window.URLSearchParams.new(window.location.search)
-        script_file = params.get("script")
+    <script>
+        // Runs immediately during parsing — before PyScript's deferred module
+        const params = new URLSearchParams(window.location.search);
+        const scriptFile = params.get('script');
 
-        # Update header with script name
-        display_name = script_file.replace(".py", "") if script_file else "Unknown"
-        document.getElementById("script-name").textContent = display_name
-        document.getElementById("loading").style.display = "none"
+        if (scriptFile) {
+            const displayName = scriptFile.replace(/\.py$/, '');
+            document.getElementById('script-name').textContent = displayName;
+            document.title = displayName + ' — Python Script';
 
-        if script_file:
-            # Fetch and run the script
-            response = await pyfetch(script_file)
-            code = await response.string()
-            exec(code)
-        else:
-            print("Error: No script specified in URL.")
+            // Set src on the py script element before PyScript initializes
+            document.getElementById('runner').setAttribute('src', scriptFile);
+        } else {
+            document.getElementById('script-name').textContent = 'No script specified';
+            document.getElementById('loading').textContent = 'Error: No script file specified in URL.';
+        }
+    </script>
+
+    <!-- PyScript module loads here (deferred), finds the script element with src already set -->
+    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+
+    <script>
+        // Hide loading message once terminal appears
+        const observer = new MutationObserver(() => {
+            const terminal = document.querySelector('.py-terminal');
+            if (terminal) {
+                document.getElementById('loading').style.display = 'none';
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     </script>
 </body>
 </html>
