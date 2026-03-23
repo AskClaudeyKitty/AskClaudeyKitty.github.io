@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Running Python Script</title>
     <script src="mini-coi.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -39,11 +41,19 @@
             color: #a0aec0;
             font-size: 1.1rem;
         }
-        /* make the PyScript terminal fill the page */
         .py-terminal {
             flex: 1;
         }
     </style>
+    <script>
+        // Set the title before page renders
+        const params = new URLSearchParams(window.location.search);
+        const scriptFile = params.get('script');
+        if (scriptFile) {
+            const displayName = scriptFile.replace(/\.py$/, '');
+            document.title = displayName + ' — Python Script';
+        }
+    </script>
 </head>
 <body>
     <div class="header">
@@ -52,59 +62,26 @@
     </div>
     <div id="loading">Loading Python environment... this may take a moment on first load.</div>
 
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const scriptFile = params.get('script');
-        const nameEl = document.getElementById('script-name');
+    <script type="py" terminal worker>
+        from pyodide.http import pyfetch
+        from pyscript import window, document
 
-        if (scriptFile) {
-            const displayName = scriptFile.replace(/\.py$/, '');
-            nameEl.textContent = displayName;
-            document.title = displayName + ' — Python Script';
+        # Get script filename from URL parameters
+        params = window.URLSearchParams.new(window.location.search)
+        script_file = params.get("script")
 
-            // Fetch the Python code, then inject PyScript with inline code
-            fetch(scriptFile)
-                .then(r => {
-                    if (!r.ok) throw new Error('Could not load ' + scriptFile);
-                    return r.text();
-                })
-                .then(code => {
-                    // Add PyScript CSS and JS
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = 'https://pyscript.net/releases/2024.11.1/core.css';
-                    document.head.appendChild(link);
+        # Update header with script name
+        display_name = script_file.replace(".py", "") if script_file else "Unknown"
+        document.getElementById("script-name").textContent = display_name
+        document.getElementById("loading").style.display = "none"
 
-                    const coreScript = document.createElement('script');
-                    coreScript.type = 'module';
-                    coreScript.src = 'https://pyscript.net/releases/2024.11.1/core.js';
-                    document.head.appendChild(coreScript);
-
-                    // Create the py-script element with inline code
-                    const pyScript = document.createElement('script');
-                    pyScript.type = 'py';
-                    pyScript.setAttribute('terminal', '');
-                    pyScript.setAttribute('worker', '');
-                    pyScript.textContent = code;
-                    document.body.appendChild(pyScript);
-
-                    // Hide loading message once terminal appears
-                    const observer = new MutationObserver(() => {
-                        const terminal = document.querySelector('.py-terminal');
-                        if (terminal) {
-                            document.getElementById('loading').style.display = 'none';
-                            observer.disconnect();
-                        }
-                    });
-                    observer.observe(document.body, { childList: true, subtree: true });
-                })
-                .catch(err => {
-                    document.getElementById('loading').textContent = 'Error: ' + err.message;
-                });
-        } else {
-            nameEl.textContent = 'No script specified';
-            document.getElementById('loading').textContent = 'Error: No script file specified in URL.';
-        }
+        if script_file:
+            # Fetch and run the script
+            response = await pyfetch(script_file)
+            code = await response.string()
+            exec(code)
+        else:
+            print("Error: No script specified in URL.")
     </script>
 </body>
 </html>
