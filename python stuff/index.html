@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Scripts</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #2d3748 0%, #1a365d 100%);
+        }
+        .container {
+            background: white;
+            padding: 3rem 4rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 { margin-top: 0; color: #2d3748; }
+        p { color: #718096; }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .script-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .script-list a {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #3182ce;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-size: 1.2rem;
+            transition: background 0.2s ease;
+        }
+        .script-list a:hover { background: #2b6cb0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" href="../index.html">&larr; Back to Games</a>
+        <h1>🐍 Python Scripts</h1>
+        <p>Click a script to run it in your browser!</p>
+        <div class="script-list">
+            <a href="run.html?script=monty python.py">Monty Python</a>
+        </div>
+    </div>
+</body>
+</html>
