@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Running Python Script</title>
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css" />
-    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+    <script src="https://skulpt.org/js/skulpt.min.js"></script>
+    <script src="https://skulpt.org/js/skulpt-stdlib.js"></script>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: system-ui, sans-serif;
             margin: 0;
@@ -14,7 +15,7 @@
             color: white;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
         }
         .header {
             padding: 1rem 2rem;
@@ -22,6 +23,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            flex-shrink: 0;
         }
         .header a {
             color: #90cdf4;
@@ -34,75 +36,133 @@
             font-size: 1.1rem;
             color: #e2e8f0;
         }
-        #loading {
-            text-align: center;
-            padding: 3rem;
-            color: #a0aec0;
-            font-size: 1.1rem;
-        }
-        .py-terminal {
+        #terminal {
             flex: 1;
+            background: #000;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #terminal .output { color: #e2e8f0; }
+        #terminal .user-input { color: #68d391; }
+        #terminal .error { color: #fc8181; }
+        #input-line {
+            display: none;
+            background: #000;
+            padding: 0 1rem 1rem 1rem;
+            flex-shrink: 0;
+        }
+        #input-line input {
+            width: 100%;
+            background: #1a202c;
+            border: 1px solid #4a5568;
+            color: #68d391;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            outline: none;
+        }
+        #input-line input:focus {
+            border-color: #68d391;
         }
     </style>
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const scriptFile = params.get('script');
-        if (scriptFile) {
-            const displayName = scriptFile.replace(/\.py$/, '');
-            document.title = displayName + ' — Python Script';
-        }
-    </script>
 </head>
 <body>
     <div class="header">
         <a href="index.html">&larr; Back to Python Scripts</a>
         <h2 id="script-name"></h2>
     </div>
-    <div id="loading">Loading Python environment... this may take a moment on first load.</div>
+    <div id="terminal"><span class="output">Loading script...</span></div>
+    <div id="input-line">
+        <input type="text" id="user-input" autocomplete="off" autofocus>
+    </div>
 
-    <script type="py" terminal>
-        import builtins
-        import time as _time_module
-        from pyscript import window, document
-        from pyodide.http import pyfetch
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const scriptFile = params.get('script');
+        const terminal = document.getElementById('terminal');
+        const inputLine = document.getElementById('input-line');
+        const userInput = document.getElementById('user-input');
 
-        # Override input() to use browser prompt dialogs
-        # (PyScript terminal input needs SharedArrayBuffer which GitHub Pages doesn't support)
-        _original_input = builtins.input
-        def _web_input(prompt=''):
-            if prompt:
-                print(prompt, end='', flush=True)
-            result = window.prompt(prompt if prompt else 'Enter input:')
-            if result is None:
-                result = ''
-            print(result)
-            return result
-        builtins.input = _web_input
+        if (scriptFile) {
+            const displayName = scriptFile.replace(/\.py$/, '');
+            document.getElementById('script-name').textContent = displayName;
+            document.title = displayName + ' — Python Script';
+        }
 
-        # Cap time.sleep so it doesn't freeze the browser
-        _original_sleep = _time_module.sleep
-        def _safe_sleep(seconds):
-            _original_sleep(min(seconds, 3))
-        _time_module.sleep = _safe_sleep
+        function appendOutput(text, className) {
+            const span = document.createElement('span');
+            span.className = className || 'output';
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
 
-        # Get script from URL and run it
-        params = window.URLSearchParams.new(window.location.search)
-        script_file = params.get('script')
+        // Resolve function for current input() call
+        let resolveInput = null;
 
-        name_el = document.getElementById('script-name')
-        loading_el = document.getElementById('loading')
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && resolveInput) {
+                const val = userInput.value;
+                userInput.value = '';
+                inputLine.style.display = 'none';
+                appendOutput(val + '\n', 'user-input');
+                resolveInput(val);
+                resolveInput = null;
+            }
+        });
 
-        if script_file:
-            display_name = script_file.replace('.py', '')
-            name_el.textContent = display_name
-            loading_el.style.display = 'none'
+        function runScript(code) {
+            terminal.textContent = '';
 
-            response = await pyfetch(script_file)
-            code = await response.string()
-            exec(code)
-        else:
-            name_el.textContent = 'No script specified'
-            loading_el.textContent = 'Error: No script file specified in URL.'
+            Sk.configure({
+                output: function(text) {
+                    appendOutput(text);
+                },
+                inputfun: function(prompt) {
+                    return new Promise(function(resolve) {
+                        if (prompt) {
+                            appendOutput(prompt);
+                        }
+                        resolveInput = resolve;
+                        inputLine.style.display = 'block';
+                        userInput.focus();
+                        terminal.scrollTop = terminal.scrollHeight;
+                    });
+                },
+                inputfunTakesPrompt: true,
+                __future__: Sk.python3
+            });
+
+            Sk.misceval.asyncToPromise(function() {
+                return Sk.importMainWithBody('<stdin>', false, code, true);
+            }).then(function() {
+                appendOutput('\n--- Program finished ---\n');
+            }).catch(function(err) {
+                appendOutput('\n' + err.toString() + '\n', 'error');
+            });
+        }
+
+        if (scriptFile) {
+            fetch(scriptFile)
+                .then(r => {
+                    if (!r.ok) throw new Error('Could not load ' + scriptFile);
+                    return r.text();
+                })
+                .then(code => runScript(code))
+                .catch(err => {
+                    terminal.textContent = '';
+                    appendOutput('Error: ' + err.message, 'error');
+                });
+        } else {
+            terminal.textContent = '';
+            appendOutput('Error: No script specified in URL.', 'error');
+        }
     </script>
 </body>
 </html>

@@ -115,4 +115,4 @@ while playagain == True:
         playagain = True
     else:
         break
-time.sleep(111111111111111111111)
+print('Thanks for playing!')
