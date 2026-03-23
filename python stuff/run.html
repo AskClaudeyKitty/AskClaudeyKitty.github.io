@@ -68,7 +68,7 @@
             document.title = displayName + ' — Python Script';
 
             // Set src on the py script element before PyScript initializes
-            document.getElementById('runner').setAttribute('src', scriptFile);
+            document.getElementById('runner').setAttribute('src', encodeURI(scriptFile));
         } else {
             document.getElementById('script-name').textContent = 'No script specified';
             document.getElementById('loading').textContent = 'Error: No script file specified in URL.';
