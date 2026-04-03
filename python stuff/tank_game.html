@@ -949,8 +949,7 @@ function update() {
       } else if (w.effect === 'poison') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'poison', life: 250, dmg: 0.3 });
       } else if (w.effect === 'hellfire') {
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'fire', life: 200, dmg: 0.4 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'poison', life: 300, dmg: 0.3 });
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'hellfire', life: 300, dmg: 1.4 });
       } else if (w.effect === 'curse') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'poison', life: 400, dmg: 0.3 });
@@ -1022,8 +1021,8 @@ function update() {
       if (dist < h.radius) {
         t.hp -= h.dmg;
         if (Math.random() < 0.03) {
-          const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!' };
-          const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa' };
+          const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!', hellfire: 'HELLFIRE!', mud: 'MUD' };
+          const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa', hellfire: '#c4f', mud: '#a85' };
           const label = labels[h.type] || h.type;
           const col = cols[h.type] || '#fff';
           spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, label, col);
@@ -1625,6 +1624,30 @@ function drawGame() {
         g.addColorStop(1, `rgba(0,180,120,${alpha * 0.9})`);
         ctx.fillStyle = g;
         ctx.fillRect(fx - 3, fy - fh, 6, fh);
+      }
+    } else if (h.type === 'hellfire') {
+      // Purple demonic fire
+      for (let fx = h.x - h.radius; fx < h.x + h.radius; fx += 5) {
+        if (fx < 0 || fx >= W) continue;
+        const fy = terrainAt(fx);
+        const flicker = Math.sin(t * 1.5 + fx * 0.4) * 5 + Math.random() * 4;
+        const fh = 12 + flicker;
+        const g = ctx.createLinearGradient(fx, fy - fh, fx, fy);
+        g.addColorStop(0, 'rgba(200,100,255,0)');
+        g.addColorStop(0.2, `rgba(180,60,255,${alpha * 0.6})`);
+        g.addColorStop(0.6, `rgba(140,30,200,${alpha * 0.8})`);
+        g.addColorStop(1, `rgba(80,0,150,${alpha * 0.9})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(fx - 3, fy - fh, 6, fh);
+      }
+      // Purple embers
+      for (let e = 0; e < 4; e++) {
+        const ex = h.x + Math.sin(t * 1.2 + e * 2) * h.radius * 0.7;
+        const ey = terrainAt(h.x) - 5 - Math.abs(Math.sin(t * 2 + e * 1.5)) * 18;
+        ctx.fillStyle = `rgba(200,100,255,${alpha * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 2, 0, Math.PI * 2);
+        ctx.fill();
       }
     } else if (h.type === 'lava') {
       // Bright orange-red lava pool with bubbles
