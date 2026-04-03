@@ -437,7 +437,6 @@ function startGame() {
   currentMap = Math.floor(Math.random() * maps.length);
   document.getElementById('info').style.display = 'block';
   initTanks();
-  applyMapBoosts();
   turn = 0;
   projectiles = [];
   explosions = [];
@@ -449,6 +448,8 @@ function startGame() {
   lastProjCount = 0;
   turnCount = 0;
   generateTerrain();
+  applyMapBoosts();
+  applyMapEffects();
 }
 
 function resetGame() {
@@ -954,11 +955,10 @@ function update() {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'poison', life: 400, dmg: 0.3 });
       } else if (w.effect === 'thermoAll') {
-        // ALL hazards at once
+        // Radiation + acid + acid fire + mud
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.0, type: 'radiation', life: 3600, dmg: 0.5 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'lava', life: 1800, dmg: 0.8 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'fire', life: 300, dmg: 0.4 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.5, type: 'poison', life: 600, dmg: 0.3 });
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'acid', life: 1800, dmg: 0.9 });
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'acidFire', life: 400, dmg: 0.6 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.6, type: 'mud', life: 1200, dmg: 0 });
       } else if (w.effect === 'megaRadiation') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.5, type: 'radiation', life: 3600, dmg: 0.5 });
@@ -1022,8 +1022,8 @@ function update() {
       if (dist < h.radius) {
         t.hp -= h.dmg;
         if (Math.random() < 0.03) {
-          const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE' };
-          const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df' };
+          const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!' };
+          const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa' };
           const label = labels[h.type] || h.type;
           const col = cols[h.type] || '#fff';
           spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, label, col);
@@ -1090,11 +1090,9 @@ function drawTank(t, tx, ty, scale) {
   ctx.ellipse(tx, ty + 2 * s, bw + 2 * s, 4 * s, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Treads — rounded dark base with wheels
+  // Treads — dark base with wheels
   ctx.fillStyle = '#2a2a2a';
-  ctx.beginPath();
-  ctx.roundRect(tx - bw - 2 * s, ty - 8 * s, (bw + 2 * s) * 2, 10 * s, 5 * s);
-  ctx.fill();
+  ctx.fillRect(tx - bw - 2 * s, ty - 8 * s, (bw + 2 * s) * 2, 10 * s);
   // Wheels
   ctx.fillStyle = '#444';
   const wheelCount = Math.round(bw / (5 * s));
@@ -1117,14 +1115,10 @@ function drawTank(t, tx, ty, scale) {
   const bodyY = ty - bh - 8 * s;
   const bodyH = bh + 2 * s;
   ctx.fillStyle = t.color;
-  ctx.beginPath();
-  ctx.roundRect(tx - bw + 2 * s, bodyY, (bw - 2 * s) * 2, bodyH, [4 * s, 4 * s, 2 * s, 2 * s]);
-  ctx.fill();
+  ctx.fillRect(tx - bw + 2 * s, bodyY, (bw - 2 * s) * 2, bodyH);
   // Body highlight
   ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.beginPath();
-  ctx.roundRect(tx - bw + 4 * s, bodyY + 1 * s, (bw - 4 * s) * 2, bodyH * 0.4, 3 * s);
-  ctx.fill();
+  ctx.fillRect(tx - bw + 4 * s, bodyY + 1 * s, (bw - 4 * s) * 2, bodyH * 0.4);
   // Body shadow
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.fillRect(tx - bw + 3 * s, bodyY + bodyH - 3 * s, (bw - 3 * s) * 2, 3 * s);
@@ -1588,6 +1582,50 @@ function drawGame() {
       ctx.beginPath();
       ctx.ellipse(h.x, gy + 2, h.radius * 0.6, 4, 0, 0, Math.PI * 2);
       ctx.fill();
+    } else if (h.type === 'acid') {
+      // Glowing cyan-green acid pool with bubbles
+      const gy = terrainAt(h.x);
+      const ag = ctx.createRadialGradient(h.x, gy, 0, h.x, gy, h.radius);
+      ag.addColorStop(0, `rgba(0,255,200,${alpha * 0.6})`);
+      ag.addColorStop(0.4, `rgba(0,200,180,${alpha * 0.4})`);
+      ag.addColorStop(0.8, `rgba(0,150,120,${alpha * 0.2})`);
+      ag.addColorStop(1, 'rgba(0,80,60,0)');
+      ctx.fillStyle = ag;
+      ctx.beginPath();
+      ctx.ellipse(h.x, gy + 2, h.radius, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Bright core
+      ctx.fillStyle = `rgba(100,255,220,${alpha * 0.3 + Math.sin(t * 4) * 0.1})`;
+      ctx.beginPath();
+      ctx.ellipse(h.x, gy + 2, h.radius * 0.3, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Acid bubbles
+      for (let b = 0; b < 5; b++) {
+        const bx = h.x + Math.sin(t * 1.5 + b * 1.4) * h.radius * 0.6;
+        const bubblePhase = (t * 2.5 + b * 1.3) % 2.5;
+        if (bubblePhase < 1.2) {
+          const by = gy - bubblePhase * 10;
+          ctx.fillStyle = `rgba(0,255,200,${alpha * (1 - bubblePhase / 1.2) * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(bx, by, 2 + bubblePhase, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (h.type === 'acidFire') {
+      // Green-teal burning flames
+      const gy = terrainAt(h.x);
+      for (let fx = h.x - h.radius; fx < h.x + h.radius; fx += 6) {
+        if (fx < 0 || fx >= W) continue;
+        const fy = terrainAt(fx);
+        const flicker = Math.sin(t + fx * 0.3) * 4 + Math.random() * 3;
+        const fh = 10 + flicker;
+        const g = ctx.createLinearGradient(fx, fy - fh, fx, fy);
+        g.addColorStop(0, 'rgba(0,255,180,0)');
+        g.addColorStop(0.3, `rgba(0,220,150,${alpha * 0.7})`);
+        g.addColorStop(1, `rgba(0,180,120,${alpha * 0.9})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(fx - 3, fy - fh, 6, fh);
+      }
     } else if (h.type === 'lava') {
       // Bright orange-red lava pool with bubbles
       const gy = terrainAt(h.x);
@@ -1684,19 +1722,24 @@ function drawGame() {
   // Projectiles — glowing orbs with trails
   for (const p of projectiles) {
     const w = p.weaponData;
-    const beh = w.behavior;
     const big = w.radius > 40;
     const med = w.radius > 25;
     const r = big ? 6 : med ? 5 : p.isFragment ? 3 : 4;
 
-    // Trail (fading line behind)
+    // Parse color to RGB for alpha blending
+    const hex = w.color;
+    let cr, cg, cb;
+    if (hex.length === 4) { cr = parseInt(hex[1]+hex[1],16); cg = parseInt(hex[2]+hex[2],16); cb = parseInt(hex[3]+hex[3],16); }
+    else { cr = parseInt(hex.slice(1,3),16); cg = parseInt(hex.slice(3,5),16); cb = parseInt(hex.slice(5,7),16); }
+
+    // Trail
     const spd = Math.hypot(p.vx, p.vy);
     const trailLen = Math.min(spd * 4, 30);
     if (trailLen > 2) {
       const nx = p.vx / spd, ny = p.vy / spd;
       const tg = ctx.createLinearGradient(p.x, p.y, p.x - nx * trailLen, p.y - ny * trailLen);
-      tg.addColorStop(0, w.color + '88');
-      tg.addColorStop(1, w.color + '00');
+      tg.addColorStop(0, `rgba(${cr},${cg},${cb},0.5)`);
+      tg.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
       ctx.strokeStyle = tg;
       ctx.lineWidth = r * 1.2;
       ctx.lineCap = 'round';
@@ -1709,8 +1752,8 @@ function drawGame() {
 
     // Outer glow
     const gg = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, r * 3);
-    gg.addColorStop(0, w.color + '44');
-    gg.addColorStop(1, w.color + '00');
+    gg.addColorStop(0, `rgba(${cr},${cg},${cb},0.25)`);
+    gg.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
     ctx.fillStyle = gg;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r * 3, 0, Math.PI * 2);
@@ -1855,8 +1898,16 @@ function draw() {
 }
 
 function loop() {
-  update();
-  draw();
+  try {
+    update();
+    draw();
+  } catch(e) {
+    console.error('GAME ERROR:', e);
+    ctx.fillStyle = '#f00';
+    ctx.font = '14px monospace';
+    ctx.fillText('ERROR: ' + e.message, 10, 30);
+    return; // stop loop so error is visible
+  }
   requestAnimationFrame(loop);
 }
 
