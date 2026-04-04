@@ -952,8 +952,10 @@ function update() {
     maxY = Math.min(maxY, p.y); // track highest projectile (negative = higher)
     const w = p.weaponData;
 
-    // Homing: curve toward enemy, then go STRAIGHT after 1 second
-    if ((w.behavior === 'homing' || w.homing) && !p.isFragment) {
+    // Check if this is a homing projectile
+    const isHoming = (w.behavior === 'homing' || w.homing) && !p.isFragment;
+    
+    if (isHoming) {
       const enemy = tanks[1 - p.owner];
       const tx = enemy.x;
       const ty = terrainAt(enemy.x) - 15;
@@ -979,20 +981,26 @@ function update() {
         const dy = ty - p.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 5) {
-          // INSTANT velocity change toward target - PERFECTLY STRAIGHT
-          const speed = 25; // instant speed boost
-          p.vx = (dx / dist) * speed;
-          p.vy = (dy / dist) * speed;
+          // Calculate exact direction to target
+          const dirX = dx / dist;
+          const dirY = dy / dist;
+          // INSTANT velocity change - completely replace old velocity
+          const speed = 35; // very fast instant speed
+          p.vx = dirX * speed;
+          p.vy = dirY * speed;
         }
-        // NO GRAVITY - goes perfectly straight
+        // ABSOLUTELY NO GRAVITY - moves in perfect straight line
       }
+      
+      // Move projectile
+      p.x += p.vx;
+      p.y += p.vy;
     } else {
-      p.vy += grav; // normal gravity for non-homing projectiles
+      // Normal projectile physics with gravity
+      p.x += p.vx;
+      p.vy += grav;
+      p.y += p.vy;
     }
-
-    const isHoming = (w.behavior === 'homing' || w.homing) && !p.isFragment;
-    p.x += p.vx;
-    p.y += p.vy;
 
     // Check direct hit on enemy tank (not the one who fired)
     let hitTank = false;
