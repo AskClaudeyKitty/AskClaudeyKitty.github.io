@@ -288,6 +288,7 @@ let botDelay = 0;
 let shakeTime = 0;
 let shakeAmount = 0;
 let lastProjCount = 0;
+let botTrajectory = []; // trajectory points for bot's aim preview
 let turnCount = 0;
 
 // ========== TERRAIN ==========
@@ -783,10 +784,22 @@ function botShoot() {
         }
       }
     }
-    bestAngle += (Math.random() - 0.5) * 12;
-    bestPower += (Math.random() - 0.5) * 3;
+    bestAngle += (Math.random() - 0.5) * 4;
+    bestPower += (Math.random() - 0.5) * 1.5;
     bot._targetAngle = bestAngle;
     bot._botPower = bestPower;
+    
+    // Calculate trajectory points for visualization
+    botTrajectory = [];
+    const rad = bestAngle * Math.PI / 180;
+    let tx = bot.x, ty = terrainAt(bot.x) - 20;
+    let tvx = Math.cos(rad) * bestPower, tvy = -Math.sin(rad) * bestPower;
+    for (let step = 0; step < 150; step += 3) {
+      tx += tvx; tvy += grav; ty += tvy;
+      if (tx < -50 || tx > W + 50 || ty > H + 50) break;
+      botTrajectory.push({ x: tx, y: ty });
+      if (ty >= terrainAt(tx)) break;
+    }
   }
 
   // Frames 2-50: slowly rotate barrel
@@ -804,6 +817,7 @@ function botShoot() {
   const bot = tanks[1];
   bot.angle = bot._targetAngle;
   fireWeapon(bot);
+  botTrajectory = []; // clear trajectory after firing
 }
 
 function impactDamage(px, py, w, p) {
@@ -1923,6 +1937,34 @@ function drawGame() {
   }
 
   drawAimUI();
+
+  // Bot trajectory preview (when bot is aiming)
+  if (turn === 1 && botTrajectory.length > 0 && !projectiles.length && !gameOver) {
+    ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(tanks[1].x, terrainAt(tanks[1].x) - 20);
+    for (const point of botTrajectory) {
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Target marker at end of trajectory
+    if (botTrajectory.length > 0) {
+      const lastPoint = botTrajectory[botTrajectory.length - 1];
+      ctx.fillStyle = 'rgba(255, 50, 50, 0.5)';
+      ctx.beginPath();
+      ctx.arc(lastPoint.x, lastPoint.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(lastPoint.x, lastPoint.y, 8, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
 
   // Projectiles — glowing orbs with trails
   for (const p of projectiles) {
