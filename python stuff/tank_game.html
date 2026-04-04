@@ -168,18 +168,18 @@ const tankTypes = [
   // ABRAMS — classic military. Straightforward hard-hitting weapons.
   { name: 'Abrams', color: '#6a8', bodyW: 30, bodyH: 10, barrelLen: 26, barrelW: 4, hp: 1000, speed: 1.5, fuel: 100, desc: 'Classic military',
     weapons: [
-      { name: 'Shell',      color: '#ff8', radius: 22, dmgMult: 1,   count: 1, spread: 0, icon: '.', ammo: 1 },
-      { name: 'Dual Shot',  color: '#ff4', radius: 18, dmgMult: 0.8, count: 2, spread: 3, icon: '..', ammo: 3 },
-      { name: 'Grenade',    color: '#fa4', radius: 15, dmgMult: 0.5, count: 1, spread: 0, icon: 'ooo', ammo: 2, behavior: 'cluster', fragments: 5, fragRadius: 12 },
-      { name: 'Airstrike',  color: '#f84', radius: 18, dmgMult: 0.7, count: 1, spread: 0, icon: 'vvv', ammo: 1, behavior: 'rain', fragments: 6 },
+      { name: 'Shell',      color: '#ff8', radius: 22, dmgMult: 1.4, count: 1, spread: 0, icon: '.', ammo: 1 },
+      { name: 'Dual Shot',  color: '#ff4', radius: 18, dmgMult: 1.1, count: 2, spread: 3, icon: '..', ammo: 3 },
+      { name: 'Grenade',    color: '#fa4', radius: 15, dmgMult: 0.9, count: 1, spread: 0, icon: 'ooo', ammo: 2, behavior: 'cluster', fragments: 5, fragRadius: 12 },
+      { name: 'Airstrike',  color: '#f84', radius: 18, dmgMult: 1.0, count: 1, spread: 0, icon: 'vvv', ammo: 1, behavior: 'rain', fragments: 6 },
     ]},
   // FROST — ice themed. Slows, shatters, freezes.
   { name: 'Frost', color: '#6cf', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 900, speed: 1.3, fuel: 110, desc: 'Ice & snow',
     weapons: [
-      { name: 'Snowball',   color: '#aef', radius: 20, dmgMult: 0.9, count: 1, spread: 0, icon: 'o', ammo: 1, effect: 'ice' },
-      { name: 'Icicle',     color: '#8df', radius: 14, dmgMult: 0.7, count: 3, spread: 2, icon: '///', ammo: 3, effect: 'ice' },
-      { name: 'Frost Bomb', color: '#cef', radius: 30, dmgMult: 1.0, count: 1, spread: 0, icon: '(*)', ammo: 2, effect: 'ice', behavior: 'split', fragments: 5, fragRadius: 14 },
-      { name: 'Blizzard',   color: '#fff', radius: 16, dmgMult: 0.6, count: 1, spread: 0, icon: '***', ammo: 1, effect: 'ice', behavior: 'rain', fragments: 8 },
+      { name: 'Snowball',   color: '#aef', radius: 20, dmgMult: 1.3, count: 1, spread: 0, icon: 'o', ammo: 1, effect: 'ice' },
+      { name: 'Icicle',     color: '#8df', radius: 14, dmgMult: 1.0, count: 3, spread: 2, icon: '///', ammo: 3, effect: 'ice' },
+      { name: 'Frost Bomb', color: '#cef', radius: 30, dmgMult: 1.4, count: 1, spread: 0, icon: '(*)', ammo: 2, effect: 'ice', behavior: 'split', fragments: 5, fragRadius: 14 },
+      { name: 'Blizzard',   color: '#fff', radius: 16, dmgMult: 1.1, count: 1, spread: 0, icon: '***', ammo: 1, effect: 'ice', behavior: 'rain', fragments: 8 },
     ]},
   // BLAZE — fire themed. Burns ground, spreads fire.
   { name: 'Blaze', color: '#f60', bodyW: 30, bodyH: 11, barrelLen: 24, barrelW: 5, hp: 950, speed: 1.2, fuel: 90, desc: 'Fire & burn',
@@ -248,10 +248,7 @@ const tankTypes = [
   // THERMONUCLEAR — ultimate radiation tank. Unlocked after 5 wins.
   { name: 'Thermonuclear', color: '#bff', bodyW: 34, bodyH: 13, barrelLen: 28, barrelW: 6, hp: 1000, speed: 0.5, fuel: 40, desc: 'Total irradiation', locked: true, unlockWins: 5,
     weapons: [
-      { name: 'Isotope',  color: '#bff', radius: 28, dmgMult: 1.0, count: 1, spread: 0, icon: '*', ammo: 1, effect: 'thermoAll' },
-      { name: 'Fallout',  color: '#af0', radius: 16, dmgMult: 0.5, count: 1, spread: 0, icon: '(*)', ammo: 3, effect: 'thermoAll', behavior: 'split', fragments: 6, fragRadius: 18 },
-      { name: 'Meltdown', color: '#ff0', radius: 60, dmgMult: 1.3, count: 1, spread: 0, icon: '!!!', ammo: 2, effect: 'thermoAll', behavior: 'drill' },
-      { name: 'H-Bomb',   color: '#fff', radius: 45, dmgMult: 1.0, count: 1, spread: 0, icon: '[!]', ammo: 1, effect: 'thermoAll', behavior: 'drillRain' },
+      { name: 'H-Bomb',   color: '#fff', radius: 45, dmgMult: 2.5, count: 1, spread: 0, icon: '[!]', ammo: 1, effect: 'thermoAll', behavior: 'drillRain' },
     ]},
 ];
 
@@ -492,7 +489,7 @@ canvas.addEventListener('mousedown', e => {
   // Fire button click
   const fbx = W - 110, fby = selY - 8;
   if (m.x >= fbx && m.x <= fbx + 95 && m.y >= fby && m.y <= fby + 38) {
-    const hasAmmo = tanks[0].weapon === 4 ? (tanks[0].bonusWeapon && tanks[0].bonusAmmo > 0) : tanks[0].ammo[tanks[0].weapon] > 0;
+    const hasAmmo = (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) ? (tanks[0].bonusAmmo > 0) : tanks[0].ammo[tanks[0].weapon] > 0;
     if (hasAmmo) {
       // Fire at current angle with medium power
       fireWeapon(tanks[0], null, 12);
@@ -506,7 +503,7 @@ canvas.addEventListener('mousedown', e => {
   if (m.x >= W - 180 && m.x <= W - 145 && m.y >= my && m.y <= my + 38) { moveRight = true; return; }
 
   // Check ammo for drag
-  if (tanks[0].weapon === 4) { if (!tanks[0].bonusWeapon || tanks[0].bonusAmmo <= 0) return; }
+  if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) { if (!tanks[0].bonusAmmo) return; }
   else if (tanks[0].ammo[tanks[0].weapon] === 0) return;
 
   // Start drag aiming
@@ -555,8 +552,9 @@ document.addEventListener('keydown', e => {
   if (turn !== 0 || projectiles.length || gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
-    if (idx < 4) { tanks[0].weapon = idx; SFX.weaponSwitch(); }
-    else if (idx === 4 && tanks[0].bonusWeapon) { tanks[0].weapon = 4; SFX.weaponSwitch(); }
+    const maxWeaponIdx = tanks[0].type.weapons.length;
+    if (idx < maxWeaponIdx) { tanks[0].weapon = idx; SFX.weaponSwitch(); }
+    else if (idx === maxWeaponIdx && tanks[0].bonusWeapon) { tanks[0].weapon = maxWeaponIdx; SFX.weaponSwitch(); }
   }
 });
 
@@ -1984,17 +1982,17 @@ function drawGame() {
   // Weapon selector with ammo
   if (!gameOver) {
     const selY = H - 55;
-    const totalSlots = tanks[0].bonusWeapon ? 5 : 4;
+    const myWeapons = tanks[0].type.weapons;
+    const totalSlots = (tanks[0].bonusWeapon ? 1 : 0) + myWeapons.length;
     const slotW = 55;
     const barW = totalSlots * slotW + (totalSlots + 1) * 4;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fillRect(10, selY - 5, barW, 50);
-    const myWeapons = tanks[0].type.weapons;
     for (let i = 0; i < totalSlots; i++) {
       const wx = 16 + i * (slotW + 4);
       const selected = tanks[0].weapon === i;
       let wName, wColor, wIcon, hasAmmo, ammoStr;
-      if (i < 4) {
+      if (i < myWeapons.length) {
         wName = myWeapons[i].name;
         wColor = myWeapons[i].color;
         wIcon = myWeapons[i].icon;
@@ -2027,7 +2025,7 @@ function drawGame() {
     // FIRE button
     if (turn === 0 && !dragging) {
       const fbx = W - 110, fby = selY - 8;
-      const hasAmmoForFire = tanks[0].weapon === 4 ? (tanks[0].bonusWeapon && tanks[0].bonusAmmo > 0) : tanks[0].ammo[tanks[0].weapon] > 0;
+      const hasAmmoForFire = (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) ? (tanks[0].bonusAmmo > 0) : tanks[0].ammo[tanks[0].weapon] > 0;
       ctx.fillStyle = hasAmmoForFire ? '#d33' : '#555';
       ctx.fillRect(fbx, fby, 95, 38);
       ctx.strokeStyle = hasAmmoForFire ? '#f55' : '#666';
