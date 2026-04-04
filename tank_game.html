@@ -1137,27 +1137,8 @@ function update() {
     }
   }
 
-  // Camera zoom to follow high projectiles
-  if (projectiles.length > 0) {
-    const minY = Math.min(0, maxY); // highest point (negative = above screen)
-    if (minY < -50) {
-      // Calculate target zoom and position - zoom OUT to see high projectiles
-      const zoomFactor = Math.abs(minY) / 300;
-      const targetZoom = Math.max(0.3, 1 / (1 + zoomFactor)); // zoom out (scale < 1)
-      const targetOffset = minY * 0.5; // pan up to follow projectile
-      // Smooth interpolation
-      cameraZoom += (targetZoom - cameraZoom) * 0.05;
-      cameraTargetY += (targetOffset - cameraTargetY) * 0.05;
-    } else {
-      // Return to normal zoom
-      cameraZoom += (1 - cameraZoom) * 0.05;
-      cameraTargetY += (0 - cameraTargetY) * 0.05;
-    }
-  } else {
-    // No projectiles - return to normal
-    cameraZoom += (1 - cameraZoom) * 0.05;
-    cameraTargetY += (0 - cameraTargetY) * 0.05;
-  }
+  // PIP viewport for high projectiles (replaces camera zoom)
+  // No camera zoom needed anymore
 
   // Floating texts
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
