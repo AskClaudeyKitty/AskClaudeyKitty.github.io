@@ -1142,10 +1142,11 @@ function update() {
   // Camera zoom to follow high projectiles
   if (projectiles.length > 0) {
     const minY = Math.min(0, maxY); // highest point (negative = above screen)
-    if (minY < 0) {
-      // Calculate target zoom and position
-      const targetZoom = Math.max(1, Math.min(5, 1 + Math.abs(minY) / 200));
-      const targetOffset = Math.min(0, minY * 0.6);
+    if (minY < -50) {
+      // Calculate target zoom and position - zoom OUT to see high projectiles
+      const zoomFactor = Math.abs(minY) / 300;
+      const targetZoom = Math.max(0.3, 1 / (1 + zoomFactor)); // zoom out (scale < 1)
+      const targetOffset = minY * 0.5; // pan up to follow projectile
       // Smooth interpolation
       cameraZoom += (targetZoom - cameraZoom) * 0.05;
       cameraTargetY += (targetOffset - cameraTargetY) * 0.05;
