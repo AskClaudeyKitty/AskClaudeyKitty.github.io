@@ -794,10 +794,12 @@ function botShoot() {
     const rad = bestAngle * Math.PI / 180;
     let tx = bot.x, ty = terrainAt(bot.x) - 20;
     let tvx = Math.cos(rad) * bestPower, tvy = -Math.sin(rad) * bestPower;
-    for (let step = 0; step < 150; step += 3) {
+    for (let step = 0; step < 500; step += 3) {
       tx += tvx; tvy += grav; ty += tvy;
       if (tx < -50 || tx > W + 50 || ty > H + 50) break;
       botTrajectory.push({ x: tx, y: ty });
+      if (ty >= terrainAt(tx)) break; // stop when hitting ground
+    }
       if (ty >= terrainAt(tx)) break;
     }
   }
