@@ -1635,6 +1635,10 @@ function drawStatBar(x, y, w, pct, color) {
 // ========== GAME DRAW ==========
 function drawGame() {
   const m = maps[currentMap];
+  
+  // Clear entire canvas first (important for zoom!)
+  ctx.clearRect(0, 0, W, H);
+  
   ctx.save();
   
   // Camera zoom and pan to follow high projectiles
@@ -1647,12 +1651,12 @@ function drawGame() {
   
   if (shakeTime > 0) ctx.translate((Math.random() - 0.5) * shakeAmount, (Math.random() - 0.5) * shakeAmount);
 
-  // Sky
+  // Sky (draw extra large to cover zoomed view)
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, m.sky1);
   grad.addColorStop(1, m.sky2);
   ctx.fillStyle = grad;
-  ctx.fillRect(-5, -5, W + 10, H + 10);
+  ctx.fillRect(-W, -H, W * 3, H * 3);
 
   // Moon stars
   if (m.name === 'Moon') {
