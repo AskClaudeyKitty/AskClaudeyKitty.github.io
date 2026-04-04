@@ -592,13 +592,13 @@ function resetGame() {
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, weapon: 0, fuel: p.fuel, maxFuel: p.fuel,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
   });
   Object.assign(tanks[1], {
     x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
     name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
   });
   turn = 0;
   projectiles = [];
