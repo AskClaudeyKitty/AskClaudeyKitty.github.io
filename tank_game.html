@@ -25,14 +25,90 @@ const W = canvas.width, H = canvas.height;
 // ========== AUDIO ==========
 let audioCtx = null;
 let audioStarted = false;
+let ambientOscillators = [];
+let ambientGains = [];
+
 function initAudio() {
   if (audioStarted) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   audioStarted = true;
+  startAmbientMusic();
 }
+
 // Start audio on first user interaction
 document.addEventListener('mousedown', initAudio, { once: false });
 document.addEventListener('keydown', initAudio, { once: false });
+
+// Ambient music - dark atmospheric drone
+function startAmbientMusic() {
+  if (!audioCtx) return;
+  
+  // Stop any existing ambient sounds
+  stopAmbientMusic();
+  
+  // Create a dark atmospheric drone with multiple oscillators
+  const frequencies = [55, 110, 165, 220]; // A1, A2, E3, A3 - dark chord
+  const types = ['sine', 'triangle', 'sine', 'triangle'];
+  
+  frequencies.forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = types[i];
+    osc.frequency.value = freq;
+    
+    // Slight detune for richness
+    osc.detune.value = (i % 2 === 0 ? -5 : 5) + Math.random() * 3;
+    
+    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+    
+    // Add subtle LFO modulation
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.1 + i * 0.05;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 0.005;
+    lfo.connect(lfoGain);
+    lfoGain.connect(gain.gain);
+    lfo.start();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    
+    ambientOscillators.push(osc, lfo);
+    ambientGains.push(gain);
+  });
+  
+  // Add occasional deep bass pulses
+  setInterval(() => {
+    if (!audioCtx || ambientOscillators.length === 0) return;
+    
+    const bassOsc = audioCtx.createOscillator();
+    const bassGain = audioCtx.createGain();
+    
+    bassOsc.frequency.value = 40 + Math.random() * 20;
+    bassOsc.type = 'sine';
+    
+    bassGain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+    
+    bassOsc.connect(bassGain);
+    bassGain.connect(audioCtx.destination);
+    bassOsc.start();
+    bassOsc.stop(audioCtx.currentTime + 2);
+  }, 4000 + Math.random() * 2000);
+}
+
+function stopAmbientMusic() {
+  ambientOscillators.forEach(osc => {
+    try { osc.stop(); } catch(e) {}
+  });
+  ambientGains.forEach(gain => {
+    try { gain.disconnect(); } catch(e) {}
+  });
+  ambientOscillators = [];
+  ambientGains = [];
+}
 
 function playTone(freq, duration, type, vol, detune) {
   if (!audioCtx) return;
@@ -580,6 +656,7 @@ function startGame() {
   generateTerrain();
   applyMapBoosts();
   applyMapEffects();
+  startAmbientMusic(); // Start/restart ambient music
 }
 
 function resetGame() {
@@ -611,6 +688,7 @@ function resetGame() {
   generateTerrain();
   applyMapBoosts();
   applyMapEffects();
+  startAmbientMusic(); // Restart ambient music
 }
 
 // ========== FIRE ==========
@@ -874,27 +952,52 @@ function update() {
     maxY = Math.min(maxY, p.y); // track highest projectile (negative = higher)
     const w = p.weaponData;
 
-    // Homing: curve toward enemy
+    // Homing: curve toward enemy, then go STRAIGHT after 1 second
     if (w.behavior === 'homing' && !p.isFragment) {
       const enemy = tanks[1 - p.owner];
       const tx = enemy.x;
       const ty = terrainAt(enemy.x) - 15;
-      const dx = tx - p.x;
-      const dy = ty - p.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > 10) {
-        const strength = 0.5;
-        p.vx += (dx / dist) * strength;
-        p.vy += (dy / dist) * strength;
-        // Cap speed so it doesn't go crazy
-        const spd = Math.hypot(p.vx, p.vy);
-        if (spd > 12) { p.vx *= 12/spd; p.vy *= 12/spd; }
+      
+      // Track time since fired
+      if (!p.homingTime) p.homingTime = 0;
+      p.homingTime++;
+      
+      if (p.homingTime < 60) {
+        // First second: gentle curve toward enemy
+        const dx = tx - p.x;
+        const dy = ty - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 10) {
+          const strength = 0.8;
+          p.vx += (dx / dist) * strength;
+          p.vy += (dy / dist) * strength;
+        }
+      } else {
+        // After 1 second: GO STRAIGHT to enemy (no gravity, direct line)
+        const dx = tx - p.x;
+        const dy = ty - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 5) {
+          // Direct velocity toward target
+          const speed = 15;
+          p.vx = (dx / dist) * speed;
+          p.vy = (dy / dist) * speed;
+        }
       }
+      
+      // Cap max speed
+      const spd = Math.hypot(p.vx, p.vy);
+      if (spd > 18) { p.vx *= 18/spd; p.vy *= 18/spd; }
     }
 
     const isHoming = w.behavior === 'homing' && !p.isFragment;
     p.x += p.vx;
-    if (!isHoming) p.vy += grav;
+    if (!isHoming || (p.homingTime && p.homingTime >= 60)) {
+      // Only apply gravity if NOT homing, or if homing but in straight phase
+      if (!isHoming) p.vy += grav;
+    } else {
+      p.vy += grav;
+    }
     p.y += p.vy;
 
     // Check direct hit on enemy tank (not the one who fired)
