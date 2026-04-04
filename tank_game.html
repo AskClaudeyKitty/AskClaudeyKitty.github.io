@@ -2045,60 +2045,61 @@ function drawGame() {
       ctx.fillRect(pipX, pipY, pipW, pipH);
       ctx.strokeStyle = '#ff0';
       ctx.lineWidth = 2;
-    ctx.strokeRect(pipX, pipY, pipW, pipH);
-    
-    // Label
-    ctx.fillStyle = '#ff0';
-    ctx.font = 'bold 10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('PROJECTILE VIEW', pipX + pipW / 2, pipY + 12);
-    
-    // Calculate scale to show projectile and target
-    const highestProj = Math.min(0, maxY);
-    const viewTop = highestProj - 50;
-    const viewBottom = H;
-    const viewHeight = viewBottom - viewTop;
-    const pipScale = Math.min(pipW / W, pipH / viewHeight) * 0.9;
-    
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(pipX, pipY + 15, pipW, pipH - 15);
-    ctx.clip();
-    
-    // Center the view horizontally
-    ctx.translate(pipX + pipW / 2, pipY + pipH - 10);
-    ctx.scale(pipScale, pipScale);
-    ctx.translate(-W / 2, -H);
-    
-    // Draw simplified terrain line
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 0; x <= W; x++) {
-      const ty = terrain[x];
-      if (x === 0) ctx.moveTo(x, ty);
-      else ctx.lineTo(x, ty);
-    }
-    ctx.stroke();
-    
-    // Draw tanks as simple markers
-    for (const t of tanks) {
-      ctx.fillStyle = t.color;
-      ctx.fillRect(t.x - 10, terrainAt(t.x) - 15, 20, 15);
-    }
-    
-    // Draw projectiles bright and large
-    for (const p of projectiles) {
-      ctx.fillStyle = '#fff';
+      ctx.strokeRect(pipX, pipY, pipW, pipH);
+      
+      // Label
+      ctx.fillStyle = '#ff0';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PROJECTILE VIEW', pipX + pipW / 2, pipY + 12);
+      
+      // Calculate scale to show projectile and target
+      const highestProj = Math.min(0, highestY);
+      const viewTop = highestProj - 50;
+      const viewBottom = H;
+      const viewHeight = viewBottom - viewTop;
+      const pipScale = Math.min(pipW / W, pipH / viewHeight) * 0.9;
+      
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = p.weaponData.color;
-      ctx.lineWidth = 2;
+      ctx.rect(pipX, pipY + 15, pipW, pipH - 15);
+      ctx.clip();
+      
+      // Center the view horizontally
+      ctx.translate(pipX + pipW / 2, pipY + pipH - 10);
+      ctx.scale(pipScale, pipScale);
+      ctx.translate(-W / 2, -H);
+      
+      // Draw simplified terrain line
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= W; x++) {
+        const ty = terrain[x];
+        if (x === 0) ctx.moveTo(x, ty);
+        else ctx.lineTo(x, ty);
+      }
       ctx.stroke();
+      
+      // Draw tanks as simple markers
+      for (const t of tanks) {
+        ctx.fillStyle = t.color;
+        ctx.fillRect(t.x - 10, terrainAt(t.x) - 15, 20, 15);
+      }
+      
+      // Draw projectiles bright and large
+      for (const p of projectiles) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = p.weaponData.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      
+      ctx.restore();
     }
-    
-    ctx.restore();
   }
 
   // Floating damage/heal texts
