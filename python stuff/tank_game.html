@@ -1180,6 +1180,11 @@ function update() {
           const col = cols[h.type] || '#fff';
           spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, label, col);
         }
+        // Check for game over from hazard damage
+        if (t.hp <= 0 && !gameOver) {
+          t.hp = 0;
+          checkWin();
+        }
       }
     }
   }
