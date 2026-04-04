@@ -2028,16 +2028,23 @@ function drawGame() {
   }
 
   // Picture-in-picture viewport for high projectiles
-  if (projectiles.length > 0 && maxY < -50) {
-    const pipW = 200, pipH = 150;
-    const pipX = W / 2 - pipW / 2;
-    const pipY = 20;
+  if (projectiles.length > 0) {
+    // Find highest projectile
+    let highestY = 0;
+    for (const p of projectiles) {
+      if (p.y < highestY) highestY = p.y;
+    }
     
-    // Draw PIP frame
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(pipX, pipY, pipW, pipH);
-    ctx.strokeStyle = '#ff0';
-    ctx.lineWidth = 2;
+    if (highestY < -50) {
+      const pipW = 200, pipH = 150;
+      const pipX = W / 2 - pipW / 2;
+      const pipY = 20;
+      
+      // Draw PIP frame
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(pipX, pipY, pipW, pipH);
+      ctx.strokeStyle = '#ff0';
+      ctx.lineWidth = 2;
     ctx.strokeRect(pipX, pipY, pipW, pipH);
     
     // Label
