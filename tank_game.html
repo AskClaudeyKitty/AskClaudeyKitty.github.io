@@ -974,13 +974,13 @@ function update() {
         }
         p.vy += grav; // gravity during curve phase
       } else {
-        // After 1 second: GO PERFECTLY STRAIGHT to enemy (NO GRAVITY)
+        // After 1 second: INSTANT speed boost and PERFECTLY STRAIGHT to enemy (NO GRAVITY)
         const dx = tx - p.x;
         const dy = ty - p.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 5) {
-          // Direct velocity toward target - PERFECTLY STRAIGHT
-          const speed = 20;
+          // INSTANT velocity change toward target - PERFECTLY STRAIGHT
+          const speed = 25; // instant speed boost
           p.vx = (dx / dist) * speed;
           p.vy = (dy / dist) * speed;
         }
