@@ -22,6 +22,130 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
+// ========== AUDIO ==========
+let audioCtx = null;
+let audioStarted = false;
+function initAudio() {
+  if (audioStarted) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioStarted = true;
+}
+// Start audio on first user interaction
+document.addEventListener('mousedown', initAudio, { once: false });
+document.addEventListener('keydown', initAudio, { once: false });
+
+function playTone(freq, duration, type, vol, detune) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  if (detune) osc.detune.value = detune;
+  gain.gain.setValueAtTime(vol || 0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playNoise(duration, vol, filterFreq) {
+  if (!audioCtx) return;
+  const bufSize = audioCtx.sampleRate * duration;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = filterFreq || 800;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  src.start();
+}
+
+const SFX = {
+  shoot() {
+    playTone(80, 0.15, 'sine', 0.2);
+    playTone(120, 0.1, 'square', 0.05);
+    playNoise(0.08, 0.08, 600);
+  },
+  shootBig() {
+    playTone(50, 0.3, 'sine', 0.25);
+    playTone(80, 0.2, 'triangle', 0.1);
+    playNoise(0.15, 0.12, 400);
+  },
+  explode(size) {
+    const s = Math.min(size / 30, 2);
+    playNoise(0.2 + s * 0.2, 0.1 + s * 0.05, 300 + s * 200);
+    playTone(40 + s * 10, 0.3 + s * 0.1, 'sine', 0.15 + s * 0.05);
+    playTone(60, 0.15, 'sawtooth', 0.03);
+  },
+  explodeSmall() {
+    playNoise(0.08, 0.06, 1200);
+    playTone(200, 0.08, 'sine', 0.05);
+  },
+  weaponSwitch() {
+    playTone(800, 0.05, 'square', 0.06);
+    playTone(1000, 0.04, 'square', 0.04);
+  },
+  ammoRefill() {
+    playTone(400, 0.1, 'sine', 0.1);
+    setTimeout(() => playTone(500, 0.1, 'sine', 0.1), 80);
+    setTimeout(() => playTone(700, 0.15, 'sine', 0.12), 160);
+  },
+  cratePickup() {
+    playTone(600, 0.08, 'sine', 0.12);
+    setTimeout(() => playTone(900, 0.12, 'sine', 0.12), 60);
+  },
+  hit() {
+    playTone(200, 0.1, 'sawtooth', 0.08);
+    playNoise(0.05, 0.08, 2000);
+    playTone(150, 0.08, 'square', 0.04);
+  },
+  iceImpact() {
+    playTone(2000, 0.15, 'sine', 0.06);
+    playTone(3000, 0.1, 'sine', 0.04);
+    playTone(1500, 0.08, 'triangle', 0.03);
+  },
+  win() {
+    playTone(400, 0.15, 'sine', 0.12);
+    setTimeout(() => playTone(500, 0.15, 'sine', 0.12), 120);
+    setTimeout(() => playTone(600, 0.15, 'sine', 0.12), 240);
+    setTimeout(() => playTone(800, 0.3, 'sine', 0.15), 360);
+  },
+  lose() {
+    playTone(300, 0.2, 'sine', 0.1);
+    setTimeout(() => playTone(250, 0.2, 'sine', 0.1), 150);
+    setTimeout(() => playTone(150, 0.4, 'sine', 0.12), 300);
+  },
+  move() {
+    playTone(40, 0.06, 'sawtooth', 0.03);
+    playNoise(0.04, 0.02, 200);
+  }
+};
+
+// Ambient hazard sounds
+let hazardSoundTimer = 0;
+function updateHazardSounds() {
+  if (!audioCtx) return;
+  hazardSoundTimer++;
+  if (hazardSoundTimer % 20 !== 0) return; // every ~0.33 sec
+  let hasFire = false, hasRad = false, hasIce = false;
+  for (const h of hazards) {
+    if (h.type === 'fire' || h.type === 'hellfire' || h.type === 'acidFire' || h.type === 'lava') hasFire = true;
+    if (h.type === 'radiation') hasRad = true;
+    if (h.type === 'ice') hasIce = true;
+  }
+  if (hasFire) playNoise(0.15, 0.015, 3000); // crackle
+  if (hasRad) playTone(55, 0.2, 'sawtooth', 0.01); // hum
+}
+
 // ========== MAPS ==========
 const maps = [
   { name: 'Plains',  sky1: '#0a0a2a', sky2: '#1a1a3a', ground: '#2a5a2a', groundLine: '#3a7a3a', baseY: 0.55, roughness: 3, gravity: 0.3, boosts: ['Abrams'] },
@@ -208,6 +332,7 @@ function checkCratePickup(tank, tankIndex) {
       tank.bonusWeapon = w;
       tank.bonusAmmo = 1;
       spawnFloatingText(c.x, c.y - 20, '+' + w.name + '!', '#fa0');
+      SFX.cratePickup();
       crates.splice(i, 1);
     }
   }
@@ -224,6 +349,7 @@ function checkAmmoRefill(tank) {
       if (tank.type.weapons[w].ammo > 0) tank.ammo[w] = 1;
     }
     spawnFloatingText(tank.x, terrainAt(tank.x) - 60, 'AMMO REFILL!', '#ff0');
+    SFX.ammoRefill();
   }
 }
 
@@ -354,6 +480,7 @@ canvas.addEventListener('mousedown', e => {
     if (m.x >= wx && m.x <= wx + slotW && m.y >= selY && m.y <= selY + 30) {
       if (i < 4) tanks[0].weapon = i;
       else if (tanks[0].bonusWeapon) tanks[0].weapon = 4;
+      SFX.weaponSwitch();
       return;
     }
   }
@@ -424,8 +551,8 @@ document.addEventListener('keydown', e => {
   if (turn !== 0 || projectiles.length || gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
-    if (idx < 4) tanks[0].weapon = idx;
-    else if (idx === 4 && tanks[0].bonusWeapon) tanks[0].weapon = 4;
+    if (idx < 4) { tanks[0].weapon = idx; SFX.weaponSwitch(); }
+    else if (idx === 4 && tanks[0].bonusWeapon) { tanks[0].weapon = 4; SFX.weaponSwitch(); }
   }
 });
 
@@ -487,6 +614,10 @@ function resetGame() {
 function fireWeapon(tank, holdTime, directPower) {
   const dmgBonus = getBoostedDmg(tank);
   const power = tank.isBot ? tank._botPower : (directPower || (5 + (holdTime || 0) * 12));
+  // Sound
+  const wCheck = tank.weapon === 4 ? tank.bonusWeapon : tank.type.weapons[tank.weapon];
+  if (wCheck && (wCheck.behavior === 'drill' || wCheck.behavior === 'drillRain' || wCheck.behavior === 'rain')) SFX.shootBig();
+  else SFX.shoot();
   let w;
   if (tank.weapon === 4 && tank.bonusWeapon) {
     w = tank.bonusWeapon;
@@ -531,6 +662,8 @@ function switchToNextWeapon(tank) {
 function createExplosion(x, y, w) {
   const radius = w.radius;
   explosions.push({ x, y, radius, alpha: 1, color: w.color });
+  if (radius > 30) SFX.explode(radius);
+  else SFX.explodeSmall();
   shakeTime = 10;
   shakeAmount = radius / 10;
   for (let tx = Math.floor(x - radius); tx <= Math.ceil(x + radius); tx++) {
@@ -677,7 +810,7 @@ function impactDamage(px, py, w, p) {
     if (dist < w.radius + 20) {
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
-      if (dmg > 0) spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44');
+      if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
     }
   }
 }
@@ -700,6 +833,7 @@ function update() {
       const moving = (keys['q'] || moveLeft || keys['e'] || moveRight);
       if ((keys['q'] || moveLeft) && tank.fuel > 0) { tank.slideVx = -spd; tank.fuel -= 0.3; }
       if ((keys['e'] || moveRight) && tank.fuel > 0) { tank.slideVx = spd; tank.fuel -= 0.3; }
+      if (moving && tank.fuel > 0 && Math.random() < 0.15) SFX.move();
       if (!tank.slideVx) tank.slideVx = 0;
       if (onIce) {
         // Ice: slide with momentum
@@ -965,6 +1099,7 @@ function update() {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.8, type: 'radiation', life: 3600, dmg: 0.5 });
       } else if (w.effect === 'ice') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'ice', life: 2400, dmg: 0 });
+        SFX.iceImpact();
       } else if (w.effect === 'mud') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
       } else if (w.effect === 'lava') {
@@ -990,6 +1125,7 @@ function update() {
   }
 
   if (shakeTime > 0) shakeTime--;
+  updateHazardSounds();
 
   // Hazard zones (fire/poison)
   for (let i = hazards.length - 1; i >= 0; i--) {
@@ -1069,6 +1205,9 @@ function checkWin() {
       if (i === 1) {
         totalWins++;
         localStorage.setItem('tankBattleWins', totalWins);
+        SFX.win();
+      } else {
+        SFX.lose();
       }
     }
   }
