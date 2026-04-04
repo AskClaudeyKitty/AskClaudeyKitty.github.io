@@ -127,6 +127,10 @@ const SFX = {
   move() {
     playTone(40, 0.06, 'sawtooth', 0.03);
     playNoise(0.04, 0.02, 200);
+  },
+  shock() {
+    playTone(1200 + Math.random() * 800, 0.06, 'sawtooth', 0.04);
+    playNoise(0.03, 0.03, 4000);
   }
 };
 
@@ -196,10 +200,10 @@ const tankTypes = [
   // ELECTRO — lightning themed. Zaps, chains, shocks.
   { name: 'Electro', color: '#8af', bodyW: 32, bodyH: 12, barrelLen: 28, barrelW: 5, hp: 1100, speed: 1.0, fuel: 80, desc: 'Lightning & shock',
     weapons: [
-      { name: 'Spark',       color: '#8af', radius: 20, dmgMult: 1,   count: 1, spread: 0, icon: '/', ammo: 1 },
-      { name: 'Tesla Shot',  color: '#adf', radius: 14, dmgMult: 0.6, count: 1, spread: 0, icon: '//', ammo: 3, behavior: 'bounce' },
-      { name: 'Chain Bolt',  color: '#cdf', radius: 14, dmgMult: 0.5, count: 1, spread: 0, icon: '///', ammo: 2, behavior: 'cluster', fragments: 4, fragRadius: 14 },
-      { name: 'Thunderstorm', color: '#ff0', radius: 18, dmgMult: 0.7, count: 1, spread: 0, icon: '!!!', ammo: 1, behavior: 'rain', fragments: 7 },
+      { name: 'Spark',       color: '#8af', radius: 20, dmgMult: 1.1, count: 1, spread: 0, icon: '/', ammo: 1, effect: 'shock' },
+      { name: 'Tesla Shot',  color: '#adf', radius: 14, dmgMult: 0.7, count: 1, spread: 0, icon: '//', ammo: 3, effect: 'shock', behavior: 'bounce' },
+      { name: 'Chain Bolt',  color: '#cdf', radius: 16, dmgMult: 0.6, count: 1, spread: 0, icon: '///', ammo: 2, effect: 'shock', behavior: 'cluster', fragments: 4, fragRadius: 14 },
+      { name: 'Thunderstorm', color: '#ff0', radius: 20, dmgMult: 0.8, count: 1, spread: 0, icon: '!!!', ammo: 1, effect: 'shock', behavior: 'rain', fragments: 7 },
     ]},
   // ATOMIC — nuclear/radiation themed. Massive damage, huge explosions.
   { name: 'Atomic', color: '#cf0', bodyW: 34, bodyH: 13, barrelLen: 26, barrelW: 6, hp: 1050, speed: 0.8, fuel: 70, desc: 'Nuclear power',
@@ -362,13 +366,13 @@ function initTanks() {
     x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, color: p.color,
     name: p.name, weapon: 0, fuel: p.fuel, maxFuel: p.fuel, isBot: false, type: p,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
   });
   Object.assign(tanks[1], {
     x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
     name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, isBot: true, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
   });
 }
 
@@ -811,6 +815,7 @@ function impactDamage(px, py, w, p) {
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
       if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
+      if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300; // 5 seconds
     }
   }
 }
@@ -1074,6 +1079,7 @@ function update() {
           t.hp -= dmg;
           if (dmg > 0) {
             spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44');
+            if (w.effect === 'shock') t.shockTimer = 300;
           }
         }
       }
@@ -1125,6 +1131,19 @@ function update() {
   }
 
   if (shakeTime > 0) shakeTime--;
+
+  // Shock damage-over-time (on tanks, not ground)
+  for (const t of tanks) {
+    if (t.shockTimer > 0) {
+      t.shockTimer--;
+      t.hp -= 0.4; // same as fire damage
+      if (Math.random() < 0.04) {
+        spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, 'SHOCK!', '#8af');
+        SFX.shock();
+      }
+    }
+  }
+
   updateHazardSounds();
 
   // Hazard zones (fire/poison)
@@ -1859,6 +1878,21 @@ function drawGame() {
     const t = tanks[i];
     const ty = terrainAt(t.x);
     drawTank(t, t.x, ty, 1);
+    // Shock visual — electric arcs
+    if (t.shockTimer > 0) {
+      ctx.strokeStyle = `rgba(130,180,255,${0.4 + Math.random() * 0.4})`;
+      ctx.lineWidth = 1.5;
+      for (let arc = 0; arc < 3; arc++) {
+        ctx.beginPath();
+        const sx = t.x + (Math.random() - 0.5) * 25;
+        const sy = ty - 10 + (Math.random() - 0.5) * 20;
+        ctx.moveTo(sx, sy);
+        for (let seg = 0; seg < 3; seg++) {
+          ctx.lineTo(sx + (Math.random() - 0.5) * 20, sy + (Math.random() - 0.5) * 20);
+        }
+        ctx.stroke();
+      }
+    }
     // HP bar
     ctx.fillStyle = '#333';
     ctx.fillRect(t.x - 22, ty - 36, 44, 6);
