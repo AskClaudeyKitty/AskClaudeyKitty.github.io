@@ -963,7 +963,7 @@ function update() {
       p.homingTime++;
       
       if (p.homingTime < 60) {
-        // First second: gentle curve toward enemy
+        // First second: gentle curve toward enemy (with gravity)
         const dx = tx - p.x;
         const dy = ty - p.y;
         const dist = Math.hypot(dx, dy);
@@ -972,32 +972,26 @@ function update() {
           p.vx += (dx / dist) * strength;
           p.vy += (dy / dist) * strength;
         }
+        p.vy += grav; // gravity during curve phase
       } else {
-        // After 1 second: GO STRAIGHT to enemy (no gravity, direct line)
+        // After 1 second: GO PERFECTLY STRAIGHT to enemy (NO GRAVITY)
         const dx = tx - p.x;
         const dy = ty - p.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 5) {
-          // Direct velocity toward target
-          const speed = 15;
+          // Direct velocity toward target - PERFECTLY STRAIGHT
+          const speed = 20;
           p.vx = (dx / dist) * speed;
           p.vy = (dy / dist) * speed;
         }
+        // NO GRAVITY - goes perfectly straight
       }
-      
-      // Cap max speed
-      const spd = Math.hypot(p.vx, p.vy);
-      if (spd > 18) { p.vx *= 18/spd; p.vy *= 18/spd; }
+    } else {
+      p.vy += grav; // normal gravity for non-homing projectiles
     }
 
     const isHoming = (w.behavior === 'homing' || w.homing) && !p.isFragment;
     p.x += p.vx;
-    if (!isHoming || (p.homingTime && p.homingTime >= 60)) {
-      // Only apply gravity if NOT homing, or if homing but in straight phase
-      if (!isHoming) p.vy += grav;
-    } else {
-      p.vy += grav;
-    }
     p.y += p.vy;
 
     // Check direct hit on enemy tank (not the one who fired)
