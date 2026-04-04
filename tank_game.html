@@ -324,7 +324,7 @@ const tankTypes = [
   // THERMONUCLEAR — ultimate radiation tank. Unlocked after 5 wins.
   { name: 'Thermonuclear', color: '#bff', bodyW: 34, bodyH: 13, barrelLen: 28, barrelW: 6, hp: 1, speed: 0.5, fuel: 40, desc: 'Total irradiation', locked: true, unlockWins: 5,
     weapons: [
-      { name: 'H-Bomb',   color: '#fff', radius: 45, dmgMult: 2.5, count: 1, spread: 0, icon: '[!]', ammo: 1, effect: 'thermoAll', behavior: 'drillRain' },
+      { name: 'H-Bomb',   color: '#fff', radius: 45, dmgMult: 2.5, count: 1, spread: 0, icon: '[!]', ammo: 1, effect: 'thermoAll', behavior: 'drillRain', homing: true },
     ]},
 ];
 
@@ -953,7 +953,7 @@ function update() {
     const w = p.weaponData;
 
     // Homing: curve toward enemy, then go STRAIGHT after 1 second
-    if (w.behavior === 'homing' && !p.isFragment) {
+    if ((w.behavior === 'homing' || w.homing) && !p.isFragment) {
       const enemy = tanks[1 - p.owner];
       const tx = enemy.x;
       const ty = terrainAt(enemy.x) - 15;
@@ -990,7 +990,7 @@ function update() {
       if (spd > 18) { p.vx *= 18/spd; p.vy *= 18/spd; }
     }
 
-    const isHoming = w.behavior === 'homing' && !p.isFragment;
+    const isHoming = (w.behavior === 'homing' || w.homing) && !p.isFragment;
     p.x += p.vx;
     if (!isHoming || (p.homingTime && p.homingTime >= 60)) {
       // Only apply gravity if NOT homing, or if homing but in straight phase
