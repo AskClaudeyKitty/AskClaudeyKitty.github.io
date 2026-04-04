@@ -1643,10 +1643,10 @@ function drawGame() {
   
   // Camera zoom and pan to follow high projectiles
   if (cameraZoom !== 1 || cameraTargetY !== 0) {
-    ctx.translate(W / 2, H / 2);
+    // First pan up, then zoom around center
+    ctx.translate(W / 2, H / 2 + cameraTargetY);
     ctx.scale(cameraZoom, cameraZoom);
     ctx.translate(-W / 2, -H / 2);
-    ctx.translate(0, cameraTargetY / cameraZoom); // pan up (compensate for zoom)
   }
   
   if (shakeTime > 0) ctx.translate((Math.random() - 0.5) * shakeAmount, (Math.random() - 0.5) * shakeAmount);
