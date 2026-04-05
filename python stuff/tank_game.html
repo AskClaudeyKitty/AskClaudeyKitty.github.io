@@ -749,7 +749,19 @@ function botShoot() {
 
     if (botMoveFrames > 0 && bot.fuel > 0 && !inWater) {
       let spd = bot.type.speed * 0.4;
-      bot.x = Math.max(15, Math.min(W - 15, bot.x + botMoveDir * spd));
+      let botOnIce = false;
+      for (const h of hazards) {
+        if (h.type === 'ice' && Math.abs(bot.x - h.x) < h.radius) { botOnIce = true; }
+        if (h.type === 'mud' && Math.abs(bot.x - h.x) < h.radius) { spd *= 0.35; }
+      }
+      if (botOnIce) {
+        spd *= 2.5;
+        bot.slideVx = botMoveDir * spd;
+        bot.x += bot.slideVx;
+        if (Math.random() < 0.15) SFX.move();
+      } else {
+        bot.x = Math.max(15, Math.min(W - 15, bot.x + botMoveDir * spd));
+      }
       bot.fuel -= 0.3;
       if (botMoveFrames !== 999) botMoveFrames--;
       checkCratePickup(bot, 1);
