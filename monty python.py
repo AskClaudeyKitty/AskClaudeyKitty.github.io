@@ -1,6 +1,6 @@
 # program to ask your name and then greet you, and then ask you some questions, then play a game.
 import random
-import time
+from time import *
 print('Hello.')
 print('What is your name?')
 myname = input()
@@ -20,7 +20,7 @@ while answer != answer1 and answer != answer2 and answer != 'skip':
         print('I disagree, ' + myname + '. Brownies taste better!')
     else:
         print('Error message! ' + 'what is a ' + answer +'?')
-        time.sleep(0.5)
+        sleep(0.5)
         print('please type again')
         
 print('phones, or computers?')
@@ -36,7 +36,7 @@ while Answer != Answer1 and Answer != Answer2 and answer != 'skip':
         print('I agree, ' + myname + '. computers are more powerful than phones!')
     else:
         print('I am sorry, but what is a ' + Answer + '?')
-        time.sleep(0.5)
+        sleep(0.5)
         print('choose again please')
         
 print('Ok, ' + myname + '. cheese or chocolate?')
@@ -52,12 +52,12 @@ while choice != chocolate and choice != cheese and answer != 'skip':
         print('I disagree, ' + myname + '. chocolate tastes better!')
     else:
         print('what is a ' + choice + '?')
-        time.sleep(0.5)
+        sleep(0.5)
         print('choose again please')
 playagain = True
         
-guessestaken = 0
-while playagain == True and answer != 'skip':
+while playagain == True:
+    guessestaken = 0
     print('Ok, now lets play a little game, ' + myname + '.')
     number = random.randint(1, 100)
     print('I am thinking of a number between 1 and 100')
@@ -73,13 +73,11 @@ while playagain == True and answer != 'skip':
         if guess == number:
             break
     if guess == number:
-        guessestaken = str(guessestaken)
-        print(f'good job, {myname}. you guessed my number in {str(guessestaken)} guesses!')
-    if guess != number:
-        number = number
-        print(f'aw dang, {myname}. you couldnt guess {str(number)} in 7 or less guesses!')
+        print(f'good job, {myname}. you guessed my number in {guessestaken} guesses!')
+    else:
+        print(f'aw dang, {myname}. you couldnt guess {number} in 7 or less guesses!')
     print('Now, ' + myname + ',')
-    time.sleep(1)
+    sleep(1)
     print('Pick a number from 1-100, then type done')
     x = 50
     y = 25
@@ -89,7 +87,7 @@ while playagain == True and answer != 'skip':
         response = ''
         while response != 'correct':
             print('Is your number...')
-            time.sleep(1.5)
+            sleep(1.5)
             print(str(x) + '?')
             response = input().lower()
             if response == 'higher':
@@ -107,13 +105,11 @@ while playagain == True and answer != 'skip':
             else:
                 print('to answer me, instead of typing ' + response + ', type higher, lower, or correct, to hint me on the number.')
     print('I guessed your number in... ')
-    time.sleep(1.5)
+    sleep(1.5)
     print(str(guess) + ' guesses!')
     print('play again guessing games? (both you guess and I guess) yes or noes. if noes, onto next game.')
     playagain = input().lower()
-    if playagain == 'yes':
-        playagain = True
-    else:
+    if playagain != 'yes':
         break
 print('the number quintiples each second every second.')
 print('would you like to watch it quintiple? it starts at 12.')
@@ -124,7 +120,7 @@ if x == 'yes' or x == 'y':
     while kaboom != 24:
         print('kaboom is equal to ' + str(kaboom))
         kaboom *= 5
-        time.sleep(1)
+        sleep(1)
         num += 1
         if num >= 10:
             print('keep going?')
@@ -137,7 +133,7 @@ if x == 'yes' or x == 'y':
                 break
 else:
     print('ok, bye!')
-    time.sleep(2)
+    sleep(2)
 
 # Start the player with some fake money
 wallet = 20000
@@ -160,7 +156,7 @@ while wallet > 0:
             continue
 
         print("Shaking the dice...")
-        time.sleep(1.5)
+        sleep(1.5)
 
         # Roll two 6-sided dice
         die1 = random.randint(1, 6)
@@ -191,4 +187,28 @@ while wallet > 0:
         print("Please type a number for your bet!")
 
 print(f"You walked away with ${wallet}. Thanks for playing!")
-
+print(f'ok now, {myname} we are gonna play rock paper scissors.')
+yes = True
+while yes:
+    choice = ' '
+    while choice == ' ':
+        print('rock, paper, or scissors?')
+        choice = input().lower().strip()
+        if choice == 'rock':
+            print('paper! you lose!')
+        elif choice == 'paper':
+            print('scissors! you lose!')
+        elif choice == 'scissors':
+            print('rock! you lose!')
+        else:
+            print(f'I am sorry, {myname}, but what is a {choice}? the choices are rock, paper, or scissors.')
+            continue
+        print('play again? yes or no.')
+        yes = input().lower().strip()
+        if yes != 'yes' and yes != 'y':
+            print('goodbye I guess loser.')
+            sleep(1)
+            yes = False
+        else:
+            print(f'ok, {myname} get ready to lose again!')
+            sleep(1)
