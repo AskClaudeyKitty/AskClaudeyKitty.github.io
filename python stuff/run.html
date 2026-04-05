@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Running Python Script</title>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            background: #1a202c;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            padding: 1rem 2rem;
+            background: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .header a {
+            color: #90cdf4;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .header a:hover { text-decoration: underline; }
+        .header h2 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+        #terminal {
+            flex: 1;
+            background: #000;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #terminal .output { color: #e2e8f0; }
+        #terminal .user-input { color: #68d391; }
+        #terminal .error { color: #fc8181; }
+        #input-line {
+            display: none;
+            background: #000;
+            padding: 0 1rem 1rem 1rem;
+            flex-shrink: 0;
+        }
+        #input-line input {
+            width: 100%;
+            background: #1a202c;
+            border: 1px solid #4a5568;
+            color: #68d391;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            outline: none;
+        }
+        #input-line input:focus {
+            border-color: #68d391;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html">&larr; Back to Python Scripts</a>
+        <h2 id="script-name"></h2>
+    </div>
+    <div id="terminal"><span class="output">Loading script...</span></div>
+    <div id="input-line">
+        <input type="text" id="user-input" autocomplete="off" autofocus>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const scriptFile = params.get('script');
+        const terminal = document.getElementById('terminal');
+        const inputLine = document.getElementById('input-line');
+        const userInput = document.getElementById('user-input');
+
+        if (scriptFile) {
+            const displayName = scriptFile.replace(/\.py$/, '');
+            document.getElementById('script-name').textContent = displayName;
+            document.title = displayName + ' — Python Script';
+        }
+
+        function appendOutput(text, className) {
+            const span = document.createElement('span');
+            span.className = className || 'output';
+            span.textContent = text;
+            terminal.appendChild(span);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Resolve function for current input() call
+        let resolveInput = null;
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && resolveInput) {
+                const val = userInput.value;
+                userInput.value = '';
+                inputLine.style.display = 'none';
+                appendOutput(val + '\n', 'user-input');
+                resolveInput(val);
+                resolveInput = null;
+            }
+        });
+
+        function runScript(code) {
+            terminal.textContent = '';
+
+            Sk.configure({
+                output: function(text) {
+                    appendOutput(text);
+                },
+                inputfun: function(prompt) {
+                    return new Promise(function(resolve) {
+                        if (prompt) {
+                            appendOutput(prompt);
+                        }
+                        resolveInput = resolve;
+                        inputLine.style.display = 'block';
+                        userInput.focus();
+                        terminal.scrollTop = terminal.scrollHeight;
+                    });
+                },
+                inputfunTakesPrompt: true,
+                __future__: Sk.python3
+            });
+
+            Sk.misceval.asyncToPromise(function() {
+                return Sk.importMainWithBody('<stdin>', false, code, true);
+            }).then(function() {
+                appendOutput('\n--- Program finished ---\n');
+            }).catch(function(err) {
+                appendOutput('\n' + err.toString() + '\n', 'error');
+            });
+        }
+
+        if (scriptFile) {
+            fetch(scriptFile)
+                .then(r => {
+                    if (!r.ok) throw new Error('Could not load ' + scriptFile);
+                    return r.text();
+                })
+                .then(code => runScript(code))
+                .catch(err => {
+                    terminal.textContent = '';
+                    appendOutput('Error: ' + err.message, 'error');
+                });
+        } else {
+            terminal.textContent = '';
+            appendOutput('Error: No script specified in URL.', 'error');
+        }
+    </script>
+</body>
+</html>

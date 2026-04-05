@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncing Ball in Ring</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: black;
+            color: white;
+            padding: 20px;
+            overflow: hidden;
+        }
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .controls {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        select {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: white;
+            color: #2d3748;
+            cursor: pointer;
+        }
+        .game-area {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        #canvas {
+            border: none;
+            background: black;
+            border-radius: 10px;
+        }
+        .game-area.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 1;
+        }
+        .controls.fullscreen-mode {
+            position: fixed;
+            z-index: 100;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        h1.fullscreen-mode {
+            position: fixed;
+            z-index: 100;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+        }
+        .game-area.fullscreen #startBtn,
+        .game-area.fullscreen #stopBtn {
+            position: fixed;
+            z-index: 10;
+        }
+        .game-area.fullscreen #startBtn {
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+        }
+        .game-area.fullscreen #stopBtn {
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+        button {
+            padding: 1.5rem 2rem;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #startBtn {
+            background: #48bb78;
+            color: white;
+        }
+        #stopBtn {
+            background: #f56565;
+            color: white;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .controls label {
+                font-size: 0.9rem;
+            }
+            select {
+                padding: 0.5rem 1rem;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 300px;
+            }
+            .game-area {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            #canvas {
+                max-width: 100%;
+                height: auto;
+            }
+            button {
+                padding: 1rem 1.5rem;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Ball in a Ring</h1>
+
+    <div class="controls">
+        <label for="simulation-select">Simulation:</label>
+        <select id="simulation-select" onchange="changeSimulation()">
+            <option value="gravity-balls">Gravity + Ball Spawning</option>
+            <option value="classic">Classic Bouncing</option>
+            <option value="no-gravity">No Gravity</option>
+            <option value="speed-up">Speed Increase</option>
+            <option value="moon-gravity">Moon Gravity</option>
+            <option value="orbit-gravity">Orbiting Gravity Ball</option>
+            <option value="screen-edges">Screen Edges Only (No Ring)</option>
+            <option value="growing-polygon">Growing Polygon (Triangle → Square → ...)</option>
+            <option value="outside-balls">Outside Ball Spawner</option>
+        </select>
+    </div>
+
+    <div class="game-area">
+        <button id="startBtn" onclick="startAnimation()">▶️ Start</button>
+        <canvas id="canvas" width="600" height="600"></canvas>
+        <button id="stopBtn" onclick="stopAnimation()">⏸️ Stop</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let centerX = canvas.width / 2;
+        let centerY = canvas.height / 2;
+        let ringRadius = 230;
+        const maxBalls = 5;
+
+        let isRunning = false;
+        let animationId = null;
+        let audioContext = null;
+        let bounceCount = 0;
+        let gravity = 0.15;
+        let currentSimulation = 'gravity-balls';
+        let spawnBalls = true;
+        let speedIncrease = false;
+
+        // Orbiting gravity balls
+        let orbitAngle = 0;
+        let orbitRadius = 255; // On the edge of the ring (230 + 25 for gravity ball radius)
+        let orbitSpeed = 0.001; // Barely moving at first
+        let gravityMultiplier = 1; // Gravity strength multiplier
+        let gravityBalls = [
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 },
+            { x: 0, y: 0, radius: 25 }
+        ];
+
+        // Growing polygon
+        let polygonSides = 3; // Start with triangle
+        let polygonRadius = 200;
+        let polygonGravityMultiplier = 1; // Gravity strength multiplier
+
+        // Ball array
+        let balls = [];
+        let outsideBalls = []; // Balls that bounce outside the ring
+
+        const TRAIL_LENGTH = 40;
+
+        // Create a new ball
+        function createBall() {
+            const useRandom = currentSimulation === 'no-gravity';
+            return {
+                x: centerX,
+                y: centerY,
+                vx: useRandom ? (Math.random() - 0.5) * 8 : 0.1,
+                vy: useRandom ? (Math.random() - 0.5) * 8 : 0,
+                radius: 20,
+                hue: Math.random() * 360,
+                trail: []
+            };
+        }
+
+        // Create a ball outside the ring
+        function createOutsideBall() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = ringRadius + 40; // Start outside the ring
+            return {
+                x: centerX + Math.cos(angle) * distance,
+                y: centerY + Math.sin(angle) * distance,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                radius: 15,
+                hue: Math.random() * 360,
+                trail: []
+            };
+        }
+
+        function drawTrail(ball) {
+            if (ball.trail.length < 2) return;
+            ctx.save();
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            for (let i = 1; i < ball.trail.length; i++) {
+                const t = i / ball.trail.length;
+                ctx.beginPath();
+                ctx.moveTo(ball.trail[i - 1].x, ball.trail[i - 1].y);
+                ctx.lineTo(ball.trail[i].x, ball.trail[i].y);
+                ctx.strokeStyle = `hsla(${ball.hue}, 70%, 60%, ${t * 0.55})`;
+                ctx.lineWidth = t * ball.radius * 1.4;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Initialize with first ball
+        balls.push(createBall());
+
+        // Initialize audio context on user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play bounce sound
+        function playBounceSound() {
+            if (!audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Random pitch between 300 and 600 Hz
+            oscillator.frequency.value = 300 + Math.random() * 300;
+            oscillator.type = 'sine';
+
+            // Sound envelope
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+        }
+
+        // Get irregular radius for no-gravity mode
+        function getIrregularRadius(angle) {
+            // Create irregular shape using multiple sine waves
+            const baseRadius = ringRadius;
+            const variation1 = Math.sin(angle * 3) * 15; // 3 lobes
+            const variation2 = Math.sin(angle * 5) * 10; // 5 lobes
+            const variation3 = Math.sin(angle * 7) * 5;  // 7 lobes
+            return baseRadius + variation1 + variation2 + variation3;
+        }
+
+        function drawPolygon() {
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Draw polygon with current number of sides
+            ctx.beginPath();
+            const angleStep = (Math.PI * 2) / polygonSides;
+
+            // Move to first vertex
+            ctx.moveTo(
+                centerX + Math.cos(0) * polygonRadius,
+                centerY + Math.sin(0) * polygonRadius
+            );
+
+            // Draw lines to each vertex
+            for (let i = 1; i <= polygonSides; i++) {
+                const angle = i * angleStep;
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * polygonRadius,
+                    centerY + Math.sin(angle) * polygonRadius
+                );
+            }
+
+            ctx.closePath();
+
+            // Outer line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Inner glow
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Draw side count indicator
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${polygonSides} sides`, centerX, centerY - polygonRadius - 30);
+        }
+
+        // Line-circle collision detection helper
+        function lineCircleCollision(x1, y1, x2, y2, cx, cy, r) {
+            // Vector from line start to end
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lenSq = dx * dx + dy * dy;
+
+            // Project circle center onto line
+            let t = ((cx - x1) * dx + (cy - y1) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t)); // Clamp to line segment
+
+            // Closest point on line
+            const closestX = x1 + t * dx;
+            const closestY = y1 + t * dy;
+
+            // Distance from circle center to closest point
+            const distX = cx - closestX;
+            const distY = cy - closestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < r) {
+                return { collides: true, overlap: r - dist };
+            }
+            return { collides: false };
+        }
+
+        function drawRing() {
+            // Don't draw ring in screen-edges mode
+            if (currentSimulation === 'screen-edges') {
+                return;
+            }
+
+            // Draw polygon instead of ring in growing-polygon mode
+            if (currentSimulation === 'growing-polygon') {
+                drawPolygon();
+                return;
+            }
+
+            ctx.save(); // Save state and ensure no shadows
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Draw outer ring
+            ctx.beginPath();
+
+            if (currentSimulation === 'no-gravity') {
+                // Draw irregular ring using line segments
+                const segments = 120;
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = getIrregularRadius(angle);
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+            } else {
+                // Draw perfect circle for other modes
+                ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Draw inner glow
+            ctx.beginPath();
+
+            if (currentSimulation === 'no-gravity') {
+                // Draw irregular inner glow
+                const segments = 120;
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = getIrregularRadius(angle) - 5;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+            } else {
+                // Draw perfect circle for other modes
+                ctx.arc(centerX, centerY, ringRadius - 5, 0, Math.PI * 2);
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.restore(); // Restore state
+        }
+
+        function drawBall(ball) {
+            ctx.save(); // Save current state
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+
+            // Ball gradient with unique color
+            const gradient = ctx.createRadialGradient(
+                ball.x - ball.radius * 0.3,
+                ball.y - ball.radius * 0.3,
+                0,
+                ball.x,
+                ball.y,
+                ball.radius
+            );
+            gradient.addColorStop(0, `hsl(${ball.hue}, 70%, 70%)`);
+            gradient.addColorStop(1, `hsl(${ball.hue}, 70%, 50%)`);
+
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Ball shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.restore(); // Restore state (removes shadow for next draw)
+        }
+
+        function updateBall(ball) {
+            // Apply gravity (if enabled)
+            if (currentSimulation === 'orbit-gravity') {
+                // Gravitational pull toward both orbiting balls
+                gravityBalls.forEach(gravityBall => {
+                    const dx = gravityBall.x - ball.x;
+                    const dy = gravityBall.y - ball.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 0) {
+                        const force = (2000 * gravityMultiplier) / (distance * distance); // Stronger gravity but not overwhelming
+                        const fx = (dx / distance) * force;
+                        const fy = (dy / distance) * force;
+                        ball.vx += fx;
+                        ball.vy += fy;
+                    }
+                });
+            } else if (gravity !== 0) {
+                // Standard downward gravity
+                if (currentSimulation === 'growing-polygon') {
+                    ball.vy += gravity * polygonGravityMultiplier;
+                } else {
+                    ball.vy += gravity;
+                }
+            }
+
+            // Update position
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Record trail position
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > TRAIL_LENGTH) ball.trail.shift();
+
+            // Check collision based on simulation mode
+            if (currentSimulation === 'screen-edges') {
+                // Screen edge collision (canvas now fills screen)
+                let bounced = false;
+
+                // Left edge
+                if (ball.x - ball.radius <= 0) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx;
+                    bounced = true;
+                }
+                // Right edge
+                if (ball.x + ball.radius >= canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx = -ball.vx;
+                    bounced = true;
+                }
+                // Top edge
+                if (ball.y - ball.radius <= 0) {
+                    ball.y = ball.radius;
+                    ball.vy = -ball.vy;
+                    bounced = true;
+                }
+                // Bottom edge
+                if (ball.y + ball.radius >= canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy = -ball.vy;
+                    bounced = true;
+                }
+
+                if (bounced) {
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
+                }
+
+                // Check collision with start and stop buttons
+                checkButtonCollision(ball);
+            } else if (currentSimulation === 'growing-polygon') {
+                // Polygon collision
+                const angleStep = (Math.PI * 2) / polygonSides;
+                let bounced = false;
+
+                // Check each edge of the polygon
+                for (let i = 0; i < polygonSides; i++) {
+                    const angle1 = i * angleStep;
+                    const angle2 = ((i + 1) % polygonSides) * angleStep;
+
+                    const x1 = centerX + Math.cos(angle1) * polygonRadius;
+                    const y1 = centerY + Math.sin(angle1) * polygonRadius;
+                    const x2 = centerX + Math.cos(angle2) * polygonRadius;
+                    const y2 = centerY + Math.sin(angle2) * polygonRadius;
+
+                    // Check if ball crosses this edge
+                    const collision = lineCircleCollision(x1, y1, x2, y2, ball.x, ball.y, ball.radius);
+
+                    if (collision.collides) {
+                        // Calculate normal vector for this edge (pointing inward)
+                        const edgeDx = x2 - x1;
+                        const edgeDy = y2 - y1;
+                        const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
+                        const nx = -edgeDy / edgeLen;
+                        const ny = edgeDx / edgeLen;
+
+                        // Reflect velocity vector
+                        const dotProduct = ball.vx * nx + ball.vy * ny;
+                        ball.vx = ball.vx - 2 * dotProduct * nx;
+                        ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                        // Push ball back inside polygon
+                        ball.x += nx * collision.overlap;
+                        ball.y += ny * collision.overlap;
+
+                        bounced = true;
+                        break; // Only bounce off one edge at a time
+                    }
+                }
+
+                if (bounced) {
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
+
+                    // Decrease ball speed by 2% on each bounce in orbit-gravity mode
+                    if (currentSimulation === 'orbit-gravity') {
+                        ball.vx *= 0.98;
+                        ball.vy *= 0.98;
+                    }
+
+                    // Increase ball speed by 0.9% and gravity by 0.5% in growing-polygon mode
+                    if (currentSimulation === 'growing-polygon') {
+                        ball.vx *= 1.009;
+                        ball.vy *= 1.009;
+                        polygonGravityMultiplier *= 1.005;
+                    }
+
+                    // Add a side to the polygon (max 100 sides)
+                    if (polygonSides < 100) {
+                        polygonSides++;
+                    }
+                }
+
+                // Check collision with buttons
+                checkButtonCollision(ball);
+            } else {
+                // Ring collision
+                const dx = ball.x - centerX;
+                const dy = ball.y - centerY;
+                const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+
+                // Get the radius at this angle (irregular for no-gravity mode)
+                const currentRingRadius = currentSimulation === 'no-gravity' ? getIrregularRadius(angle) : ringRadius;
+
+                // If ball touches or goes beyond ring
+                if (distanceFromCenter + ball.radius >= currentRingRadius) {
+                    // Calculate normal vector at collision point
+                    // For irregular shape, approximate by using angle to center
+                    const nx = Math.cos(angle);
+                    const ny = Math.sin(angle);
+
+                    // Calculate dot product of velocity and normal
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+
+                    // Reflect velocity vector (perfect bounce, no energy loss)
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                    // Add randomness in no-gravity mode to prevent getting stuck
+                    if (currentSimulation === 'no-gravity') {
+                        const randomAngle = (Math.random() - 0.5) * 0.3; // Small random deviation
+                        const cos = Math.cos(randomAngle);
+                        const sin = Math.sin(randomAngle);
+                        const newVx = ball.vx * cos - ball.vy * sin;
+                        const newVy = ball.vx * sin + ball.vy * cos;
+                        ball.vx = newVx;
+                        ball.vy = newVy;
+                    }
+
+                    // Push ball back inside ring
+                    const overlap = distanceFromCenter + ball.radius - currentRingRadius;
+                    ball.x -= nx * overlap;
+                    ball.y -= ny * overlap;
+
+                    // Play sound and update counters
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360; // Change color on bounce
+                    bounceCount++;
+
+                    // Decrease ball speed by 2% on each bounce in orbit-gravity mode
+                    if (currentSimulation === 'orbit-gravity') {
+                        ball.vx *= 0.98;
+                        ball.vy *= 0.98;
+                    }
+
+                    // Increase orbit speed by 25% and gravity by 1% on bounce in orbit-gravity mode
+                    if (currentSimulation === 'orbit-gravity') {
+                        orbitSpeed *= 1.25;
+                        gravityMultiplier *= 1.01; // Increase gravity by 1%
+                    }
+
+                    // Increase speed on bounce (if enabled)
+                    if (speedIncrease) {
+                        ball.vx *= 1.1;
+                        ball.vy *= 1.1;
+                    }
+
+                    // Every 10 bounces, add a new ball (if spawning enabled and under max)
+                    if (spawnBalls && bounceCount % 10 === 0 && balls.length < maxBalls) {
+                        balls.push(createBall());
+                    }
+
+                    // In outside-balls mode, spawn an outside ball on each bounce
+                    if (currentSimulation === 'outside-balls') {
+                        outsideBalls.push(createOutsideBall());
+                    }
+                }
+
+                // Check collision with buttons in all modes
+                checkButtonCollision(ball);
+            }
+        }
+
+        function updateOutsideBalls() {
+            outsideBalls.forEach(ball => {
+                // Apply gravity
+                ball.vy += gravity;
+
+                // Update position
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Record trail position
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > TRAIL_LENGTH) ball.trail.shift();
+
+                // Check collision with ring (from outside)
+                const dx = ball.x - centerX;
+                const dy = ball.y - centerY;
+                const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+
+                // If ball touches or goes inside the ring
+                if (distanceFromCenter - ball.radius <= ringRadius) {
+                    const angle = Math.atan2(dy, dx);
+
+                    // Normal vector pointing away from center
+                    const nx = Math.cos(angle);
+                    const ny = Math.sin(angle);
+
+                    // Reflect velocity
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                    // Push ball back outside ring
+                    const overlap = ringRadius - (distanceFromCenter - ball.radius);
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+
+                    // Play sound and change color
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                }
+
+                // Check collision with screen edges
+                if (ball.x - ball.radius <= 0) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx;
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                }
+                if (ball.x + ball.radius >= canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx = -ball.vx;
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                }
+                if (ball.y - ball.radius <= 0) {
+                    ball.y = ball.radius;
+                    ball.vy = -ball.vy;
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                }
+                if (ball.y + ball.radius >= canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy = -ball.vy;
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                }
+            });
+        }
+
+        // Check collision between two balls
+        function checkBallCollision(ball1, ball2) {
+            const dx = ball2.x - ball1.x;
+            const dy = ball2.y - ball1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = ball1.radius + ball2.radius;
+
+            if (distance < minDistance && distance > 0) {
+                // Collision detected!
+
+                // Normal vector (from ball1 to ball2)
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                // Relative velocity
+                const dvx = ball1.vx - ball2.vx;
+                const dvy = ball1.vy - ball2.vy;
+
+                // Velocity along normal
+                const velAlongNormal = dvx * nx + dvy * ny;
+
+                // Only resolve if balls are moving toward each other
+                if (velAlongNormal > 0) {
+                    // Elastic collision (equal mass, no energy loss)
+                    // Swap velocity components along the normal
+                    const impulse = velAlongNormal;
+
+                    ball1.vx -= impulse * nx;
+                    ball1.vy -= impulse * ny;
+                    ball2.vx += impulse * nx;
+                    ball2.vy += impulse * ny;
+
+                    // Separate balls to prevent sticking
+                    const overlap = minDistance - distance;
+                    const separationX = nx * overlap / 2;
+                    const separationY = ny * overlap / 2;
+
+                    ball1.x -= separationX;
+                    ball1.y -= separationY;
+                    ball2.x += separationX;
+                    ball2.y += separationY;
+
+                    // Change colors on collision
+                    ball1.hue = (ball1.hue + 15) % 360;
+                    ball2.hue = (ball2.hue + 15) % 360;
+                }
+            }
+        }
+
+        // Check collision with start and stop buttons
+        function checkButtonCollision(ball) {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            [startBtn, stopBtn].forEach(btn => {
+                const rect = btn.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+
+                // Convert button position to canvas coordinates
+                const btnLeft = rect.left - canvasRect.left;
+                const btnTop = rect.top - canvasRect.top;
+                const btnRight = btnLeft + rect.width;
+                const btnBottom = btnTop + rect.height;
+
+                // Check if ball collides with button
+                const closestX = Math.max(btnLeft, Math.min(ball.x, btnRight));
+                const closestY = Math.max(btnTop, Math.min(ball.y, btnBottom));
+
+                const distX = ball.x - closestX;
+                const distY = ball.y - closestY;
+                const distance = Math.sqrt(distX * distX + distY * distY);
+
+                if (distance < ball.radius) {
+                    // Collision detected!
+                    const overlap = ball.radius - distance;
+
+                    // Normal vector from button to ball
+                    let nx = distX / distance;
+                    let ny = distY / distance;
+
+                    // If center is inside button, push out
+                    if (distance === 0) {
+                        nx = 1;
+                        ny = 0;
+                    }
+
+                    // Reflect velocity
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+
+                    // Push ball out of button
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+
+                    // Play sound and update
+                    playBounceSound();
+                    ball.hue = (ball.hue + 30) % 360;
+                    bounceCount++;
+                }
+            });
+        }
+
+        function updateGravityBall() {
+            // Update orbit angle
+            orbitAngle += orbitSpeed;
+
+            // Calculate gravity ball positions (evenly spaced around the ring, 90 degrees apart)
+            for (let i = 0; i < gravityBalls.length; i++) {
+                const angleOffset = (Math.PI / 2) * i; // 90 degrees apart
+                gravityBalls[i].x = centerX + Math.cos(orbitAngle + angleOffset) * orbitRadius;
+                gravityBalls[i].y = centerY + Math.sin(orbitAngle + angleOffset) * orbitRadius;
+            }
+        }
+
+        function drawGravityBall() {
+            gravityBalls.forEach((ball, index) => {
+                ctx.save();
+
+                // Draw gravity ball with glow
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+
+                // Gradient for gravity ball (different colors for each)
+                const gradient = ctx.createRadialGradient(
+                    ball.x - ball.radius * 0.3,
+                    ball.y - ball.radius * 0.3,
+                    0,
+                    ball.x,
+                    ball.y,
+                    ball.radius
+                );
+
+                if (index === 0) {
+                    gradient.addColorStop(0, '#ff6b6b');
+                    gradient.addColorStop(1, '#c92a2a');
+                    ctx.shadowColor = '#ff6b6b';
+                } else if (index === 1) {
+                    gradient.addColorStop(0, '#4ecdc4');
+                    gradient.addColorStop(1, '#0891b2');
+                    ctx.shadowColor = '#4ecdc4';
+                } else if (index === 2) {
+                    gradient.addColorStop(0, '#ffe66d');
+                    gradient.addColorStop(1, '#f59f00');
+                    ctx.shadowColor = '#ffe66d';
+                } else {
+                    gradient.addColorStop(0, '#ff85a2');
+                    gradient.addColorStop(1, '#d6336c');
+                    ctx.shadowColor = '#ff85a2';
+                }
+
+                ctx.fillStyle = gradient;
+
+                // Glow effect
+                ctx.shadowBlur = 20;
+
+                ctx.fill();
+
+                // Draw force field indicator
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 15, 0, Math.PI * 2);
+                const strokeColors = [
+                    'rgba(255, 107, 107, 0.3)',
+                    'rgba(78, 205, 196, 0.3)',
+                    'rgba(255, 230, 109, 0.3)',
+                    'rgba(255, 133, 162, 0.3)'
+                ];
+                ctx.strokeStyle = strokeColors[index];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.restore();
+            });
+        }
+
+        function gameLoop() {
+            if (!isRunning) return;
+
+            // Fade trail
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ring
+            drawRing();
+
+            // Update and draw orbiting gravity ball if in that mode
+            if (currentSimulation === 'orbit-gravity') {
+                updateGravityBall();
+                drawGravityBall();
+            }
+
+            // Update all balls
+            balls.forEach(ball => updateBall(ball));
+
+            // Update and draw outside balls if in that mode
+            if (currentSimulation === 'outside-balls') {
+                updateOutsideBalls();
+                outsideBalls.forEach(ball => drawTrail(ball));
+                outsideBalls.forEach(ball => drawBall(ball));
+            }
+
+            // Check ball-to-ball collisions
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    checkBallCollision(balls[i], balls[j]);
+                }
+            }
+
+            // Check outside ball collisions with each other
+            for (let i = 0; i < outsideBalls.length; i++) {
+                for (let j = i + 1; j < outsideBalls.length; j++) {
+                    checkBallCollision(outsideBalls[i], outsideBalls[j]);
+                }
+            }
+
+            // Check outside ball collisions with inside balls
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = 0; j < outsideBalls.length; j++) {
+                    checkBallCollision(balls[i], outsideBalls[j]);
+                }
+            }
+
+            // Draw trails then balls
+            balls.forEach(ball => drawTrail(ball));
+            balls.forEach(ball => drawBall(ball));
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startAnimation() {
+            initAudio();
+            if (isRunning) return;
+
+            // Create a ball if there are none
+            if (balls.length === 0) {
+                balls.push(createBall());
+            }
+
+            isRunning = true;
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopAnimation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            // Reset the simulation
+            balls = [];
+            outsideBalls = [];
+            bounceCount = 0;
+
+            // Reset orbit speed and gravity if in orbit-gravity mode
+            if (currentSimulation === 'orbit-gravity') {
+                orbitSpeed = 0.005;
+                gravityMultiplier = 1;
+            }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRing();
+
+            // Draw gravity ball if in orbit-gravity mode
+            if (currentSimulation === 'orbit-gravity') {
+                updateGravityBall();
+                drawGravityBall();
+            }
+        }
+
+        function changeSimulation() {
+            const select = document.getElementById('simulation-select');
+            currentSimulation = select.value;
+
+            // Reset game state
+            stopAnimation();
+            balls = [];
+            bounceCount = 0;
+
+            // Set simulation parameters
+            switch (currentSimulation) {
+                case 'gravity-balls':
+                    gravity = 0.15;
+                    spawnBalls = true;
+                    speedIncrease = false;
+                    break;
+                case 'classic':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    break;
+                case 'no-gravity':
+                    gravity = 0;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    break;
+                case 'speed-up':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = true;
+                    break;
+                case 'moon-gravity':
+                    gravity = 0.025; // Moon gravity is ~1/6 of Earth
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    break;
+                case 'orbit-gravity':
+                    gravity = 0;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    orbitAngle = 0; // Reset orbit position
+                    orbitSpeed = 0.005; // Reset orbit speed
+                    gravityMultiplier = 1; // Reset gravity multiplier
+                    break;
+                case 'screen-edges':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    // Resize canvas to fill screen
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    // Update center point
+                    centerX = canvas.width / 2;
+                    centerY = canvas.height / 2;
+                    // Add fullscreen classes for positioning
+                    document.querySelector('.game-area').classList.add('fullscreen');
+                    document.querySelector('.controls').classList.add('fullscreen-mode');
+                    document.querySelector('h1').classList.add('fullscreen-mode');
+                    break;
+                case 'growing-polygon':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    polygonSides = 3; // Reset to triangle
+                    polygonGravityMultiplier = 1; // Reset gravity multiplier
+                    break;
+                case 'outside-balls':
+                    gravity = 0.15;
+                    spawnBalls = false;
+                    speedIncrease = false;
+                    outsideBalls = []; // Reset outside balls
+                    break;
+                default:
+                    // Reset canvas to original size for other modes
+                    canvas.width = 600;
+                    canvas.height = 600;
+                    // Update center point back to original
+                    centerX = canvas.width / 2;
+                    centerY = canvas.height / 2;
+                    // Remove fullscreen classes
+                    document.querySelector('.game-area').classList.remove('fullscreen');
+                    document.querySelector('.controls').classList.remove('fullscreen-mode');
+                    document.querySelector('h1').classList.remove('fullscreen-mode');
+                    break;
+            }
+
+            // Initialize with first ball
+            balls.push(createBall());
+
+            // Redraw static state
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRing();
+
+            // Draw gravity ball if in orbit-gravity mode
+            if (currentSimulation === 'orbit-gravity') {
+                updateGravityBall();
+                drawGravityBall();
+            }
+
+            balls.forEach(ball => drawBall(ball));
+        }
+
+        // Initialize - draw static ring and balls
+        ctx.shadowColor = 'transparent';
+        drawRing();
+        balls.forEach(ball => drawBall(ball));
+
+        // Handle window resize for screen-edges mode
+        window.addEventListener('resize', () => {
+            if (currentSimulation === 'screen-edges') {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                centerX = canvas.width / 2;
+                centerY = canvas.height / 2;
+            }
+        });
+    </script>
+</body>
+</html>

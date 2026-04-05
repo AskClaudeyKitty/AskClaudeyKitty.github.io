@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .game {
+            background: white;
+            padding: 2rem 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { margin-top: 0; }
+        input {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            width: 140px;
+            text-align: center;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        button {
+            font-size: 1.2rem;
+            padding: 0.5rem 1.5rem;
+            margin-left: 0.5rem;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+        }
+        button:hover { background: #5a67d8; }
+        .message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            min-height: 1.5rem;
+        }
+        .win { color: #48bb78; }
+        .high { color: #f56565; }
+        .low { color: #ed8936; }
+        .close { color: #9f7aea; }
+        .kinda { color: #4299e1; }
+        .reset {
+            background: #48bb78;
+            margin-top: 1rem;
+            display: none;
+        }
+        .reset:hover { background: #38a169; }
+        .mute-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .mute-btn:hover { background: rgba(255,255,255,0.3); }
+        .settings-btn {
+            position: fixed;
+            top: 10px;
+            right: 70px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .settings-btn:hover { background: rgba(255,255,255,0.3); }
+        .saves-btn {
+            position: fixed;
+            top: 10px;
+            right: 130px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .saves-btn:hover { background: rgba(255,255,255,0.3); }
+        .achievements-btn {
+            position: fixed;
+            top: 10px;
+            right: 190px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .achievements-btn:hover { background: rgba(255,255,255,0.3); }
+        .hint-btn {
+            position: fixed;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .hint-btn:hover { background: rgba(255,255,255,0.3); }
+        .achievement {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            text-align: left;
+            opacity: 0.4;
+        }
+        .achievement.unlocked {
+            opacity: 1;
+            background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+        }
+        .achievement-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        .memory-card {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            user-select: none;
+        }
+        .memory-card:hover {
+            transform: scale(1.05);
+        }
+        .memory-card.flipped {
+            background: white;
+            border: 3px solid #667eea;
+        }
+        .memory-card.matched {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            cursor: default;
+        }
+        .memory-card.matched:hover {
+            transform: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            min-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .slider-container {
+            margin: 1.5rem 0;
+        }
+        .slider {
+            width: 100%;
+            font-size: 1.2rem;
+        }
+        .close-modal {
+            background: #667eea;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    <button class="saves-btn" onclick="openSaves()">💾</button>
+    <button class="achievements-btn" onclick="openAchievements()">🏆</button>
+    <button class="mute-btn" onclick="toggleMute()">🔊</button>
+    <button class="hint-btn" onclick="showHint()">💡</button>
+
+    <div class="modal" id="welcome-modal">
+        <div class="modal-content">
+            <h2>👋 Welcome!</h2>
+            <p>Click the ⚙️ <strong>Settings</strong> button to switch games, change options, and see your stats!</p>
+            <p>🎯 <strong>Guess the Number</strong> - Classic number guessing game!</p>
+            <p>🧠 <strong>Memory Match</strong> - Find all the pairs!</p>
+            <p>Use the 💾 <strong>Saves</strong> button to save/load your stats!</p>
+            <p>Use the 🏆 <strong>Achievements</strong> button to view your unlocked achievements!</p>
+            <p>Use the 🔊 <strong>Mute</strong> button to toggle sound on/off.</p>
+            <button class="close-modal" onclick="closeWelcome()">Got it!</button>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <h2>⚙️ Settings</h2>
+            <div class="slider-container">
+                <label for="attempts-slider">Max Attempts: <strong id="slider-value">7</strong></label><br><br>
+                <input type="range" id="attempts-slider" class="slider" min="1" max="15" value="7" oninput="updateAttempts(this.value)">
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <strong>📍 Hint Levels:</strong><br><br>
+                <span style="color: #9f7aea;">🔥 Within 2</span> — SO close!<br>
+                <span style="color: #4299e1;">🌡️ Within 3-10</span> — Getting warmer<br>
+                <span style="color: #ed8936;">🧊 11+ away</span> — Ice cold
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="original-music" style="width: auto; margin-right: 0.5rem;" onchange="toggleMusicMode()">
+                    <strong>🎵 Original ambient music (slow)</strong>
+                </label>
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <strong>📊 Your Stats:</strong><br><br>
+                Wins: <span id="stats-wins">0</span> | Losses: <span id="stats-losses">0</span><br>
+                <strong style="font-size: 1.2rem;">Win Rate: <span id="win-rate">0%</span></strong>
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 0.5rem;">
+                    <input type="checkbox" id="timed-mode" style="width: auto; margin-right: 0.5rem;" onchange="toggleTimedMode()">
+                    <strong>⏱️ Timed Mode</strong>
+                </label>
+                <select id="timer-duration" style="width: auto; padding: 0.3rem; border-radius: 0.3rem;" onchange="updateTimerDuration()">
+                    <option value="5">5 seconds (Insane!)</option>
+                    <option value="15">15 seconds (Hard)</option>
+                    <option value="30" selected>30 seconds (Normal)</option>
+                </select>
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="reverse-scroll" style="width: auto; margin-right: 0.5rem;" onchange="toggleReverseScroll()">
+                    <strong>🔄 Reverse Scroll (modals)</strong>
+                </label>
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <strong>🎮 Game Mode:</strong><br><br>
+                <select id="game-mode" style="width: auto; padding: 0.3rem; border-radius: 0.3rem;" onchange="switchGame()">
+                    <option value="guess">🎯 Guess the Number</option>
+                    <option value="memory">🧠 Memory Match</option>
+                </select>
+            </div>
+
+            <div style="text-align: left; margin: 1.5rem 0; padding: 1rem; background: #f7faf7; border-radius: 0.5rem;">
+                <strong>🔑 Developer Code:</strong><br><br>
+                <input type="text" id="dev-code-input" placeholder="Enter code..." style="width: 60%; padding: 0.3rem; border-radius: 0.3rem;">
+                <button onclick="checkDevCode()" style="font-size: 0.9rem; padding: 0.3rem 0.8rem; margin-left: 0.5rem;">Submit</button>
+                <div id="dev-code-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <div id="developer-panel" style="display: none; text-align: left; margin: 1.5rem 0; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.5rem; color: white;">
+                <strong>👨‍💻 Developer Panel</strong><br><br>
+                <label style="display: block; margin-bottom: 0.5rem;">Wins: <input type="number" id="dev-wins" value="0" style="width: 70px; padding: 0.3rem; border-radius: 0.3rem; border: none;"> <button onclick="setWins()" style="background: #48bb78; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 0.3rem;">Set</button></label>
+                <label style="display: block;">Losses: <input type="number" id="dev-losses" value="0" style="width: 70px; padding: 0.3rem; border-radius: 0.3rem; border: none;"> <button onclick="setLosses()" style="background: #f56565; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 0.3rem;">Set</button></label>
+                <br><br>
+                <select id="achievement-select" style="padding: 0.3rem; border-radius: 0.3rem; width: 70%;">
+                    <option value="">Select achievement...</option>
+                    <option value="firstWin">First Win</option>
+                    <option value="firstLoss">First Loss</option>
+                    <option value="winStreak2">Hot Streak (2)</option>
+                    <option value="winStreak3">On Fire (3)</option>
+                    <option value="winStreak4">Unstoppable (4)</option>
+                    <option value="winStreak5">Legendary (5)</option>
+                    <option value="lossStreak2">Cold Streak (2)</option>
+                    <option value="lossStreak3">Freezing (3)</option>
+                    <option value="lossStreak4">Absolute Zero (4)</option>
+                    <option value="lossStreak5">Hopeless (5)</option>
+                    <option value="games100">Veteran (100 games)</option>
+                    <option value="perfectGame">Perfect Game</option>
+                    <option value="quickWin">Quick Win</option>
+                    <option value="efficientWin">Efficient Win</option>
+                    <option value="timedWin">Speed Demon</option>
+                    <option value="timed15">Fast Win (15s)</option>
+                    <option value="timed5">Insane Win (5s)</option>
+                    <option value="meme">The Meme</option>
+                    <option value="developer">Developer</option>
+                    <option value="memoryFirstWin">Memory Master</option>
+                    <option value="memoryPerfect">Perfect Memory</option>
+                    <option value="memoryUnder20">Quick Mind</option>
+                    <option value="memory10">Eidetic Memory</option>
+                </select>
+                <button onclick="giveAchievement()" style="background: #f6e05e; color: #744210; border: none; padding: 0.5rem 1rem; border-radius: 0.3rem; margin-left: 0.5rem;">Give Achievement</button>
+                <br><br>
+                <strong>Quick Save/Load:</strong><br><br>
+                <input type="text" id="dev-save-name" placeholder="Save name..." style="padding: 0.3rem; border-radius: 0.3rem; width: 60%;">
+                <button onclick="quickSave()" style="background: #48bb78; color: white; border: none; padding: 0.3rem 1rem; border-radius: 0.3rem;">Save</button>
+                <br><br>
+                <select id="dev-save-select" style="padding: 0.3rem; border-radius: 0.3rem; width: 80%; max-width: 200px;">
+                    <option value="">Select save to load...</option>
+                </select>
+                <button onclick="quickLoad()" style="background: #4299e1; color: white; border: none; padding: 0.3rem 1rem; border-radius: 0.3rem; margin-left: 0.5rem;">Load</button>
+                <div id="dev-action-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button class="close-modal" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
+
+    <div class="modal" id="saves-modal">
+        <div class="modal-content">
+            <h2>💾 Save / Load</h2>
+            <div id="save-section">
+                <input type="text" id="save-name" placeholder="Save name..." style="width: 70%; margin-bottom: 0.5rem;">
+                <br>
+                <button class="close-modal" onclick="saveGame()">Save</button>
+            </div>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid #e2e8f0;">
+            <div id="load-section">
+                <input type="text" id="load-name" placeholder="Save name to load..." style="padding: 0.3rem; border-radius: 0.3rem; width: 70%;">
+                <button class="close-modal" onclick="loadGame()" style="margin-left: 0.5rem;">Load</button>
+            </div>
+            <div id="save-message" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+            <button class="close-modal" onclick="closeSaves()" style="background: #718096;">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="achievements-modal">
+        <div class="modal-content">
+            <h2>🏆 Achievements</h2>
+            <div id="achievements-list">
+                <div class="achievement" id="ach-first-win">
+                    <span class="achievement-icon">🎉</span>
+                    <strong>First Win</strong>
+                    <br><small>Win your first game!</small>
+                </div>
+                <div class="achievement" id="ach-first-loss">
+                    <span class="achievement-icon">💀</span>
+                    <strong>First Loss</strong>
+                    <br><small>Lose your first game...</small>
+                </div>
+                <div class="achievement" id="ach-win-streak-2">
+                    <span class="achievement-icon">🔥</span>
+                    <strong>Hot Streak (2)</strong>
+                    <br><small>Win 2 games in a row!</small>
+                </div>
+                <div class="achievement" id="ach-win-streak-3">
+                    <span class="achievement-icon">🔥🔥</span>
+                    <strong>On Fire (3)</strong>
+                    <br><small>Win 3 games in a row!</small>
+                </div>
+                <div class="achievement" id="ach-win-streak-4">
+                    <span class="achievement-icon">🔥🔥🔥</span>
+                    <strong>Unstoppable (4)</strong>
+                    <br><small>Win 4 games in a row!</small>
+                </div>
+                <div class="achievement" id="ach-win-streak-5">
+                    <span class="achievement-icon">🌟</span>
+                    <strong>Legendary (5)</strong>
+                    <br><small>Win 5 games in a row!</small>
+                </div>
+                <div class="achievement" id="ach-loss-streak-2">
+                    <span class="achievement-icon">🧊</span>
+                    <strong>Cold Streak (2)</strong>
+                    <br><small>Lose 2 games in a row...</small>
+                </div>
+                <div class="achievement" id="ach-loss-streak-3">
+                    <span class="achievement-icon">🧊🧊</span>
+                    <strong>Freezing (3)</strong>
+                    <br><small>Lose 3 games in a row...</small>
+                </div>
+                <div class="achievement" id="ach-loss-streak-4">
+                    <span class="achievement-icon">🧊🧊🧊</span>
+                    <strong>Absolute Zero (4)</strong>
+                    <br><small>Lose 4 games in a row...</small>
+                </div>
+                <div class="achievement" id="ach-loss-streak-5">
+                    <span class="achievement-icon">❄️</span>
+                    <strong>Hopeless (5)</strong>
+                    <br><small>Lose 5 games in a row...</small>
+                </div>
+                <div class="achievement" id="ach-100-games">
+                    <span class="achievement-icon">🎮</span>
+                    <strong>Veteran</strong>
+                    <br><small>Play 100 rounds!</small>
+                </div>
+                <div class="achievement" id="ach-perfect-game">
+                    <span class="achievement-icon">💎</span>
+                    <strong>Perfect Game</strong>
+                    <br><small>Win on your first guess!</small>
+                </div>
+                <div class="achievement" id="ach-quick-win">
+                    <span class="achievement-icon">⚡</span>
+                    <strong>Quick Win</strong>
+                    <br><small>Win in 3 guesses or less!</small>
+                </div>
+                <div class="achievement" id="ach-efficient-win">
+                    <span class="achievement-icon">🎯</span>
+                    <strong>Efficient Win</strong>
+                    <br><small>Win in 4 guesses!</small>
+                </div>
+                <div class="achievement" id="ach-timed-win">
+                    <span class="achievement-icon">⏱️</span>
+                    <strong>Speed Demon</strong>
+                    <br><small>Win a timed game!</small>
+                </div>
+                <div class="achievement" id="ach-timed-15">
+                    <span class="achievement-icon">⚡</span>
+                    <strong>Fast Win</strong>
+                    <br><small>Win with 15 second timer!</small>
+                </div>
+                <div class="achievement" id="ach-timed-5">
+                    <span class="achievement-icon">🔥</span>
+                    <strong>Insane Win</strong>
+                    <br><small>Win with 5 second timer!</small>
+                </div>
+                <div class="achievement" id="ach-meme">
+                    <span class="achievement-icon">😂</span>
+                    <strong>The Meme</strong>
+                    <br><small>Guess the forbidden number...</small>
+                </div>
+                <div class="achievement" id="ach-developer">
+                    <span class="achievement-icon">👨‍💻</span>
+                    <strong>Developer</strong>
+                    <br><small>Enter the secret code...</small>
+                </div>
+                <div class="achievement" id="ach-memory-first-win">
+                    <span class="achievement-icon">🧠</span>
+                    <strong>Memory Master</strong>
+                    <br><small>Win your first Memory Match!</small>
+                </div>
+                <div class="achievement" id="ach-memory-perfect">
+                    <span class="achievement-icon">⭐</span>
+                    <strong>Perfect Memory</strong>
+                    <br><small>Win Memory Match in 8 moves!</small>
+                </div>
+                <div class="achievement" id="ach-memory-under-20">
+                    <span class="achievement-icon">🤩</span>
+                    <strong>Quick Mind</strong>
+                    <br><small>Win Memory Match in under 20 moves!</small>
+                </div>
+                <div class="achievement" id="ach-memory-10">
+                    <span class="achievement-icon">🚀</span>
+                    <strong>Eidetic Memory</strong>
+                    <br><small>Win Memory Match in 10 moves or less!</small>
+                </div>
+                <div class="achievement" id="ach-completionist">
+                    <span class="achievement-icon">👑</span>
+                    <strong>Completionist</strong>
+                    <br><small>Unlock all other achievements!</small>
+                </div>
+            </div>
+            <button class="close-modal" onclick="closeAchievements()">Close</button>
+        </div>
+    </div>
+
+    <div class="game" id="guessing-game">
+        <h1>🎯 Guess the Number!</h1>
+        <p>I'm thinking of a number between 1 and 100.</p>
+        <p><small>Wins: <strong id="wins" style="color: #48bb78;">0</strong> | Losses: <strong id="losses" style="color: #f56565;">0</strong></small></p>
+        <p><small>Win Streak: <strong id="current-win-streak" style="color: #ed8936;">0</strong> 🔥 | Loss Streak: <strong id="current-loss-streak" style="color: #4299e1;">0</strong> 🧊</small></p>
+        <p id="timer-display" style="display:none;"><small>⏱️ Time: <strong id="timer">30</strong>s</small></p>
+        <p><small>You have <strong id="attempts-left">7</strong> attempts remaining!</small></p>
+        <input type="number" id="guess" min="1" max="100" autofocus>
+        <button onclick="guess()">Guess</button>
+        <div class="message" id="message"></div>
+        <button class="reset" id="reset" onclick="reset()">Play Again</button>
+    </div>
+
+    <div class="game" id="memory-game" style="display: none;">
+        <h1>🧠 Memory Match!</h1>
+        <p>Find all the pairs!</p>
+        <p><small>Pairs Found: <strong id="pairs-found" style="color: #48bb78;">0</strong> / <strong id="total-pairs">8</strong></small></p>
+        <p><small>Moves: <strong id="memory-moves">0</strong></small></p>
+        <div id="memory-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 400px; margin: 0 auto;"></div>
+        <div class="message" id="memory-message" style="margin-top: 1rem;"></div>
+        <button class="reset" id="memory-reset" onclick="resetMemory()" style="margin-top: 1rem; display: none;">Play Again</button>
+    </div>
+
+    <script>
+        // Current game mode
+        let currentGame = 'guess';
+
+        // Developer code - change this before showing at school!
+        const DEVELOPER_CODE = '146';
+        let developerModeUnlocked = false;
+
+        // Generate secret number (never 67!)
+        let secret = Math.floor(Math.random() * 99) + 1;
+        if (secret >= 67) secret++;
+
+        let attempts = 0;
+        let maxAttempts = 7;
+        let wins = 0;
+        let losses = 0;
+        let winStreak = 0;
+        let lossStreak = 0;
+        let gamesPlayed = 0;
+        let achievements = {
+            firstWin: false,
+            firstLoss: false,
+            winStreak2: false,
+            winStreak3: false,
+            winStreak4: false,
+            winStreak5: false,
+            lossStreak2: false,
+            lossStreak3: false,
+            lossStreak4: false,
+            lossStreak5: false,
+            games100: false,
+            perfectGame: false,
+            quickWin: false,
+            efficientWin: false,
+            timedWin: false,
+            timed15: false,
+            timed5: false,
+            meme: false,
+            developer: false,
+            memoryFirstWin: false,
+            memoryPerfect: false,
+            memoryUnder20: false,
+            memory10: false,
+            completionist: false
+        };
+
+        // Timed mode
+        let timedMode = false;
+        let timerDuration = 30;
+        let timeLeft = 30;
+        let timerInterval = null;
+        let currentTimerDuration = 30; // Track what duration the current game is using
+
+        // Reverse scroll
+        let reverseScroll = false;
+
+        // Memory Match game variables
+        const memoryEmojis = ['🎮', '🎲', '🎯', '🏆', '🎪', '🎨', '🎭', '🎬'];
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let memoryMoves = 0;
+        let totalPairs = 8;
+        let canFlip = true;
+
+        const ratings = {
+            1: [
+                "🏆 GODLIKE! Perfect guess!",
+                "👑 LEGENDARY! First try!",
+                "🔥 UNSTOPPABLE! One shot!"
+            ],
+            2: [
+                "🎯 Excellent! Just 2 tries!",
+                "⚡ Fantastic! Sharp skills!",
+                "🚀 Amazing! Almost perfect!"
+            ],
+            3: [
+                "😊 Great job! 3 attempts!",
+                "👍 Well done! Nice work!",
+                "✨ Brilliant! Keep it up!"
+            ],
+            4: [
+                "🙂 Pretty good! 4 tries!",
+                "👀 Not bad! Solid effort!",
+                "😃 Decent! You're improving!"
+            ],
+            5: [
+                "🤡 5 attempts? My grandma's faster!",
+                "🧠 A rock could do better...",
+                "📉 That was painfully average!"
+            ],
+            6: [
+                "🦕 You call that guessing? Embarrassing!",
+                "🧟 6 tries? Your brain is on life support!",
+                "🪦 I've seen house plants with better intuition!"
+            ],
+            7: [
+                "💀 7 attempts? Pure torture to watch!",
+                "🦋 You had ONE job... and struggled!",
+                "⚰️ Barely scraped by! Tragically bad!"
+            ],
+            8: [
+                "🪦 That was rough... 8 tries!",
+                "💀 Barely made it!",
+                "🧟 Brain at 1%..."
+            ],
+            9: [
+                "⚰️ Almost buried this game...",
+                "🦇 Negative tactical awareness...",
+                "🧩 My goldfish does better..."
+            ],
+            10: [
+                "🚮 Absolute garbage performance!",
+                "📉 You couldn't hit water falling out of a boat!",
+                "🤡 Please never play again..."
+            ],
+            default: [
+                "💀 You had all those chances...",
+                "🪦 R.I.P. your guessing career...",
+                "🚮 That performance was unacceptable..."
+            ]
+        };
+
+        const uncompliments = [
+            "🤡 Actually terrible at this.",
+            "📉 My goldfish guesses better.",
+            "🧠 A rock could do better.",
+            "💀 You had 7 chances and blew them all.",
+            "🚮 That performance was garbage.",
+            "🦋 Did you even try?",
+            "🪦 Your guessing game is dead on arrival.",
+            "🥶 Zero tactical awareness.",
+            "🔋 Your brain is at 1%.",
+            "⚰️ Bury this game and never play again.",
+            "📉 Negative IQ plays.",
+            "🎯 You couldn't hit water if you fell out of a boat."
+        ];
+
+        // Audio system
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let isMuted = false;
+        let ambientInterval = null;
+        let useOriginalMusic = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.querySelector('.mute-btn').textContent = isMuted ? '🔇' : '🔊';
+            if (isMuted && ambientInterval) {
+                clearInterval(ambientInterval);
+                ambientInterval = null;
+            } else if (!isMuted) {
+                startAmbient();
+            }
+        }
+
+        function playTone(freq, duration, type = 'sine', volume = 0.1) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playClick() {
+            initAudio();
+            playTone(800, 0.05, 'square', 0.05);
+        }
+
+        function playWin() {
+            initAudio();
+            const notes = [523, 659, 784, 1047]; // C E G C
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 0.3, 'sine', 0.15), i * 100);
+            });
+        }
+
+        function playLose() {
+            initAudio();
+            // Sad trombone: G2 - F2 - Eb2 - D2 - C2 - Bb1 - LONG sad slide to A1
+            const trombone = [
+                { freq: 98, dur: 400 },     // G2
+                { freq: 87, dur: 450 },     // F2
+                { freq: 78, dur: 500 },     // Eb2
+                { freq: 73, dur: 550 },     // D2
+                { freq: 65, dur: 600 },     // C2
+                { freq: 58, dur: 2500 }     // Bb1 - extra long sad ending
+            ];
+
+            let delay = 0;
+            trombone.forEach(note => {
+                setTimeout(() => {
+                    if (isMuted || !audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(note.freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + note.dur / 1000);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + note.dur / 1000);
+                }, delay);
+                delay += note.dur;
+            });
+        }
+
+        function startAmbient() {
+            if (isMuted || ambientInterval) return;
+            initAudio();
+
+            if (useOriginalMusic) {
+                // Original simple ambient arpeggio
+                const notes = [261, 329, 392, 523, 392, 329]; // C E G C G E
+                let noteIndex = 0;
+
+                ambientInterval = setInterval(() => {
+                    if (!isMuted) {
+                        playTone(notes[noteIndex], 0.5, 'sine', 0.02);
+                    }
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }, 2000);
+            } else {
+                // Extended ambient arpeggio
+                const notes = [
+                    261, 329, 392, 523, 392, 329, 349, 440, 523, 659, 440, 349,
+                    293, 369, 440, 587, 440, 369, 261, 329, 392, 523, 698, 523,
+                    233, 293, 349, 466, 349, 293, 196, 246, 293, 392, 293, 246,
+                    220, 277, 329, 440, 329, 277, 220, 277, 329, 440, 523, 440,
+                    174, 220, 261, 349, 261, 220, 174, 220, 261, 349, 440, 349,
+                    392, 493, 587, 783, 587, 493, 392, 493, 587, 493, 392, 349,
+                    330, 415, 493, 659, 493, 415, 330, 415, 493, 415, 330, 293,
+                    277, 349, 415, 554, 415, 349, 277, 349, 415, 349, 277, 261
+                ];
+                let noteIndex = 0;
+
+                ambientInterval = setInterval(() => {
+                    if (!isMuted) {
+                        playTone(notes[noteIndex], 0.2, 'sine', 0.02);
+                    }
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }, 130);
+            }
+        }
+
+        function toggleMusicMode() {
+            playClick();
+            useOriginalMusic = document.getElementById('original-music').checked;
+            // Restart ambient with new mode
+            if (ambientInterval) {
+                clearInterval(ambientInterval);
+                ambientInterval = null;
+            }
+            if (!isMuted) {
+                startAmbient();
+            }
+        }
+
+        function updateWinsLosses() {
+            document.getElementById('wins').textContent = wins;
+            document.getElementById('losses').textContent = losses;
+            document.getElementById('current-win-streak').textContent = winStreak;
+            document.getElementById('current-loss-streak').textContent = lossStreak;
+        }
+
+        function startTimer() {
+            if (!timedMode) return;
+            currentTimerDuration = timerDuration;
+            timeLeft = timerDuration;
+            document.getElementById('timer-display').style.display = 'block';
+            document.getElementById('timer').textContent = timeLeft;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    // Time's up - you lose
+                    const message = document.getElementById('message');
+                    message.textContent = '⏰ Time\'s up! The number was ' + secret;
+                    message.className = 'message high';
+                    document.getElementById('reset').style.display = 'inline-block';
+                    document.getElementById('guess').disabled = true;
+                    losses++;
+                    lossStreak++;
+                    winStreak = 0;
+                    gamesPlayed++;
+                    updateWinsLosses();
+                    unlockAchievement('firstLoss');
+                    if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                    if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                    if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                    if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                    if (gamesPlayed >= 100) unlockAchievement('games100');
+                    playLose();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function toggleTimedMode() {
+            playClick();
+            timedMode = document.getElementById('timed-mode').checked;
+            if (timedMode) {
+                timerDuration = parseInt(document.getElementById('timer-duration').value);
+                document.getElementById('timer-display').style.display = 'block';
+                document.getElementById('timer').textContent = timerDuration;
+            } else {
+                document.getElementById('timer-display').style.display = 'none';
+                stopTimer();
+            }
+        }
+
+        function updateTimerDuration() {
+            playClick();
+            timerDuration = parseInt(document.getElementById('timer-duration').value);
+            if (timedMode) {
+                document.getElementById('timer').textContent = timerDuration;
+            }
+        }
+
+        function toggleReverseScroll() {
+            playClick();
+            reverseScroll = document.getElementById('reverse-scroll').checked;
+        }
+
+        function checkDevCode() {
+            playClick();
+            const input = document.getElementById('dev-code-input');
+            const messageEl = document.getElementById('dev-code-message');
+            const code = input.value.trim();
+
+            if (code === DEVELOPER_CODE) {
+                if (!achievements.developer) {
+                    achievements.developer = true;
+                    developerModeUnlocked = true;
+                    updateAchievementsDisplay();
+                    unlockAchievement('developer');
+                    messageEl.textContent = '🎉 Developer mode unlocked!';
+                    messageEl.style.color = '#48bb78';
+                    input.value = '';
+                } else {
+                    messageEl.textContent = 'Already unlocked!';
+                    messageEl.style.color = '#f6e05e';
+                }
+                // Show developer panel
+                document.getElementById('developer-panel').style.display = 'block';
+                // Populate dev save list
+                updateDevSaveList();
+            } else if (code !== '') {
+                messageEl.textContent = '❌ Wrong code!';
+                messageEl.style.color = '#f56565';
+            } else {
+                messageEl.textContent = '';
+            }
+        }
+
+        function quickSave() {
+            playClick();
+            const name = document.getElementById('dev-save-name').value.trim();
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!name) {
+                msgEl.textContent = '❌ Enter a save name!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            const saveData = {
+                wins: wins,
+                losses: losses,
+                winStreak: winStreak,
+                lossStreak: lossStreak,
+                gamesPlayed: gamesPlayed,
+                achievements: achievements,
+                timedMode: timedMode,
+                timerDuration: timerDuration,
+                reverseScroll: reverseScroll,
+                developerModeUnlocked: developerModeUnlocked
+            };
+
+            localStorage.setItem('quickSave_' + name, JSON.stringify(saveData));
+            msgEl.textContent = '✅ Saved as "' + name + '"!';
+            document.getElementById('dev-save-name').value = '';
+            setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            updateDevSaveList();
+        }
+
+        function quickLoad() {
+            playClick();
+            const select = document.getElementById('dev-save-select');
+            const name = select.value;
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!name) {
+                msgEl.textContent = '❌ Select a save first!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            const data = JSON.parse(localStorage.getItem('quickSave_' + name));
+            if (!data) {
+                msgEl.textContent = '❌ Save not found!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            // Load all data
+            wins = data.wins;
+            losses = data.losses;
+            winStreak = data.winStreak || 0;
+            lossStreak = data.lossStreak || 0;
+            gamesPlayed = data.gamesPlayed || (wins + losses);
+            achievements = data.achievements || achievements;
+            timedMode = data.timedMode || false;
+            timerDuration = data.timerDuration || 30;
+            reverseScroll = data.reverseScroll || false;
+            developerModeUnlocked = data.developerModeUnlocked || false;
+
+            // Update UI
+            document.getElementById('timed-mode').checked = timedMode;
+            document.getElementById('timer-duration').value = timerDuration;
+            document.getElementById('reverse-scroll').checked = reverseScroll;
+            if (developerModeUnlocked) {
+                document.getElementById('developer-panel').style.display = 'block';
+            }
+
+            updateWinsLosses();
+            updateStatsDisplay();
+            updateAchievementsDisplay();
+
+            // Check for Completionist
+            const allAchs = ['firstWin', 'firstLoss', 'winStreak2', 'winStreak3', 'winStreak4', 'winStreak5',
+                'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'games100', 'perfectGame',
+                'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5', 'meme', 'developer',
+                'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10'];
+            const allUnlocked = allAchs.every(a => achievements[a]);
+            if (allUnlocked && !achievements.completionist) {
+                achievements.completionist = true;
+                updateAchievementsDisplay();
+            }
+
+            msgEl.textContent = '✅ Loaded "' + name + '"!';
+            select.value = '';
+            setTimeout(() => { msgEl.textContent = ''; }, 2000);
+        }
+
+        function updateDevSaveList() {
+            const select = document.getElementById('dev-save-select');
+            select.innerHTML = '<option value="">Select save to load...</option>';
+
+            // Get all quick saves
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('quickSave_')) {
+                    const name = key.replace('quickSave_', '');
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                }
+            }
+        }
+
+        function setWins() {
+            playClick();
+            const input = document.getElementById('dev-wins');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val >= 0) {
+                const oldWins = wins;
+                wins = val;
+                const diff = wins - oldWins;
+                winStreak = Math.max(0, Math.min(wins, winStreak + diff));
+                updateWinsLosses();
+                updateStatsDisplay();
+                document.getElementById('dev-wins').value = wins;
+                const msgEl = document.getElementById('dev-action-message');
+                msgEl.textContent = '✅ Wins set to ' + wins + '!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            }
+        }
+
+        function setLosses() {
+            playClick();
+            const input = document.getElementById('dev-losses');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val >= 0) {
+                const oldLosses = losses;
+                losses = val;
+                const diff = losses - oldLosses;
+                lossStreak = Math.max(0, Math.min(losses, lossStreak + diff));
+                updateWinsLosses();
+                updateStatsDisplay();
+                document.getElementById('dev-losses').value = losses;
+                const msgEl = document.getElementById('dev-action-message');
+                msgEl.textContent = '✅ Losses set to ' + losses + '!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+            }
+        }
+
+        function giveAchievement() {
+            playClick();
+            const select = document.getElementById('achievement-select');
+            const ach = select.value;
+            const msgEl = document.getElementById('dev-action-message');
+
+            if (!ach) {
+                msgEl.textContent = '❌ Select an achievement first!';
+                setTimeout(() => { msgEl.textContent = ''; }, 2000);
+                return;
+            }
+
+            unlockAchievement(ach);
+            select.value = '';
+        }
+
+        // Game switching
+        function switchGame() {
+            playClick();
+            const mode = document.getElementById('game-mode').value;
+            currentGame = mode;
+
+            if (mode === 'guess') {
+                document.getElementById('guessing-game').style.display = 'block';
+                document.getElementById('memory-game').style.display = 'none';
+            } else if (mode === 'memory') {
+                document.getElementById('guessing-game').style.display = 'none';
+                document.getElementById('memory-game').style.display = 'block';
+                initMemoryGame();
+            }
+        }
+
+        // Memory Match Game Functions
+        function initMemoryGame() {
+            memoryCards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            memoryMoves = 0;
+            canFlip = true;
+
+            // Create pairs
+            const pairs = [...memoryEmojis, ...memoryEmojis];
+            // Shuffle
+            for (let i = pairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+            }
+
+            // Create grid
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+
+            pairs.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.textContent = '?';
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+                memoryCards.push(card);
+            });
+
+            document.getElementById('pairs-found').textContent = '0';
+            document.getElementById('memory-moves').textContent = '0';
+            document.getElementById('memory-message').textContent = '';
+            document.getElementById('memory-message').className = 'message';
+            document.getElementById('memory-reset').style.display = 'none';
+        }
+
+        function flipCard(card) {
+            if (!canFlip) return;
+            if (card.classList.contains('flipped')) return;
+            if (card.classList.contains('matched')) return;
+
+            playClick();
+            card.classList.add('flipped');
+            card.textContent = card.dataset.emoji;
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                memoryMoves++;
+                document.getElementById('memory-moves').textContent = memoryMoves;
+
+                const [card1, card2] = flippedCards;
+
+                if (card1.dataset.emoji === card2.dataset.emoji) {
+                    // Match!
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        matchedPairs++;
+                        document.getElementById('pairs-found').textContent = matchedPairs;
+                        flippedCards = [];
+                        canFlip = true;
+
+                        if (matchedPairs === totalPairs) {
+                            // Win!
+                            const message = document.getElementById('memory-message');
+                            message.textContent = '🎉 You won in ' + memoryMoves + ' moves!';
+                            message.className = 'message win';
+                            document.getElementById('memory-reset').style.display = 'inline-block';
+                            playWin();
+
+                            // Achievements
+                            unlockAchievement('memoryFirstWin');
+                            if (memoryMoves === 8) unlockAchievement('memoryPerfect');
+                            if (memoryMoves < 20) unlockAchievement('memoryUnder20');
+                            if (memoryMoves <= 10) unlockAchievement('memory10');
+
+                            gamesPlayed++;
+                            if (gamesPlayed >= 100) unlockAchievement('games100');
+                        }
+                    }, 500);
+                } else {
+                    // No match
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        card1.textContent = '?';
+                        card2.textContent = '?';
+                        flippedCards = [];
+                        canFlip = true;
+                    }, 1000);
+                }
+            }
+        }
+
+        function resetMemory() {
+            playClick();
+            initMemoryGame();
+        }
+
+        // Handle reverse scroll on modals
+        document.addEventListener('wheel', (e) => {
+            if (reverseScroll) {
+                const modalContent = e.target.closest('.modal-content');
+                if (modalContent) {
+                    e.preventDefault();
+                    modalContent.scrollTop -= e.deltaY; // Reverse: down scrolls down, up scrolls up
+                }
+            }
+        }, { passive: false });
+
+        function updateStatsDisplay() {
+            document.getElementById('stats-wins').textContent = wins;
+            document.getElementById('stats-losses').textContent = losses;
+            const total = wins + losses;
+            const rate = total > 0 ? Math.round((wins / total) * 100) : 0;
+            document.getElementById('win-rate').textContent = rate + '%';
+        }
+
+        // Achievements functions
+        function openAchievements() {
+            playClick();
+            updateAchievementsDisplay();
+            document.getElementById('achievements-modal').style.display = 'flex';
+        }
+
+        function closeAchievements() {
+            playClick();
+            document.getElementById('achievements-modal').style.display = 'none';
+        }
+
+        function showHint() {
+            playClick();
+            const low = 1;
+            const high = 100;
+            const mid = Math.floor((low + high) / 2);
+            const hintMsg = document.createElement('div');
+            hintMsg.style.cssText = 'position: fixed; top: 20%; left: 10px; transform: translateY(-50%); background: rgba(255,255,255,0.95); padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 200px;';
+            hintMsg.innerHTML = '💡 Start at <strong>' + mid + '</strong>!<br><small>Then narrow it down by half each time.</small>';
+            document.body.appendChild(hintMsg);
+            setTimeout(() => {
+                hintMsg.remove();
+            }, 4000);
+        }
+
+        function updateAchievementsDisplay() {
+            const achList = [
+                ['firstWin', 'ach-first-win'],
+                ['firstLoss', 'ach-first-loss'],
+                ['winStreak2', 'ach-win-streak-2'],
+                ['winStreak3', 'ach-win-streak-3'],
+                ['winStreak4', 'ach-win-streak-4'],
+                ['winStreak5', 'ach-win-streak-5'],
+                ['lossStreak2', 'ach-loss-streak-2'],
+                ['lossStreak3', 'ach-loss-streak-3'],
+                ['lossStreak4', 'ach-loss-streak-4'],
+                ['lossStreak5', 'ach-loss-streak-5'],
+                ['games100', 'ach-100-games'],
+                ['perfectGame', 'ach-perfect-game'],
+                ['quickWin', 'ach-quick-win'],
+                ['efficientWin', 'ach-efficient-win'],
+                ['timedWin', 'ach-timed-win'],
+                ['timed15', 'ach-timed-15'],
+                ['timed5', 'ach-timed-5'],
+                ['meme', 'ach-meme'],
+                ['developer', 'ach-developer'],
+                ['memoryFirstWin', 'ach-memory-first-win'],
+                ['memoryPerfect', 'ach-memory-perfect'],
+                ['memoryUnder20', 'ach-memory-under-20'],
+                ['memory10', 'ach-memory-10'],
+                ['completionist', 'ach-completionist']
+            ];
+            achList.forEach(([key, id]) => {
+                if (achievements[key]) {
+                    document.getElementById(id).classList.add('unlocked');
+                }
+            });
+        }
+
+        function unlockAchievement(ach) {
+            if (achievements[ach]) return; // Already unlocked
+            achievements[ach] = true;
+            updateAchievementsDisplay();
+
+            // Achievement names for notifications
+            const achNames = {
+                firstWin: 'First Win',
+                firstLoss: 'First Loss',
+                winStreak2: 'Hot Streak (2)',
+                winStreak3: 'On Fire (3)',
+                winStreak4: 'Unstoppable (4)',
+                winStreak5: 'Legendary (5)',
+                lossStreak2: 'Cold Streak (2)',
+                lossStreak3: 'Freezing (3)',
+                lossStreak4: 'Absolute Zero (4)',
+                lossStreak5: 'Hopeless (5)',
+                games100: 'Veteran',
+                perfectGame: 'Perfect Game',
+                quickWin: 'Quick Win',
+                efficientWin: 'Efficient Win',
+                timedWin: 'Speed Demon',
+                timed15: 'Fast Win',
+                timed5: 'Insane Win',
+                meme: 'The Meme',
+                developer: 'Developer',
+                memoryFirstWin: 'Memory Master',
+                memoryPerfect: 'Perfect Memory',
+                memoryUnder20: 'Quick Mind',
+                memory10: 'Eidetic Memory',
+                completionist: 'Completionist'
+            };
+
+            // Show notification as popup (doesn't interfere with game messages)
+            const achMsg = document.createElement('div');
+            achMsg.className = 'achievement-notification';
+            achMsg.dataset.achievement = ach;
+            achMsg.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%); padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap; transition: left 0.3s ease;';
+            achMsg.textContent = '🏆 ' + achNames[ach] + '!';
+            document.body.appendChild(achMsg);
+
+            // Reposition all notifications to be centered side by side
+            repositionAchievementNotifications();
+
+            setTimeout(() => {
+                achMsg.remove();
+                repositionAchievementNotifications();
+            }, 3000);
+
+            // Check for Completionist (all other achievements unlocked)
+            if (ach !== 'completionist') {
+                const allAchs = ['firstWin', 'firstLoss', 'winStreak2', 'winStreak3', 'winStreak4', 'winStreak5',
+                    'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'games100', 'perfectGame',
+                    'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5', 'meme', 'developer',
+                    'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10'];
+                const allUnlocked = allAchs.every(a => achievements[a]);
+                if (allUnlocked && !achievements.completionist) {
+                    setTimeout(() => unlockAchievement('completionist'), 500);
+                }
+            }
+        }
+
+        function repositionAchievementNotifications() {
+            const notes = document.querySelectorAll('.achievement-notification');
+            const spacing = 220; // pixels between notifications
+            const totalWidth = (notes.length - 1) * spacing;
+            const startX = -totalWidth / 2;
+
+            notes.forEach((note, i) => {
+                const offset = startX + (i * spacing);
+                note.style.left = 'calc(50% + ' + offset + 'px)';
+            });
+        }
+
+        function checkAchievements() {
+            const unlocked = [];
+            if (wins > 0 && !achievements.firstWin) {
+                achievements.firstWin = true;
+                unlocked.push('First Win');
+            }
+            if (losses > 0 && !achievements.firstLoss) {
+                achievements.firstLoss = true;
+                unlocked.push('First Loss');
+            }
+            if (winStreak >= 2 && !achievements.winStreak2) {
+                achievements.winStreak2 = true;
+                unlocked.push('Hot Streak (2)');
+            }
+            if (winStreak >= 3 && !achievements.winStreak3) {
+                achievements.winStreak3 = true;
+                unlocked.push('On Fire (3)');
+            }
+            if (winStreak >= 4 && !achievements.winStreak4) {
+                achievements.winStreak4 = true;
+                unlocked.push('Unstoppable (4)');
+            }
+            if (winStreak >= 5 && !achievements.winStreak5) {
+                achievements.winStreak5 = true;
+                unlocked.push('Legendary (5)');
+            }
+            if (lossStreak >= 2 && !achievements.lossStreak2) {
+                achievements.lossStreak2 = true;
+                unlocked.push('Cold Streak (2)');
+            }
+            if (lossStreak >= 3 && !achievements.lossStreak3) {
+                achievements.lossStreak3 = true;
+                unlocked.push('Freezing (3)');
+            }
+            if (lossStreak >= 4 && !achievements.lossStreak4) {
+                achievements.lossStreak4 = true;
+                unlocked.push('Absolute Zero (4)');
+            }
+            if (lossStreak >= 5 && !achievements.lossStreak5) {
+                achievements.lossStreak5 = true;
+                unlocked.push('Hopeless (5)');
+            }
+            if (gamesPlayed >= 100 && !achievements.games100) {
+                achievements.games100 = true;
+                unlocked.push('Veteran');
+            }
+            // Note: perfectGame, quickWin, efficientWin, timedWin can't be restored from stats alone
+            if (unlocked.length > 0) {
+                updateAchievementsDisplay();
+                return unlocked;
+            }
+            return [];
+        }
+
+        // Save/Load functions
+        function openSaves() {
+            playClick();
+            document.getElementById('saves-modal').style.display = 'flex';
+            document.getElementById('save-message').textContent = '';
+        }
+
+        function closeSaves() {
+            playClick();
+            document.getElementById('saves-modal').style.display = 'none';
+        }
+
+        function saveGame() {
+            playClick();
+            const name = document.getElementById('save-name').value.trim();
+            const messageEl = document.getElementById('save-message');
+
+            if (!name) {
+                messageEl.textContent = '❌ Please enter a save name!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            const saveData = {
+                wins: wins,
+                losses: losses,
+                winStreak: winStreak,
+                lossStreak: lossStreak,
+                gamesPlayed: gamesPlayed,
+                achievements: achievements,
+                timedMode: timedMode,
+                timerDuration: timerDuration,
+                reverseScroll: reverseScroll,
+                developerModeUnlocked: developerModeUnlocked
+            };
+
+            localStorage.setItem('guessingGame_' + name, JSON.stringify(saveData));
+            messageEl.textContent = '✅ Saved successfully!';
+            messageEl.style.color = '#48bb78';
+
+            // Clear input
+            document.getElementById('save-name').value = '';
+        }
+
+        function loadGame() {
+            playClick();
+            const name = document.getElementById('load-name').value.trim();
+            const messageEl = document.getElementById('save-message');
+
+            if (!name) {
+                messageEl.textContent = '❌ Please enter a save name!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            const savedData = localStorage.getItem('guessingGame_' + name);
+
+            if (!savedData) {
+                messageEl.textContent = '❌ Save not found!';
+                messageEl.style.color = '#f56565';
+                return;
+            }
+
+            const data = JSON.parse(savedData);
+
+            wins = data.wins;
+            losses = data.losses;
+            winStreak = data.winStreak || 0;
+            lossStreak = data.lossStreak || 0;
+            gamesPlayed = data.gamesPlayed || (wins + losses);
+            timedMode = data.timedMode || false;
+            timerDuration = data.timerDuration || 30;
+            reverseScroll = data.reverseScroll || false;
+            developerModeUnlocked = data.developerModeUnlocked || false;
+            document.getElementById('timed-mode').checked = timedMode;
+            document.getElementById('timer-duration').value = timerDuration;
+            document.getElementById('reverse-scroll').checked = reverseScroll;
+            if (timedMode) {
+                document.getElementById('timer-display').style.display = 'block';
+                document.getElementById('timer').textContent = timerDuration;
+            } else {
+                document.getElementById('timer-display').style.display = 'none';
+            }
+            achievements = data.achievements || {
+                firstWin: false,
+                firstLoss: false,
+                winStreak2: false,
+                winStreak3: false,
+                winStreak4: false,
+                winStreak5: false,
+                lossStreak2: false,
+                lossStreak3: false,
+                lossStreak4: false,
+                lossStreak5: false,
+                games100: false,
+                perfectGame: false,
+                quickWin: false,
+                efficientWin: false,
+                timedWin: false,
+                timed15: false,
+                timed5: false,
+                meme: false,
+                developer: false,
+                memoryFirstWin: false,
+                memoryPerfect: false,
+                memoryUnder20: false,
+                memory10: false,
+                completionist: false
+            };
+            updateWinsLosses();
+            updateStatsDisplay();
+            updateAchievementsDisplay();
+
+            // Check for missing achievements based on stats
+            const restored = checkAchievements();
+
+            // Check for Completionist
+            const allAchs = ['firstWin', 'firstLoss', 'winStreak2', 'winStreak3', 'winStreak4', 'winStreak5',
+                'lossStreak2', 'lossStreak3', 'lossStreak4', 'lossStreak5', 'games100', 'perfectGame',
+                'quickWin', 'efficientWin', 'timedWin', 'timed15', 'timed5', 'meme', 'developer',
+                'memoryFirstWin', 'memoryPerfect', 'memoryUnder20', 'memory10'];
+            const allUnlocked = allAchs.every(a => achievements[a]);
+            if (allUnlocked && !achievements.completionist) {
+                achievements.completionist = true;
+                restored.push('Completionist');
+                updateAchievementsDisplay();
+            }
+
+            // Show load notification as popup (doesn't interfere with game)
+            const loadMsg = document.createElement('div');
+            loadMsg.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #48bb78; color: white; padding: 1rem 2rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+            loadMsg.textContent = '✅ Loaded successfully!';
+            document.body.appendChild(loadMsg);
+
+            if (restored.length > 0) {
+                const restoreMsg = document.createElement('div');
+                restoreMsg.style.cssText = 'position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%); padding: 1rem 2rem; border-radius: 0.5rem; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+                restoreMsg.textContent = '🏆 Restored: ' + restored.join(', ');
+                document.body.appendChild(restoreMsg);
+                setTimeout(() => {
+                    restoreMsg.remove();
+                }, 4000);
+            }
+
+            setTimeout(() => {
+                loadMsg.remove();
+            }, 2000);
+
+            // Clear input
+            document.getElementById('load-name').value = '';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('saves-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'saves-modal') {
+                closeSaves();
+            }
+        });
+        document.getElementById('achievements-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'achievements-modal') {
+                closeAchievements();
+            }
+        });
+
+        // Welcome modal - show on first visit
+        function closeWelcome() {
+            playClick();
+            document.getElementById('welcome-modal').style.display = 'none';
+        }
+
+        // Show welcome modal on load
+        document.getElementById('welcome-modal').style.display = 'flex';
+
+        // Start ambient on first interaction
+        document.addEventListener('click', () => {
+            initAudio();
+            startAmbient();
+        }, { once: true });
+
+        // Settings functions
+        function openSettings() {
+            playClick();
+            updateStatsDisplay();
+            // Show developer panel if unlocked
+            if (developerModeUnlocked) {
+                document.getElementById('developer-panel').style.display = 'block';
+                updateDevSaveList();
+            }
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            playClick();
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('settings-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'settings-modal') {
+                closeSettings();
+            }
+        });
+        document.getElementById('welcome-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'welcome-modal') {
+                closeWelcome();
+            }
+        });
+
+        function updateAttempts(value) {
+            maxAttempts = parseInt(value);
+            document.getElementById('slider-value').textContent = value;
+            // Update display if game hasn't started
+            if (attempts === 0) {
+                document.getElementById('attempts-left').textContent = maxAttempts;
+            }
+        }
+
+        function guess() {
+            const input = document.getElementById('guess');
+            const message = document.getElementById('message');
+            const attemptsLeft = document.getElementById('attempts-left');
+            const guess = parseInt(input.value);
+            playClick();
+
+            // Start timer on first guess
+            if (attempts === 0 && timedMode && !timerInterval) {
+                startTimer();
+            }
+
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                message.textContent = 'Enter a number between 1 and 100!';
+                message.className = 'message';
+                return;
+            }
+
+            // The meme - guessing 67 makes you lose instantly!
+            if (guess === 67) {
+                message.innerHTML = '😂 IT\'S 67!<br>Instant loss... classic.';
+                message.className = 'message high';
+                document.getElementById('reset').style.display = 'inline-block';
+                input.disabled = true;
+                input.value = '';
+                losses++;
+                lossStreak++;
+                winStreak = 0;
+                gamesPlayed++;
+                updateWinsLosses();
+                unlockAchievement('meme');
+                unlockAchievement('firstLoss');
+                if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+                stopTimer();
+                playLose();
+                return;
+            }
+
+            attempts++;
+            attemptsLeft.textContent = maxAttempts - attempts;
+
+            if (guess < secret) {
+                if (secret - guess <= 2) {
+                    message.textContent = 'Too low... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (secret - guess <= 10) {
+                    message.textContent = 'Too low... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too low! Try again.';
+                    message.className = 'message low';
+                }
+            } else if (guess > secret) {
+                if (guess - secret <= 2) {
+                    message.textContent = 'Too high... but you\'re close! 🔥';
+                    message.className = 'message close';
+                } else if (guess - secret <= 10) {
+                    message.textContent = 'Too high... getting warmer! 🌡️';
+                    message.className = 'message kinda';
+                } else {
+                    message.textContent = 'Too high! Try again.';
+                    message.className = 'message high';
+                }
+            } else {
+                const ratingList = ratings[attempts] || ratings.default;
+                const rating = ratingList[Math.floor(Math.random() * ratingList.length)];
+                message.textContent = `🎉 ${rating}`;
+                message.className = 'message win';
+                document.getElementById('reset').style.display = 'inline-block';
+                input.disabled = true;
+                input.value = '';
+                wins++;
+                winStreak++;
+                lossStreak = 0;
+                gamesPlayed++;
+                updateWinsLosses();
+                stopTimer();
+                unlockAchievement('firstWin');
+                if (winStreak >= 2) unlockAchievement('winStreak2');
+                if (winStreak >= 3) unlockAchievement('winStreak3');
+                if (winStreak >= 4) unlockAchievement('winStreak4');
+                if (winStreak >= 5) unlockAchievement('winStreak5');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+                // New win-based achievements
+                if (attempts === 1) unlockAchievement('perfectGame');
+                if (attempts <= 3) unlockAchievement('quickWin');
+                if (attempts === 4) unlockAchievement('efficientWin');
+                if (timedMode) {
+                    unlockAchievement('timedWin');
+                    if (currentTimerDuration === 15) unlockAchievement('timed15');
+                    if (currentTimerDuration === 5) unlockAchievement('timed5');
+                }
+                playWin();
+                return;
+            }
+
+            if (attempts >= maxAttempts) {
+                const uncompliment = uncompliments[Math.floor(Math.random() * uncompliments.length)];
+                message.textContent = `💀 Game over! The number was ${secret}. ${uncompliment}`;
+                message.className = 'message high';
+                document.getElementById('reset').style.display = 'inline-block';
+                input.disabled = true;
+                input.value = '';
+                losses++;
+                lossStreak++;
+                winStreak = 0;
+                gamesPlayed++;
+                updateWinsLosses();
+                unlockAchievement('firstLoss');
+                if (lossStreak >= 2) unlockAchievement('lossStreak2');
+                if (lossStreak >= 3) unlockAchievement('lossStreak3');
+                if (lossStreak >= 4) unlockAchievement('lossStreak4');
+                if (lossStreak >= 5) unlockAchievement('lossStreak5');
+                if (gamesPlayed >= 100) unlockAchievement('games100');
+                playLose();
+                return;
+            }
+
+            input.value = '';
+            input.focus();
+        }
+
+        function reset() {
+            playClick();
+            // Generate secret number (never 67!)
+            secret = Math.floor(Math.random() * 99) + 1;
+            if (secret >= 67) secret++;
+            attempts = 0;
+            document.getElementById('message').textContent = '';
+            document.getElementById('message').className = 'message';
+            document.getElementById('reset').style.display = 'none';
+            document.getElementById('attempts-left').textContent = maxAttempts;
+            document.getElementById('guess').disabled = false;
+            document.getElementById('guess').focus();
+            stopTimer();
+            if (timedMode) {
+                document.getElementById('timer').textContent = timerDuration;
+            }
+        }
+
+        document.getElementById('guess').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') guess();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lag Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        .fps-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            font-family: system-ui, sans-serif;
+        }
+        .fps-display.good {
+            color: #48bb78;
+        }
+        .fps-display.ok {
+            color: #f6e05e;
+        }
+        .fps-display.bad {
+            color: #f56565;
+        }
+        .fps-display.terrible {
+            color: #ff0066;
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        button {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #startBtn {
+            background: #48bb78;
+            color: white;
+        }
+        #stopBtn {
+            background: #f56565;
+            color: white;
+        }
+        #resetBtn {
+            background: #4299e1;
+            color: white;
+        }
+        .lag-indicator {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+        .lag-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .lag-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #f6e05e, #f56565, #ff0066);
+            transition: width 0.3s;
+            border-radius: 1rem;
+        }
+        #confetti-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .fps-display {
+                font-size: 2.5rem;
+            }
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .stat-box {
+                padding: 0.6rem;
+            }
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            button {
+                padding: 0.7rem 1.5rem;
+                font-size: 1rem;
+                margin: 0.3rem;
+            }
+            .lag-indicator {
+                padding: 0.6rem;
+            }
+            .lag-bar {
+                height: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div class="container">
+        <h1>Lag Simulator</h1>
+        <p>Watch your FPS crumble over time!</p>
+        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.9rem;">
+            ⌨️ Press <strong>1</strong> to Start | <strong>2</strong> to Stop | <strong>3</strong> to Reset
+        </p>
+
+        <div class="fps-display good" id="fpsDisplay">60 FPS</div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Time Elapsed</div>
+                <div class="stat-value" id="timeElapsed">0s</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Confetti Count</div>
+                <div class="stat-value" id="lagFactor">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Frame Time</div>
+                <div class="stat-value" id="frameTime">16.67ms</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Physics Ops</div>
+                <div class="stat-value" id="operations">0</div>
+            </div>
+        </div>
+
+        <div class="lag-indicator">
+            <div style="margin-bottom: 0.5rem;">LAG INTENSITY</div>
+            <div class="lag-bar">
+                <div class="lag-fill" id="lagFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button id="startBtn" onclick="startSimulation()">▶️ Start Lag</button>
+            <button id="stopBtn" onclick="stopSimulation()" style="display: none;">⏸️ Stop</button>
+            <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let animationId = null;
+        let startTime = null;
+        let frameCount = 0;
+        let lastFrameTime = performance.now();
+        let fps = 60;
+
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const timeElapsed = document.getElementById('timeElapsed');
+        const lagFactorDisplay = document.getElementById('lagFactor');
+        const frameTimeDisplay = document.getElementById('frameTime');
+        const operationsDisplay = document.getElementById('operations');
+        const lagFill = document.getElementById('lagFill');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        function updateDisplay(currentTime) {
+            const elapsedTime = (currentTime - startTime) / 1000;
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+
+            frameCount++;
+
+            // Calculate FPS every 10 frames
+            if (frameCount % 10 === 0) {
+                fps = Math.round(1000 / deltaTime);
+                timeElapsed.textContent = elapsedTime.toFixed(1) + 's';
+                lagFactorDisplay.textContent = confettiParticles.length.toLocaleString();
+                frameTimeDisplay.textContent = deltaTime.toFixed(2) + 'ms';
+                const n = confettiParticles.length;
+                operationsDisplay.textContent = (Math.min(n * 2, 500)).toLocaleString();
+
+                // Update FPS display color
+                fpsDisplay.className = 'fps-display';
+                if (fps >= 50) fpsDisplay.classList.add('good');
+                else if (fps >= 30) fpsDisplay.classList.add('ok');
+                else if (fps >= 15) fpsDisplay.classList.add('bad');
+                else fpsDisplay.classList.add('terrible');
+
+                fpsDisplay.textContent = fps + ' FPS';
+
+                // Update lag bar — based on actual FPS (60 = 0%, 0 = 100%)
+                const lagPercentage = Math.min(Math.max((1 - fps / 60) * 100, 0), 100);
+                lagFill.style.width = lagPercentage + '%';
+            }
+        }
+
+        function gameLoop(currentTime) {
+            if (!isRunning) return;
+
+            const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
+
+            // Heavy physics + matrix math
+            heavyPhysics();
+
+            // Spawn confetti — rate grows with time
+            const confettiBatch = Math.floor(elapsedTime * 1.5) + 2;
+            spawnConfettiBatch(confettiBatch);
+            if (elapsedTime > 5) currentThemeIdx++;  // cycle themes
+            updateGravBall();
+            drawConfetti();
+            drawGravBall();
+
+            updateDisplay(currentTime);
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startSimulation() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startTime = performance.now();
+            lastFrameTime = startTime;
+            frameCount = 0;
+
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            initGravBall();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+
+            frameCount = 0;
+            fps = 60;
+            startTime = null;
+            lastFrameTime = performance.now();
+
+            confettiParticles = [];
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            currentThemeIdx = 0;
+
+            fpsDisplay.className = 'fps-display good';
+            fpsDisplay.textContent = '60 FPS';
+            timeElapsed.textContent = '0s';
+            lagFactorDisplay.textContent = '0';
+            frameTimeDisplay.textContent = '16.67ms';
+            operationsDisplay.textContent = '0';
+            lagFill.style.width = '0%';
+        }
+
+        function resetSimulation() {
+            stopSimulation();
+        }
+
+        // ── CONFETTI SYSTEM (from guessing game) ─────────────────────────────
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        });
+
+        let confettiParticles = [];
+
+        // ── GRAVITY BALL ──────────────────────────────────────────────────────
+        const gravBall = {
+            x: 0, y: 0, r: 22,
+            vx: 4.5, vy: 3.2,
+        };
+        function initGravBall() {
+            gravBall.x = confettiCanvas.width / 2;
+            gravBall.y = confettiCanvas.height / 2;
+        }
+        function updateGravBall() {
+            const W = confettiCanvas.width, H = confettiCanvas.height;
+            gravBall.x += gravBall.vx;
+            gravBall.y += gravBall.vy;
+            if (gravBall.x - gravBall.r < 0)  { gravBall.x = gravBall.r;  gravBall.vx =  Math.abs(gravBall.vx); }
+            if (gravBall.x + gravBall.r > W)   { gravBall.x = W - gravBall.r; gravBall.vx = -Math.abs(gravBall.vx); }
+            if (gravBall.y - gravBall.r < 0)   { gravBall.y = gravBall.r;  gravBall.vy =  Math.abs(gravBall.vy); }
+            if (gravBall.y + gravBall.r > H)   { gravBall.y = H - gravBall.r; gravBall.vy = -Math.abs(gravBall.vy); }
+        }
+        function drawGravBall() {
+            const ctx = confettiCtx;
+            ctx.save();
+            const grad = ctx.createRadialGradient(gravBall.x - gravBall.r * 0.3, gravBall.y - gravBall.r * 0.3, 2, gravBall.x, gravBall.y, gravBall.r);
+            grad.addColorStop(0, 'rgba(255,255,255,0.95)');
+            grad.addColorStop(0.4, 'rgba(180,120,255,0.85)');
+            grad.addColorStop(1, 'rgba(80,0,180,0.7)');
+            ctx.beginPath();
+            ctx.arc(gravBall.x, gravBall.y, gravBall.r, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.shadowColor = '#a855f7';
+            ctx.shadowBlur = 24;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const confettiThemes = {
+            rainbow: () => `hsl(${Math.random() * 360}, 70%, 50%)`,
+            gold:    () => `hsl(${45 + Math.random() * 15}, 90%, ${50 + Math.random() * 20}%)`,
+            fire:    () => `hsl(${10 + Math.random() * 30}, 100%, ${50 + Math.random() * 30}%)`,
+        };
+        let currentThemeIdx = 0;
+        const themeKeys = Object.keys(confettiThemes);
+
+        const GRAVITY = 0.9;
+        const BOUNCINESS = 0.68;
+        const AIR_FRICTION = 0.992;
+        const TRAIL_LENGTH = 8;
+
+        function spawnConfettiBatch(count) {
+            const colorFunc = confettiThemes[themeKeys[currentThemeIdx % themeKeys.length]];
+            for (let i = 0; i < count; i++) {
+                const size = Math.random() * 12 + 4;
+                confettiParticles.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -size,
+                    size,
+                    mass: size * size * 0.01 + Math.random() * 0.5,
+                    speedX: (Math.random() - 0.5) * 6,
+                    speedY: Math.random() * 2 + 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 12 - 6,
+                    angularDamping: 0.97 + Math.random() * 0.02,
+                    color: colorFunc(),
+                    bounceCount: 0,
+                    bounciness: BOUNCINESS,
+                    trail: [],
+                });
+            }
+        }
+
+        function drawConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            const W = confettiCanvas.width, H = confettiCanvas.height;
+
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+
+                // Air friction
+                p.speedX *= AIR_FRICTION;
+                p.speedY *= AIR_FRICTION;
+
+                // Update position
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Spin with angular damping
+                p.rotation += p.rotationSpeed;
+                p.rotationSpeed *= p.angularDamping;
+
+                const half = p.size / 2;
+
+                // Bounce off left/right walls
+                if (p.x - half < 0) {
+                    p.x = half;
+                    p.speedX = Math.abs(p.speedX) * p.bounciness;
+                    p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                    p.bounceCount++;
+                } else if (p.x + half > W) {
+                    p.x = W - half;
+                    p.speedX = -Math.abs(p.speedX) * p.bounciness;
+                    p.rotationSpeed += (Math.random() - 0.5) * 8;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                    p.bounceCount++;
+                }
+
+                // Bounce off floor
+                if (p.y + half > H) {
+                    p.y = H - half;
+                    p.speedY = -Math.abs(p.speedY) * (p.bounciness - p.mass * 0.05);
+                    p.speedX *= 0.88;  // floor friction
+                    p.rotationSpeed += (Math.random() - 0.5) * 12;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                    p.bounceCount++;
+                }
+
+                // Bounce off ceiling
+                if (p.y - half < 0) {
+                    p.y = half;
+                    p.speedY = Math.abs(p.speedY) * p.bounciness;
+                    p.rotationSpeed += (Math.random() - 0.5) * 6;
+                    p.bounciness = Math.min(p.bounciness + 0.02, 1.4);
+                }
+
+                // Record trail
+                p.trail.push({ x: p.x, y: p.y });
+                if (p.trail.length > TRAIL_LENGTH) p.trail.shift();
+
+                // Draw trail
+                for (let t = 0; t < p.trail.length; t++) {
+                    const alpha = (t / p.trail.length) * 0.35;
+                    const trailSize = p.size * (t / p.trail.length) * 0.7;
+                    confettiCtx.save();
+                    confettiCtx.globalAlpha = alpha;
+                    confettiCtx.translate(p.trail[t].x, p.trail[t].y);
+                    confettiCtx.rotate(p.rotation * Math.PI / 180);
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.fillRect(-trailSize / 2, -trailSize / 2, trailSize, trailSize);
+                    confettiCtx.restore();
+                }
+
+                // Draw main piece
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.rotation * Math.PI / 180);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-half, -half, p.size, p.size);
+                confettiCtx.restore();
+            }
+        }
+
+        // ── HEAVY PHYSICS (extra CPU load) ───────────────────────────────────
+        // Gravity toward the gravity ball + matrix math per frame
+        function heavyPhysics() {
+            const n = confettiParticles.length;
+            if (n < 1) return;
+
+            // Pull toward the gravity ball (only gravity source)
+            for (let i = 0; i < n; i++) {
+                const p = confettiParticles[i];
+                const dx = gravBall.x - p.x;
+                const dy = gravBall.y - p.y;
+                const distSq = dx * dx + dy * dy + 1;
+                const dist = Math.sqrt(distSq);
+                const force = 18000 / distSq;
+                p.speedX += force * dx / dist;
+                p.speedY += force * dy / dist;
+            }
+
+            // Fake matrix multiplications to burn CPU
+            const iters = Math.min(n * 2, 500);
+            for (let k = 0; k < iters; k++) {
+                const a = [Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random()];
+                const b = [Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random(),
+                           Math.random(), Math.random(), Math.random(), Math.random()];
+                // 4x4 matrix multiply
+                const c = new Array(16);
+                for (let r = 0; r < 4; r++)
+                    for (let col = 0; col < 4; col++) {
+                        let s = 0;
+                        for (let m = 0; m < 4; m++) s += a[r*4+m] * b[m*4+col];
+                        c[r*4+col] = s;
+                    }
+                // Ray-sphere intersection checks
+                const p = confettiParticles[k % n];
+                for (let ray = 0; ray < 4; ray++) {
+                    const rx = Math.random(), ry = Math.random();
+                    const ocx = rx - p.x, ocy = ry - p.y;
+                    const discriminant = (ocx*rx + ocy*ry)**2 - (rx*rx+ry*ry)*(ocx*ocx+ocy*ocy - p.size*p.size);
+                    void Math.sqrt(Math.abs(discriminant));
+                }
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') {
+                startSimulation();
+            } else if (e.key === '2') {
+                stopSimulation();
+            } else if (e.key === '3') {
+                resetSimulation();
+            }
+        });
+
+        // Initialize
+        resetSimulation();
+    </script>
+</body>
+</html>

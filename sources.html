@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Source Code Links</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; padding: 40px 20px; }
+h1 { color: #ffd700; margin-bottom: 8px; }
+p { color: #888; margin-bottom: 30px; font-size: 0.9em; }
+.item { background: #16213e; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+.item-name { flex: 1; font-weight: bold; }
+.url-box { background: #0f3460; border-radius: 6px; padding: 8px 12px; font-size: 0.8em; color: #4ecdc4; font-family: monospace; flex: 2; word-break: break-all; }
+.copy-btn { background: linear-gradient(135deg, #ffd700, #ff9900); color: #1a1a2e; border: none; border-radius: 6px; padding: 8px 14px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85em; }
+.copy-btn:active { opacity: 0.7; }
+.copied { background: #48bb78 !important; color: white !important; }
+</style>
+</head>
+<body>
+<h1>📋 Source Code Links</h1>
+<p>Click "Copy" to copy a link, then paste it into Google Slides.</p>
+
+<div id="links"></div>
+
+<script>
+const base = 'https://askclaudeykitty.github.io/';
+const files = [
+    { name: 'Index Page',               file: 'source_index.txt' },
+    { name: 'Lag Simulator',            file: 'source_lag_simulator.txt' },
+    { name: 'Guessing Game',            file: 'source_guessing_game.txt' },
+    { name: 'Explosion Button',         file: 'source_explosion-button.txt' },
+    { name: 'Explosion Button (WebGL)', file: 'source_explosion-button-webgl.txt' },
+    { name: 'Ball in a Ring',           file: 'source_bouncing_ball.txt' },
+    { name: 'Tower Defense',            file: 'source_tower-defense.txt' },
+    { name: 'Regular Clicker Game',     file: 'source_regular-clicker-game.txt' },
+];
+
+const container = document.getElementById('links');
+files.forEach(({name, file}) => {
+    const url = base + file;
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+        <div class="item-name">${name}</div>
+        <div class="url-box">${url}</div>
+        <button class="copy-btn" onclick="copyUrl(this, '${url}')">Copy</button>
+    `;
+    container.appendChild(div);
+});
+
+function copyUrl(btn, url) {
+    navigator.clipboard.writeText(url);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+}
+</script>
+</body>
+</html>
