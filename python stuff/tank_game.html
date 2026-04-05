@@ -131,10 +131,6 @@ const SFX = {
   shock() {
     playTone(1200 + Math.random() * 800, 0.06, 'sawtooth', 0.04);
     playNoise(0.03, 0.03, 4000);
-  },
-  water() {
-    playNoise(0.3, 0.04, 1500);
-    playTone(300, 0.15, 'sine', 0.03);
   }
 };
 
@@ -699,10 +695,8 @@ function botShoot() {
     // Check if standing in hazard
     let inHazard = false;
     let hazardX = 0;
-    let inWater = false;
     for (const h of hazards) {
-      if (h.type === 'water' && Math.abs(bot.x - h.x) < h.radius) { inWater = true; }
-      if (h.type !== 'ice' && h.type !== 'water' && Math.abs(bot.x - h.x) < h.radius) { inHazard = true; hazardX = h.x; break; }
+      if (h.type !== 'ice' && Math.abs(bot.x - h.x) < h.radius) { inHazard = true; hazardX = h.x; break; }
     }
 
     if (botDelay === 1) {
@@ -747,7 +741,7 @@ function botShoot() {
       botMoveFrames = 0;
     }
 
-    if (botMoveFrames > 0 && bot.fuel > 0 && !inWater) {
+    if (botMoveFrames > 0 && bot.fuel > 0) {
       let spd = bot.type.speed * 0.4;
       let botOnIce = false;
       for (const h of hazards) {
@@ -766,14 +760,6 @@ function botShoot() {
       if (botMoveFrames !== 999) botMoveFrames--;
       checkCratePickup(bot, 1);
       return;
-    }
-    // Bot in water: sway gently
-    if (inWater) {
-      bot.inWater = true;
-      bot.waterSway = Math.sin(Date.now() / 200) * 3;
-      bot.x += bot.waterSway * 0.1;
-    } else {
-      bot.inWater = false;
     }
     botMoveDone = true;
     botAimFrame = 0;
@@ -867,35 +853,25 @@ function update() {
   if (!projectiles.length && !gameOver) {
     if (turn === 0) {
       let spd = tank.type.speed;
-      let onIce = false, inWater = false;
+      let onIce = false;
       for (const h of hazards) {
         if (h.type === 'ice' && Math.abs(tank.x - h.x) < h.radius) { onIce = true; }
         if (h.type === 'mud' && Math.abs(tank.x - h.x) < h.radius) { spd *= 0.35; }
-        if (h.type === 'water' && Math.abs(tank.x - h.x) < h.radius) { inWater = true; }
       }
       if (onIce) spd *= 2.5; // faster but slidey
       const moving = (keys['q'] || moveLeft || keys['e'] || moveRight);
-      // Water: no movement, just swaying
-      if (inWater) {
-        tank.inWater = true;
-        tank.waterSway = Math.sin(Date.now() / 200) * 3;
-        tank.x += tank.waterSway;
-        if (Math.random() < 0.02) SFX.water();
+      if ((keys['q'] || moveLeft) && tank.fuel > 0) { tank.slideVx = -spd; tank.fuel -= 0.3; }
+      if ((keys['e'] || moveRight) && tank.fuel > 0) { tank.slideVx = spd; tank.fuel -= 0.3; }
+      if (moving && tank.fuel > 0 && Math.random() < 0.15) SFX.move();
+      if (!tank.slideVx) tank.slideVx = 0;
+      if (onIce) {
+        // Ice: slide with momentum
+        tank.x += tank.slideVx;
+        if (!moving) tank.slideVx *= 0.95; // friction on ice when not pressing
+        else tank.slideVx *= 0.98;
       } else {
-        tank.inWater = false;
-        if ((keys['q'] || moveLeft) && tank.fuel > 0) { tank.slideVx = -spd; tank.fuel -= 0.3; }
-        if ((keys['e'] || moveRight) && tank.fuel > 0) { tank.slideVx = spd; tank.fuel -= 0.3; }
-        if (moving && tank.fuel > 0 && Math.random() < 0.15) SFX.move();
-        if (!tank.slideVx) tank.slideVx = 0;
-        if (onIce) {
-          // Ice: slide with momentum
-          tank.x += tank.slideVx;
-          if (!moving) tank.slideVx *= 0.95; // friction on ice when not pressing
-          else tank.slideVx *= 0.98;
-        } else {
-          if (moving) tank.x += tank.slideVx;
-          tank.slideVx = 0; // no slide on normal ground
-        }
+        if (moving) tank.x += tank.slideVx;
+        tank.slideVx = 0; // no slide on normal ground
       }
       tank.x = Math.max(15, Math.min(W - 15, tank.x));
       checkCratePickup(tank, 0);
@@ -1200,32 +1176,6 @@ function update() {
 
   updateHazardSounds();
 
-  // Check for ice + fire touching -> create water hazard
-  for (let i = 0; i < hazards.length; i++) {
-    for (let j = i + 1; j < hazards.length; j++) {
-      const h1 = hazards[i], h2 = hazards[j];
-      if ((h1.type === 'ice' && (h2.type === 'fire' || h2.type === 'hellfire' || h2.type === 'lava')) ||
-          (h2.type === 'ice' && (h1.type === 'fire' || h1.type === 'hellfire' || h1.type === 'lava'))) {
-        const dist = Math.abs(h1.x - h2.x);
-        if (dist < h1.radius + h2.radius) {
-          // Create water hazard between them
-          const waterX = (h1.x + h2.x) / 2;
-          const waterRadius = (h1.radius + h2.radius) * 0.8;
-          // Check if water already exists nearby
-          let hasWater = false;
-          for (const h of hazards) {
-            if (h.type === 'water' && Math.abs(h.x - waterX) < 20) { hasWater = true; break; }
-          }
-          if (!hasWater) {
-            hazards.push({ x: waterX, y: terrainAt(waterX), radius: waterRadius, type: 'water', life: 600, dmg: 0 });
-            // Remove the ice and fire that created it
-            h1.life = 1; h2.life = 1;
-          }
-        }
-      }
-    }
-  }
-
   // Hazard zones (fire/poison)
   for (let i = hazards.length - 1; i >= 0; i--) {
     const h = hazards[i];
@@ -1254,19 +1204,13 @@ function update() {
     for (const t of tanks) {
       const dist = Math.abs(t.x - h.x);
       if (dist < h.radius) {
-        // Water hazard: no movement, just swaying
-        if (h.type === 'water') {
-          t.inWater = true;
-          t.waterSway = Math.sin(Date.now() / 200) * 3; // gentle swaying
-        } else {
-          t.hp -= h.dmg;
-          if (Math.random() < 0.03) {
-            const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!', hellfire: 'HELLFIRE!', mud: 'MUD', water: 'WATER' };
-            const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa', hellfire: '#c4f', mud: '#a85', water: '#4af' };
-            const label = labels[h.type] || h.type;
-            const col = cols[h.type] || '#fff';
-            spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, label, col);
-          }
+        t.hp -= h.dmg;
+        if (Math.random() < 0.03) {
+          const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!', hellfire: 'HELLFIRE!', mud: 'MUD' };
+          const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa', hellfire: '#c4f', mud: '#a85' };
+          const label = labels[h.type] || h.type;
+          const col = cols[h.type] || '#fff';
+          spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, label, col);
         }
         // Check for game over from hazard damage
         if (t.hp <= 0 && !gameOver) {
@@ -1817,41 +1761,6 @@ function drawGame() {
         if (sparkle > 0.5) {
           ctx.fillStyle = `rgba(255,255,255,${alpha * sparkle * 0.5})`;
           ctx.fillRect(sx - 1, gy - 2, 2, 2);
-        }
-      }
-    } else if (h.type === 'water') {
-      // Water hazard: blue shimmering surface with gentle waves
-      const gy = terrainAt(h.x);
-      const wave = Math.sin(t * 2) * 3;
-      // Water surface gradient
-      const wg = ctx.createLinearGradient(h.x, gy - 8, h.x, gy + 5);
-      wg.addColorStop(0, `rgba(100,180,255,${alpha * 0.6})`);
-      wg.addColorStop(0.5, `rgba(60,140,220,${alpha * 0.4})`);
-      wg.addColorStop(1, `rgba(40,100,180,${alpha * 0.3})`);
-      ctx.fillStyle = wg;
-      ctx.beginPath();
-      ctx.ellipse(h.x, gy, h.radius, 10 + wave, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Wave lines
-      ctx.strokeStyle = `rgba(150,200,255,${alpha * 0.5})`;
-      ctx.lineWidth = 1;
-      for (let wy = -5; wy <= 5; wy += 4) {
-        ctx.beginPath();
-        for (let wx = -h.radius; wx <= h.radius; wx += 3) {
-          const waveY = Math.sin(wx * 0.3 + t * 3) * 2;
-          ctx.lineTo(h.x + wx, gy + wy + waveY);
-        }
-        ctx.stroke();
-      }
-      // Sparkles on water surface
-      for (let s = 0; s < 4; s++) {
-        const sx = h.x + Math.sin(t * 1.5 + s * 2) * h.radius * 0.7;
-        const sparkle = Math.sin(t * 4 + s * 3);
-        if (sparkle > 0.7) {
-          ctx.fillStyle = `rgba(200,230,255,${sparkle * alpha * 0.8})`;
-          ctx.beginPath();
-          ctx.arc(sx, gy - 2, 1.5, 0, Math.PI * 2);
-          ctx.fill();
         }
       }
     } else if (h.type === 'mud') {
