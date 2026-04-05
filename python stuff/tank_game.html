@@ -800,8 +800,6 @@ function botShoot() {
       botTrajectory.push({ x: tx, y: ty });
       if (ty >= terrainAt(tx)) break; // stop when hitting ground
     }
-      if (ty >= terrainAt(tx)) break;
-    }
   }
 
   // Frames 2-50: slowly rotate barrel
