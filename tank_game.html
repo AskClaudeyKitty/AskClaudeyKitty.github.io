@@ -451,7 +451,7 @@ canvas.addEventListener('mousedown', e => {
   const m = getMousePos(e);
   if (state === 'menu') {
     // BATTLE button
-    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) state = 'select'; selectScroll = 0;
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; }
     return;
   }
   if (state === 'select') {
@@ -542,7 +542,7 @@ canvas.addEventListener('wheel', e => {
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (state === 'menu') {
-    if (e.key === 'Enter') state = 'select'; selectScroll = 0;
+    if (e.key === 'Enter') { state = 'select'; selectScroll = 0; }
     return;
   }
   if (state === 'select') {
@@ -594,13 +594,13 @@ function resetGame() {
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, weapon: 0, fuel: p.fuel, maxFuel: p.fuel,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false
   });
   Object.assign(tanks[1], {
     x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
     name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false
   });
   turn = 0;
   projectiles = [];
@@ -699,9 +699,7 @@ function botShoot() {
     // Check if standing in hazard
     let inHazard = false;
     let hazardX = 0;
-    let inWater = false;
     for (const h of hazards) {
-      if (h.type === 'water' && Math.abs(bot.x - h.x) < h.radius) { inWater = true; }
       if (h.type !== 'ice' && h.type !== 'water' && Math.abs(bot.x - h.x) < h.radius) { inHazard = true; hazardX = h.x; break; }
     }
 
@@ -747,7 +745,7 @@ function botShoot() {
       botMoveFrames = 0;
     }
 
-    if (botMoveFrames > 0 && bot.fuel > 0 && !inWater) {
+    if (botMoveFrames > 0 && bot.fuel > 0) {
       let spd = bot.type.speed * 0.4;
       let botOnIce = false;
       for (const h of hazards) {
@@ -766,14 +764,6 @@ function botShoot() {
       if (botMoveFrames !== 999) botMoveFrames--;
       checkCratePickup(bot, 1);
       return;
-    }
-    // Bot in water: sway gently, no movement
-    if (inWater) {
-      bot.inWater = true;
-      bot.waterSway = Math.sin(Date.now() / 200) * 3;
-      bot.x += bot.waterSway * 0.1;
-    } else {
-      bot.inWater = false;
     }
     botMoveDone = true;
     botAimFrame = 0;
@@ -820,11 +810,11 @@ function botShoot() {
     const rad = bestAngle * Math.PI / 180;
     let tx = bot.x, ty = terrainAt(bot.x) - 20;
     let tvx = Math.cos(rad) * bestPower, tvy = -Math.sin(rad) * bestPower;
-    for (let step = 0; step < 500; step += 3) {
+    for (let step = 0; step < 300; step++) {
       tx += tvx; tvy += grav; ty += tvy;
       if (tx < -50 || tx > W + 50 || ty > H + 50) break;
-      botTrajectory.push({ x: tx, y: ty });
-      if (ty >= terrainAt(tx)) break; // stop when hitting ground
+      if (step % 3 === 0) botTrajectory.push({ x: tx, y: ty });
+      if (ty >= terrainAt(tx)) break;
     }
   }
 
@@ -882,7 +872,6 @@ function update() {
         tank.x += tank.waterSway;
         if (Math.random() < 0.02) SFX.water();
       } else {
-        tank.inWater = false;
         if ((keys['q'] || moveLeft) && tank.fuel > 0) { tank.slideVx = -spd; tank.fuel -= 0.3; }
         if ((keys['e'] || moveRight) && tank.fuel > 0) { tank.slideVx = spd; tank.fuel -= 0.3; }
         if (moving && tank.fuel > 0 && Math.random() < 0.15) SFX.move();
@@ -1226,6 +1215,26 @@ function update() {
     }
   }
 
+  // Snow map: convert water to ice, re-ice exposed ground
+  if (maps[currentMap].name === 'Snow') {
+    for (const h of hazards) {
+      if (h.type === 'water') { h.type = 'ice'; h.life = 999999; h.dmg = 0; }
+    }
+    // Check for un-iced terrain and add ice patches
+    for (let x = 40; x < W - 40; x += 60) {
+      let hasIce = false;
+      for (const h of hazards) {
+        if (h.type === 'ice' && Math.abs(h.x - x) < 40) { hasIce = true; break; }
+      }
+      if (!hasIce) {
+        hazards.push({ x, y: terrainAt(x), radius: 40 + Math.random() * 20, type: 'ice', life: 999999, dmg: 0 });
+      }
+    }
+  }
+
+  // Clear inWater flags before hazard check
+  for (const t of tanks) t.inWater = false;
+
   // Hazard zones (fire/poison)
   for (let i = hazards.length - 1; i >= 0; i--) {
     const h = hazards[i];
@@ -1254,10 +1263,12 @@ function update() {
     for (const t of tanks) {
       const dist = Math.abs(t.x - h.x);
       if (dist < h.radius) {
-        // Water hazard: no movement, just swaying
+        // Water hazard: no movement, just swaying (player only)
         if (h.type === 'water') {
-          t.inWater = true;
-          t.waterSway = Math.sin(Date.now() / 200) * 3; // gentle swaying
+          if (t === tanks[0]) {
+            t.inWater = true;
+            t.waterSway = Math.sin(Date.now() / 200) * 3;
+          }
         } else {
           t.hp -= h.dmg;
           if (Math.random() < 0.03) {
@@ -1306,20 +1317,25 @@ function update() {
 }
 
 function checkWin() {
-  for (let i = 0; i < 2; i++) {
-    if (tanks[i].hp <= 0) {
-      tanks[i].hp = 0;
-      gameOver = true;
-      winner = tanks[1 - i].name;
-      // Track player wins
-      if (i === 1) {
-        totalWins++;
-        localStorage.setItem('tankBattleWins', totalWins);
-        SFX.win();
-      } else {
-        SFX.lose();
-      }
-    }
+  const dead0 = tanks[0].hp <= 0;
+  const dead1 = tanks[1].hp <= 0;
+  if (!dead0 && !dead1) return;
+  if (dead0) tanks[0].hp = 0;
+  if (dead1) tanks[1].hp = 0;
+  gameOver = true;
+  if (dead0 && dead1) {
+    // Both dead — attacker wins, or draw if hazard kill
+    winner = tanks[turn].name;
+    if (turn === 0) { SFX.win(); }
+    else { SFX.lose(); }
+  } else if (dead1) {
+    winner = tanks[0].name;
+    totalWins++;
+    localStorage.setItem('tankBattleWins', totalWins);
+    SFX.win();
+  } else {
+    winner = tanks[1].name;
+    SFX.lose();
   }
 }
 
@@ -2122,6 +2138,68 @@ function drawGame() {
     ctx.arc(p.x - r * 0.2, p.y - r * 0.2, r * 0.45, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  }
+
+  // Minimap when projectile goes high off screen
+  let projHigh = false;
+  let minProjY = Infinity;
+  for (const p of projectiles) {
+    if (p.y < 0) { projHigh = true; if (p.y < minProjY) minProjY = p.y; }
+  }
+  if (projHigh) {
+    const mmW = 200, mmH = 120;
+    const mmX = W - mmW - 10, mmY = 10;
+    // Calculate view bounds to include projectiles
+    const viewTop = Math.min(minProjY - 20, -100);
+    const viewBot = H;
+    const viewH = viewBot - viewTop;
+    const sx = mmW / W, sy = mmH / viewH;
+
+    // Background
+    const mg = ctx.createLinearGradient(mmX, mmY, mmX, mmY + mmH);
+    mg.addColorStop(0, maps[currentMap].sky1);
+    mg.addColorStop(1, maps[currentMap].sky2);
+    ctx.fillStyle = mg;
+    ctx.fillRect(mmX, mmY, mmW, mmH);
+
+    // Terrain
+    ctx.fillStyle = maps[currentMap].ground;
+    ctx.beginPath();
+    ctx.moveTo(mmX, mmY + mmH);
+    for (let x = 0; x <= W; x += 4) {
+      ctx.lineTo(mmX + x * sx, mmY + (terrain[x] - viewTop) * sy);
+    }
+    ctx.lineTo(mmX + mmW, mmY + mmH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tanks
+    for (let i = 0; i < 2; i++) {
+      const t = tanks[i];
+      const tx = mmX + t.x * sx;
+      const ty = mmY + (terrainAt(t.x) - viewTop) * sy;
+      ctx.fillStyle = i === 0 ? t.color : '#e55';
+      ctx.fillRect(tx - 3, ty - 3, 6, 4);
+    }
+
+    // Projectiles
+    for (const p of projectiles) {
+      ctx.fillStyle = p.weaponData.color;
+      ctx.beginPath();
+      ctx.arc(mmX + p.x * sx, mmY + (p.y - viewTop) * sy, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Border
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mmX, mmY, mmW, mmH);
+
+    // Label
+    ctx.fillStyle = '#aaa';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('TRACKING', mmX + mmW - 4, mmY + 10);
   }
 
   // Floating damage/heal texts
