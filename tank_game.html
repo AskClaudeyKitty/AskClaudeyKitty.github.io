@@ -2148,7 +2148,7 @@ function drawGame() {
   }
   if (projHigh) {
     const mmW = 200, mmH = 120;
-    const mmX = W - mmW - 10, mmY = 10;
+    const mmX = W / 2 - mmW / 2, mmY = 10;
     // Calculate view bounds to include projectiles
     const viewTop = Math.min(minProjY - 20, -100);
     const viewBot = H;
