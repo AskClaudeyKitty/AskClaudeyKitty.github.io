@@ -40,6 +40,13 @@
             border-radius: 0.5rem;
             font-size: 1.2rem;
             transition: background 0.2s ease;
+            position: relative;
+        }
+        .play-count {
+            font-size: 0.65rem;
+            opacity: 0.8;
+            display: block;
+            margin-top: 2px;
         }
         a:hover {
             background: #38a169;
@@ -121,15 +128,15 @@
         <h1>🎮 Game Collection</h1>
         <p>Welcome to the game hub!</p>
         <div class="game-links">
-            <a href="lag_simulator.html">Lag Simulator</a>
-            <a href="guessing_game.html">Play Guessing Game</a>
-            <a href="explosion-button.html">Explosion Button</a>
-            <a href="explosion-button-webgl.html">Explosion Button (WebGL)</a>
-            <a href="bouncing_ball.html">Ball in a Ring</a>
-            <a href="tower-defense.html">Tower Defense Game</a>
-            <a href="regular-clicker-game.html">Regular Clicker Game</a>
-            <a href="computer_crasher.html">Computer Crasher</a>
-            <a href="python%20stuff/tank_game.html">Tank Battle</a>
+            <a href="lag_simulator.html">Lag Simulator<span class="play-count" data-game="lag_simulator"></span></a>
+            <a href="guessing_game.html">Play Guessing Game<span class="play-count" data-game="guessing_game"></span></a>
+            <a href="explosion-button.html">Explosion Button<span class="play-count" data-game="explosion_button"></span></a>
+            <a href="explosion-button-webgl.html">Explosion Button (WebGL)<span class="play-count" data-game="explosion_button_webgl"></span></a>
+            <a href="bouncing_ball.html">Ball in a Ring<span class="play-count" data-game="bouncing_ball"></span></a>
+            <a href="tower-defense.html">Tower Defense Game<span class="play-count" data-game="tower_defense"></span></a>
+            <a href="regular-clicker-game.html">Regular Clicker Game<span class="play-count" data-game="regular_clicker"></span></a>
+            <a href="computer_crasher.html">Computer Crasher<span class="play-count" data-game="computer_crasher"></span></a>
+            <a href="tank_game.html">Tank Battle<span class="play-count" data-game="tank_battle"></span></a>
             <a href="python%20stuff/index.html">Python Scripts</a>
         </div>
 
@@ -145,6 +152,18 @@
     </div>
 
 <script>
+// Play counter
+const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
+fetch(SUPA_URL + '/rest/v1/play_counts?select=game,count', {
+  headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+}).then(r => r.json()).then(data => {
+  for (const row of data) {
+    const el = document.querySelector(`[data-game="${row.game}"]`);
+    if (el) el.textContent = row.count + ' plays';
+  }
+}).catch(() => {});
+
 const base = 'https://askclaudeykitty.github.io/';
 const sources = [
     ['Index Page',               'source_index.txt'],

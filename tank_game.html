@@ -2347,5 +2347,15 @@ function loop() {
 
 loop();
 </script>
+<script>
+(function(){
+  var k='played_tank_battle';
+  if(sessionStorage.getItem(k))return;
+  sessionStorage.setItem(k,'1');
+  var u='https://khsdgbglmzyuiqsfalcv.supabase.co/rest/v1/rpc/increment_play';
+  var h={'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k'};
+  fetch(u,{method:'POST',headers:h,body:JSON.stringify({game_name:'tank_battle'})}).catch(function(){});
+})();
+</script>
 </body>
 </html>
