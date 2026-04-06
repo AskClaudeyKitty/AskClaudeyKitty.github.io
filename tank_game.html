@@ -1214,7 +1214,7 @@ function update() {
             if (h.type === 'water' && Math.abs(h.x - waterX) < 20) { hasWater = true; break; }
           }
           if (!hasWater) {
-            hazards.push({ x: waterX, y: terrainAt(waterX), radius: waterRadius, type: 'water', life: 600, dmg: 0 });
+            hazards.push({ x: waterX, y: terrainAt(waterX), radius: waterRadius, type: 'water', life: 4200, dmg: 0 });
             // Remove the ice and fire that created it
             h1.life = 1; h2.life = 1;
           }
