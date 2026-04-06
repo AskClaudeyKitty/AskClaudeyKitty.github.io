@@ -701,7 +701,7 @@ function botShoot() {
     let hazardX = 0;
     let inWater = false;
     for (const h of hazards) {
-      if (h.type === 'water' && Math.abs(bot.x - h.x) < h.radius) { inWater = true; inHazard = true; hazardX = h.x; }
+      if (h.type === 'water' && Math.abs(bot.x - h.x) < h.radius) { inWater = true; }
       if (h.type !== 'ice' && h.type !== 'water' && Math.abs(bot.x - h.x) < h.radius) { inHazard = true; hazardX = h.x; break; }
     }
 
@@ -743,11 +743,11 @@ function botShoot() {
     }
 
     // If fleeing hazard, stop once clear
-    if (botMoveFrames === 999 && !inHazard && !inWater) {
+    if (botMoveFrames === 999 && !inHazard) {
       botMoveFrames = 0;
     }
 
-    if (botMoveFrames > 0 && bot.fuel > 0) {
+    if (botMoveFrames > 0 && bot.fuel > 0 && !inWater) {
       let spd = bot.type.speed * 0.4;
       let botOnIce = false;
       for (const h of hazards) {
@@ -767,7 +767,7 @@ function botShoot() {
       checkCratePickup(bot, 1);
       return;
     }
-    // Bot in water: sway gently
+    // Bot in water: sway gently, no movement
     if (inWater) {
       bot.inWater = true;
       bot.waterSway = Math.sin(Date.now() / 200) * 3;
