@@ -1956,53 +1956,25 @@ function drawGame() {
         ctx.fill();
       }
     } else if (h.type === 'lava') {
-      // Underground lava — glows from below terrain through cracks
+      // Lava pool — solid like the bottom-of-map lava layer
       const gy = terrainAt(h.x);
-      // Deep underglow beneath terrain
-      const ug = ctx.createRadialGradient(h.x, gy + 15, 0, h.x, gy + 15, h.radius * 1.2);
-      ug.addColorStop(0, `rgba(255,160,0,${alpha * 0.5})`);
-      ug.addColorStop(0.5, `rgba(200,60,0,${alpha * 0.3})`);
-      ug.addColorStop(1, 'rgba(100,10,0,0)');
-      ctx.fillStyle = ug;
+      // Solid lava fill
+      ctx.fillStyle = `rgba(255,68,0,${alpha})`;
       ctx.beginPath();
-      ctx.ellipse(h.x, gy + 15, h.radius * 1.2, 20, 0, 0, Math.PI * 2);
+      ctx.ellipse(h.x, gy + 2, h.radius, 8, 0, 0, Math.PI * 2);
       ctx.fill();
-      // Lava seeping through cracks on surface
-      for (let cx = h.x - h.radius; cx < h.x + h.radius; cx += 8) {
-        if (cx < 0 || cx >= W) continue;
-        const cy = terrainAt(cx);
-        const crackGlow = Math.sin(t * 2 + cx * 0.5) * 0.5 + 0.5;
-        const crackW = 2 + Math.sin(t * 3 + cx * 0.8) * 1.5;
-        const cg = ctx.createLinearGradient(cx, cy - 3, cx, cy + 8);
-        cg.addColorStop(0, `rgba(255,200,50,${alpha * crackGlow * 0.6})`);
-        cg.addColorStop(0.4, `rgba(255,100,0,${alpha * crackGlow * 0.8})`);
-        cg.addColorStop(1, `rgba(180,30,0,${alpha * 0.3})`);
-        ctx.fillStyle = cg;
-        ctx.fillRect(cx - crackW / 2, cy - 2, crackW, 10);
+      // Bright wavy surface line (like map lava)
+      ctx.fillStyle = `rgba(255,136,0,${alpha * 0.9})`;
+      for (let lx = h.x - h.radius; lx < h.x + h.radius; lx += 20) {
+        if (lx < 0 || lx >= W) continue;
+        const ly = gy - 1 + Math.sin(t * 2 + lx * 0.05) * 3;
+        ctx.fillRect(lx, ly, 20, 3);
       }
-      // Surface glow line
-      ctx.strokeStyle = `rgba(255,120,0,${alpha * 0.4 + Math.sin(t * 4) * 0.1})`;
-      ctx.lineWidth = 2;
+      // Hot yellow core
+      ctx.fillStyle = `rgba(255,200,0,${alpha * 0.5 + Math.sin(t * 3) * 0.1})`;
       ctx.beginPath();
-      for (let sx = h.x - h.radius; sx < h.x + h.radius; sx += 3) {
-        if (sx < 0 || sx >= W) continue;
-        const sy = terrainAt(sx) + Math.sin(t * 2 + sx * 0.3) * 1;
-        if (sx <= h.x - h.radius + 3) ctx.moveTo(sx, sy);
-        else ctx.lineTo(sx, sy);
-      }
-      ctx.stroke();
-      // Occasional bubbles rising from cracks
-      for (let b = 0; b < 4; b++) {
-        const bx = h.x + Math.sin(t * 1.1 + b * 2.3) * h.radius * 0.6;
-        const bubblePhase = (t * 1.5 + b * 1.7) % 2;
-        if (bubblePhase < 0.8) {
-          const by = terrainAt(bx) - bubblePhase * 12;
-          ctx.fillStyle = `rgba(255,160,0,${alpha * (1 - bubblePhase / 0.8) * 0.5})`;
-          ctx.beginPath();
-          ctx.arc(bx, by, 2 + bubblePhase, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+      ctx.ellipse(h.x, gy + 2, h.radius * 0.5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
