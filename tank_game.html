@@ -1005,22 +1005,15 @@ function update() {
     const outOfBounds = p.ricochets > 3 || p.y > H + 50;
 
     if (hitGround) {
-      // Bounce off terrain (all weapons, up to 10 times, not near enemy)
+      // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
       if (p.bounceCount < 10) {
-        let nearEnemy = false;
-        for (const t of tanks) {
-          if (Math.hypot(t.x - p.x, terrainAt(t.x) - p.y) < w.radius + 30) { nearEnemy = true; break; }
-        }
-        if (!nearEnemy) {
-          p.bounceCount++;
-          // Impact damage + explosion on every bounce
-          createExplosion(p.x, p.y, w);
-          impactDamage(p.x, p.y, w, p);
-          p.vy = -Math.abs(p.vy);
-          p.y = terrainAt(p.x) - 2;
-          continue;
-        }
+        p.bounceCount++;
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, w, p);
+        p.vy = -Math.abs(p.vy);
+        p.y = terrainAt(p.x) - 2;
+        continue;
       }
 
       // Split: fragments scatter on impact
