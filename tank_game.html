@@ -1005,18 +1005,20 @@ function update() {
     const outOfBounds = p.ricochets > 3 || p.y > H + 50;
 
     if (hitGround) {
-      // Bounce: reflect off terrain once, but only if not near an enemy
-      if (w.behavior === 'bounce' && !p.hasBounced) {
+      // Bounce off terrain (all weapons, up to 10 times, not near enemy)
+      if (!p.bounceCount) p.bounceCount = 0;
+      if (p.bounceCount < 10) {
         let nearEnemy = false;
         for (const t of tanks) {
           if (Math.hypot(t.x - p.x, terrainAt(t.x) - p.y) < w.radius + 30) { nearEnemy = true; break; }
         }
         if (!nearEnemy) {
-          p.hasBounced = true;
-          p.vy = -Math.abs(p.vy) * 0.6;
-          p.vx *= 0.8;
+          p.bounceCount++;
+          // Impact damage + explosion on every bounce
+          createExplosion(p.x, p.y, w);
+          impactDamage(p.x, p.y, w, p);
+          p.vy = -Math.abs(p.vy);
           p.y = terrainAt(p.x) - 2;
-          createExplosion(p.x, p.y, { ...w, radius: w.radius * 0.3 });
           continue;
         }
       }
@@ -1538,7 +1540,7 @@ function drawAimUI() {
 
   // Trajectory dotted lines (one per projectile in multi-shot weapons)
   const wCheck = tanks[0].weapon === 4 ? tanks[0].bonusWeapon : tanks[0].type.weapons[tanks[0].weapon];
-  const canBounce = wCheck && wCheck.behavior === 'bounce';
+  const canBounce = true; // all weapons bounce
   const shotCount = wCheck ? (wCheck.count || 1) : 1;
   const shotSpread = wCheck ? (wCheck.spread || 0) : 0;
   let lastSx = 0, lastSy = 0;
@@ -1560,10 +1562,10 @@ function drawAimUI() {
       if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
       if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
       if (sy >= terrainAt(sx)) {
-        if (canBounce && !trajBounced) {
-          trajBounced = true;
-          vy = -Math.abs(vy) * 0.6;
-          vx *= 0.8;
+        if (!trajBounced) trajBounced = 0;
+        if (trajBounced < 10) {
+          trajBounced++;
+          vy = -Math.abs(vy);
           sy = terrainAt(sx) - 2;
           continue;
         }
