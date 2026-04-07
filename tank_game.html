@@ -476,6 +476,9 @@ canvas.addEventListener('mousedown', e => {
   if (state === 'menu') {
     // BATTLE button
     if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; }
+    // Toggle buttons
+    if (m.x >= W / 2 - 110 && m.x <= W / 2 - 5 && m.y >= 380 && m.y <= 410) { simpleAiming = !simpleAiming; }
+    if (m.x >= W / 2 + 5 && m.x <= W / 2 + 110 && m.y >= 380 && m.y <= 410) { chaosMode = !chaosMode; }
     return;
   }
   if (state === 'select') {
@@ -516,10 +519,6 @@ canvas.addEventListener('mousedown', e => {
   const selY = H - 63;
   const slotW = 55;
   const totalSlots = tanks[0].bonusWeapon ? 5 : 4;
-
-  // Toggle button clicks
-  if (m.x >= 10 && m.x <= 80 && m.y >= 10 && m.y <= 30) { simpleAiming = !simpleAiming; return; }
-  if (m.x >= 85 && m.x <= 150 && m.y >= 10 && m.y <= 30) { chaosMode = !chaosMode; return; }
 
   // Weapon slot clicks
   for (let i = 0; i < totalSlots; i++) {
@@ -1700,6 +1699,21 @@ function drawMenu() {
   ctx.font = '10px monospace';
   ctx.fillText('or press ENTER', W / 2, 360);
 
+  // Options
+  ctx.fillStyle = simpleAiming ? '#484' : '#333';
+  ctx.fillRect(W / 2 - 110, 380, 105, 30);
+  ctx.strokeStyle = simpleAiming ? '#6a6' : '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 - 110, 380, 105, 30);
+  ctx.fillStyle = '#ccc'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(simpleAiming ? 'SIMPLE: ON' : 'SIMPLE: OFF', W / 2 - 57, 400);
+
+  ctx.fillStyle = chaosMode ? '#844' : '#333';
+  ctx.fillRect(W / 2 + 5, 380, 105, 30);
+  ctx.strokeStyle = chaosMode ? '#f44' : '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 + 5, 380, 105, 30);
+  ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '11px monospace';
+  ctx.fillText(chaosMode ? 'CHAOS: ON' : 'CHAOS: OFF', W / 2 + 57, 400);
+
   // Wins + version
   ctx.fillStyle = '#555';
   ctx.fillText('Wins: ' + totalWins, W / 2, H - 25);
@@ -2525,23 +2539,6 @@ function drawGame() {
       ctx.fillStyle = tanks[0].fuel > 0 ? '#aaf' : '#555';
       ctx.fillText('>', W - 162, my + 25);
     }
-  }
-
-  // Toggle buttons (top-left)
-  if (!gameOver && turn === 0 && !projectiles.length) {
-    ctx.fillStyle = simpleAiming ? '#484' : '#333';
-    ctx.fillRect(10, 10, 70, 20);
-    ctx.strokeStyle = simpleAiming ? '#6a6' : '#555'; ctx.lineWidth = 1;
-    ctx.strokeRect(10, 10, 70, 20);
-    ctx.fillStyle = '#ccc'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(simpleAiming ? 'SIMPLE ON' : 'SIMPLE', 45, 23);
-
-    ctx.fillStyle = chaosMode ? '#844' : '#333';
-    ctx.fillRect(85, 10, 65, 20);
-    ctx.strokeStyle = chaosMode ? '#f44' : '#555'; ctx.lineWidth = 1;
-    ctx.strokeRect(85, 10, 65, 20);
-    ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '9px monospace';
-    ctx.fillText(chaosMode ? 'CHAOS!' : 'CHAOS', 117, 23);
   }
 
   // Map name
