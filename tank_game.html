@@ -1145,10 +1145,10 @@ function update() {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'poison', life: 400, dmg: 0.3 });
       } else if (w.effect === 'thermoAll') {
-        // Radiation + acid + acid fire (2.5x damage)
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.0, type: 'radiation', life: 3600, dmg: 1.25 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'acid', life: 1800, dmg: 2.25 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'acidFire', life: 400, dmg: 1.5 });
+        // Radiation + acid + acid fire (1.5x damage)
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.0, type: 'radiation', life: 3600, dmg: 0.75 });
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'acid', life: 1800, dmg: 1.35 });
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'acidFire', life: 400, dmg: 0.9 });
       } else if (w.effect === 'megaRadiation') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.5, type: 'radiation', life: 3600, dmg: 0.5 });
       } else if (w.effect === 'radiation') {
