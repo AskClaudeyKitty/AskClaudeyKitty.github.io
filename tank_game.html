@@ -1015,7 +1015,8 @@ function update() {
     if (hitGround) {
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
-      if (p.bounceCount < 10) {
+      const maxBounce = p.isFragment ? 4 : 10;
+      if (p.bounceCount < maxBounce) {
         p.bounceCount++;
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
