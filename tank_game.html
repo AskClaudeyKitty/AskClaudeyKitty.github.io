@@ -1145,11 +1145,10 @@ function update() {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'poison', life: 400, dmg: 0.3 });
       } else if (w.effect === 'thermoAll') {
-        // Radiation + acid + acid fire + mud
+        // Radiation + acid + acid fire
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.0, type: 'radiation', life: 3600, dmg: 0.5 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'acid', life: 1800, dmg: 0.9 });
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'acidFire', life: 400, dmg: 0.6 });
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.6, type: 'mud', life: 1200, dmg: 0 });
       } else if (w.effect === 'megaRadiation') {
         hazards.push({ x: p.x, y: p.y, radius: w.radius * 2.5, type: 'radiation', life: 3600, dmg: 0.5 });
       } else if (w.effect === 'radiation') {
