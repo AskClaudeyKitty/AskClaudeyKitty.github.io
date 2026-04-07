@@ -1536,46 +1536,54 @@ function drawAimUI() {
 
   if (power < 1) return;
 
-  // Trajectory dotted line
-  let sx = tank.x, sy = tankY - 20;
-  let vx = Math.cos(rad) * power, vy = -Math.sin(rad) * power;
-  ctx.setLineDash([5, 8]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(sx, sy);
-  let dots = 0;
-  let trajBounced = false;
+  // Trajectory dotted lines (one per projectile in multi-shot weapons)
   const wCheck = tanks[0].weapon === 4 ? tanks[0].bonusWeapon : tanks[0].type.weapons[tanks[0].weapon];
   const canBounce = wCheck && wCheck.behavior === 'bounce';
-  for (let step = 0; step < 300; step++) {
-    sx += vx; vy += grav; sy += vy;
-    if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
-    if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
-    if (sy >= terrainAt(sx)) {
-      if (canBounce && !trajBounced) {
-        trajBounced = true;
-        vy = -Math.abs(vy) * 0.6;
-        vx *= 0.8;
-        sy = terrainAt(sx) - 2;
-        continue;
-      }
-      break;
-    }
-    ctx.lineTo(sx, sy);
-    dots++;
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
+  const shotCount = wCheck ? (wCheck.count || 1) : 1;
+  const shotSpread = wCheck ? (wCheck.spread || 0) : 0;
+  let lastSx = 0, lastSy = 0;
 
-  // Impact crosshair
-  ctx.strokeStyle = 'rgba(255,80,80,0.6)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(sx - 14, sy); ctx.lineTo(sx + 14, sy);
-  ctx.moveTo(sx, sy - 14); ctx.lineTo(sx, sy + 14);
-  ctx.stroke();
+  for (let shot = 0; shot < shotCount; shot++) {
+    const angleOff = (shot - (shotCount - 1) / 2) * shotSpread;
+    const shotRad = (tank.angle + angleOff) * Math.PI / 180;
+    let sx = tank.x, sy = tankY - 20;
+    let vx = Math.cos(shotRad) * power, vy = -Math.sin(shotRad) * power;
+    const alpha = shotCount === 1 ? 0.4 : 0.3;
+    ctx.setLineDash([5, 8]);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    let trajBounced = false;
+    for (let step = 0; step < 300; step++) {
+      sx += vx; vy += grav; sy += vy;
+      if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
+      if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
+      if (sy >= terrainAt(sx)) {
+        if (canBounce && !trajBounced) {
+          trajBounced = true;
+          vy = -Math.abs(vy) * 0.6;
+          vx *= 0.8;
+          sy = terrainAt(sx) - 2;
+          continue;
+        }
+        break;
+      }
+      ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    lastSx = sx; lastSy = sy;
+
+    // Impact crosshair per shot
+    ctx.strokeStyle = 'rgba(255,80,80,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx - 12, sy); ctx.lineTo(sx + 12, sy);
+    ctx.moveTo(sx, sy - 12); ctx.lineTo(sx, sy + 12);
+    ctx.stroke();
+  }
 
   // Power bar at top
   ctx.fillStyle = '#222'; ctx.fillRect(W / 2 - 100, 10, 200, 16);
