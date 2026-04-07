@@ -156,11 +156,11 @@ function updateHazardSounds() {
 
 // ========== MAPS ==========
 const maps = [
-  { name: 'Plains',  sky1: '#0a0a2a', sky2: '#1a1a3a', ground: '#2a5a2a', groundLine: '#3a7a3a', baseY: 0.55, roughness: 3, gravity: 0.3, lava: true, boosts: ['Abrams'] },
-  { name: 'Desert',  sky1: '#2a1500', sky2: '#4a2800', ground: '#8a7a40', groundLine: '#aa9a50', baseY: 0.6,  roughness: 2, gravity: 0.3, lava: true, boosts: ['Terra', 'Anubis'] },
-  { name: 'Snow',    sky1: '#1a2a3a', sky2: '#2a3a4a', ground: '#c8ccd0', groundLine: '#dde0e4', baseY: 0.55, roughness: 3, gravity: 0.3, lava: true, boosts: ['Frost'] },
-  { name: 'Moon',    sky1: '#000005', sky2: '#0a0a15', ground: '#555560', groundLine: '#666670', baseY: 0.5,  roughness: 4, gravity: 0.15, lava: true, boosts: ['Atomic', 'Electro', 'Thermonuclear'] },
-  { name: 'Volcano', sky1: '#1a0500', sky2: '#3a1000', ground: '#3a2a2a', groundLine: '#5a3a3a', baseY: 0.5,  roughness: 5, gravity: 0.3, lava: true, boosts: ['Blaze', 'Solar', 'Hades'] },
+  { name: 'Plains',  sky1: '#0a0a2a', sky2: '#1a1a3a', ground: '#2a5a2a', groundLine: '#3a7a3a', baseY: 0.55, roughness: 3, gravity: 0.3, lava: true, boosts: ['Abrams'], terrainType: 'normal' },
+  { name: 'Desert',  sky1: '#2a1500', sky2: '#4a2800', ground: '#8a7a40', groundLine: '#aa9a50', baseY: 0.6,  roughness: 2, gravity: 0.3, lava: true, boosts: ['Terra', 'Anubis'], terrainType: 'sand' },
+  { name: 'Snow',    sky1: '#1a2a3a', sky2: '#2a3a4a', ground: '#c8ccd0', groundLine: '#dde0e4', baseY: 0.55, roughness: 3, gravity: 0.3, lava: true, boosts: ['Frost'], terrainType: 'normal' },
+  { name: 'Moon',    sky1: '#000005', sky2: '#0a0a15', ground: '#555560', groundLine: '#666670', baseY: 0.5,  roughness: 4, gravity: 0.15, lava: true, boosts: ['Atomic', 'Electro', 'Thermonuclear'], terrainType: 'rock' },
+  { name: 'Volcano', sky1: '#1a0500', sky2: '#3a1000', ground: '#3a2a2a', groundLine: '#5a3a3a', baseY: 0.5,  roughness: 5, gravity: 0.3, lava: true, boosts: ['Blaze', 'Solar', 'Hades'], terrainType: 'rock' },
 ];
 let currentMap = 0; // randomized on game start
 
@@ -278,6 +278,7 @@ let menuHover = -1;
 let selectScroll = 0;
 
 const terrain = [];
+const terrainType = []; // 'normal', 'sand', 'rock'
 const tanks = [{}, {}];
 let turn = 0;
 let projectiles = [];
@@ -310,6 +311,10 @@ function generateTerrain() {
       terrain[x] = (terrain[x-2] + terrain[x-1] + terrain[x] + terrain[x+1] + terrain[x+2]) / 5;
     }
   }
+  // Set terrain type from map
+  terrainType.length = 0;
+  const tt = maps[currentMap].terrainType || 'normal';
+  for (let x = 0; x <= W; x++) terrainType[x] = tt;
 }
 
 function terrainAt(x) {
@@ -333,11 +338,20 @@ function checkCratePickup(tank, tankIndex) {
   for (let i = crates.length - 1; i >= 0; i--) {
     const c = crates[i];
     if (Math.abs(tank.x - c.x) < 25) {
-      // Give a random bonus weapon from the crate pool
-      const w = crateWeapons[Math.floor(Math.random() * crateWeapons.length)];
-      tank.bonusWeapon = w;
-      tank.bonusAmmo = 1;
-      spawnFloatingText(c.x, c.y - 20, '+' + w.name + '!', '#fa0');
+      if (Math.random() < 0.25 && !tank.shield) {
+        // Shield pickup
+        tank.shield = true;
+        spawnFloatingText(c.x, c.y - 20, '+SHIELD!', '#4af');
+      } else {
+        // Give a random weapon from ANY tank
+        const allWeapons = [];
+        for (const tt of tankTypes) { if (!tt.locked) for (const ww of tt.weapons) allWeapons.push(ww); }
+        for (const ww of crateWeapons) allWeapons.push(ww);
+        const w = allWeapons[Math.floor(Math.random() * allWeapons.length)];
+        tank.bonusWeapon = w;
+        tank.bonusAmmo = 1;
+        spawnFloatingText(c.x, c.y - 20, '+' + w.name + '!', '#fa0');
+      }
       SFX.cratePickup();
       crates.splice(i, 1);
     }
@@ -368,13 +382,13 @@ function initTanks() {
     x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, color: p.color,
     name: p.name, weapon: 0, fuel: p.fuel, maxFuel: p.fuel, isBot: false, type: p,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
   });
   Object.assign(tanks[1], {
     x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
     name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, isBot: true, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
   });
 }
 
@@ -430,6 +444,14 @@ canvas.addEventListener('mousemove', e => {
     }
     return;
   }
+  if (state === 'mapSelect') {
+    mapHover = -1;
+    for (let i = 0; i < maps.length; i++) {
+      const bx = W / 2 - (maps.length * 85) / 2 + i * 85;
+      if (m.x >= bx && m.x <= bx + 75 && m.y >= 140 && m.y <= 320) mapHover = i;
+    }
+    return;
+  }
   if (dragging) {
     dragX = m.x; dragY = m.y;
     // Direct aim: drag from tank toward where you want to shoot
@@ -466,12 +488,25 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= bx && m.x <= bx + 130 && m.y >= by && m.y <= by + 150) {
         if (isLocked) return; // can't select locked tank
         menuSelection = i;
-        startGame();
+        startMapSelect();
         return;
       }
     }
     // Back button
     if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; return; }
+    return;
+  }
+  if (state === 'mapSelect') {
+    // Random button
+    if (m.x >= W / 2 - 60 && m.x <= W / 2 + 60 && m.y >= 80 && m.y <= 110) { startGame(); return; }
+    // Map cards
+    for (let i = 0; i < maps.length; i++) {
+      const bx = W / 2 - (maps.length * 85) / 2 + i * 85;
+      const by = 140;
+      if (m.x >= bx && m.x <= bx + 75 && m.y >= by && m.y <= by + 180) { startGame(i); return; }
+    }
+    // Back button
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; return; }
     return;
   }
   if (state !== 'game' || turn !== 0 || projectiles.length || gameOver) return;
@@ -549,7 +584,13 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { state = 'menu'; return; }
     if (e.key === 'ArrowLeft') menuSelection = Math.max(0, menuSelection - 1);
     if (e.key === 'ArrowRight') menuSelection = Math.min(tankTypes.length - 1, menuSelection + 1);
-    if (e.key === 'Enter') startGame();
+    if (e.key === 'Enter') startMapSelect();
+    return;
+  }
+  if (state === 'mapSelect') {
+    if (e.key === 'Escape') { state = 'select'; selectScroll = 0; return; }
+    if (e.key >= '1' && e.key <= String(maps.length)) { startGame(parseInt(e.key) - 1); return; }
+    if (e.key === 'Enter') { startGame(); return; } // random
     return;
   }
   if (gameOver && e.key === 'r') return resetGame();
@@ -566,9 +607,16 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
 // ========== GAME FLOW ==========
-function startGame() {
+let mapHover = -1;
+
+function startMapSelect() {
+  state = 'mapSelect';
+  mapHover = -1;
+}
+
+function startGame(mapIdx) {
   state = 'game';
-  currentMap = Math.floor(Math.random() * maps.length);
+  currentMap = mapIdx !== undefined ? mapIdx : Math.floor(Math.random() * maps.length);
   document.getElementById('info').style.display = 'block';
   initTanks();
   turn = 0;
@@ -594,13 +642,13 @@ function resetGame() {
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, weapon: 0, fuel: p.fuel, maxFuel: p.fuel,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
   });
   Object.assign(tanks[1], {
     x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
     name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
   });
   turn = 0;
   projectiles = [];
@@ -677,7 +725,9 @@ function createExplosion(x, y, w) {
     if (tx >= 0 && tx < W) {
       const dist = Math.abs(tx - x);
       const depth = Math.sqrt(Math.max(0, radius * radius - dist * dist));
-      terrain[tx] += depth * 0.5;
+      const tt = terrainType[tx] || 'normal';
+      const mult = tt === 'sand' ? 0.9 : tt === 'rock' ? 0.15 : 0.5;
+      terrain[tx] += depth * mult;
       terrain[tx] = Math.min(terrain[tx], H - 5);
     }
   }
@@ -799,12 +849,14 @@ function botShoot() {
         let vx = Math.cos(rad) * power, vy = -Math.sin(rad) * power;
         for (let step = 0; step < 300; step++) {
           sx += vx; vy += grav; sy += vy;
+          if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
+          if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
           if (sx >= 0 && sx < W && sy >= terrainAt(sx)) {
             const dist = Math.hypot(sx - target.x, sy - terrainAt(target.x));
             if (dist < bestDist) { bestDist = dist; bestAngle = angle; bestPower = power; }
             break;
           }
-          if (sx < -50 || sx > W + 50 || sy > H + 50) break;
+          if (sy > H + 50) break;
         }
       }
     }
@@ -820,7 +872,9 @@ function botShoot() {
     let tvx = Math.cos(rad) * bestPower, tvy = -Math.sin(rad) * bestPower;
     for (let step = 0; step < 300; step++) {
       tx += tvx; tvy += grav; ty += tvy;
-      if (tx < -50 || tx > W + 50 || ty > H + 50) break;
+      if (tx <= 0 && tvx < 0) { tx = 1; tvx = -tvx * 0.8; }
+      if (tx >= W && tvx > 0) { tx = W - 1; tvx = -tvx * 0.8; }
+      if (ty > H + 50) break;
       if (step % 3 === 0) botTrajectory.push({ x: tx, y: ty });
       if (ty >= terrainAt(tx)) break;
     }
@@ -848,10 +902,11 @@ function impactDamage(px, py, w, p) {
   for (const t of tanks) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
+      if (t.shield) { t.shield = false; spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af'); continue; }
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
       if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
-      if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300; // 5 seconds
+      if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300;
     }
   }
 }
@@ -928,6 +983,10 @@ function update() {
     if (!isHoming) p.vy += grav;
     p.y += p.vy;
 
+    // Ricochet off left/right walls
+    if (p.x <= 0 && p.vx < 0) { p.x = 1; p.vx = -p.vx * 0.8; if (!p.ricochets) p.ricochets = 0; p.ricochets++; }
+    if (p.x >= W && p.vx > 0) { p.x = W - 1; p.vx = -p.vx * 0.8; if (!p.ricochets) p.ricochets = 0; p.ricochets++; }
+
     // Check direct hit on enemy tank (not the one who fired)
     let hitTank = false;
     for (let ti = 0; ti < tanks.length; ti++) {
@@ -943,7 +1002,7 @@ function update() {
     }
 
     const hitGround = (p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank;
-    const outOfBounds = p.x < -50 || p.x > W + 50 || p.y > H + 50;
+    const outOfBounds = p.ricochets > 3 || p.y > H + 50;
 
     if (hitGround) {
       // Bounce: reflect off terrain once, but only if not near an enemy
@@ -1126,6 +1185,7 @@ function update() {
       for (const t of tanks) {
         const dist = Math.hypot(t.x - p.x, terrainAt(t.x) - p.y);
         if (dist < expR + 20) {
+          if (t.shield) { t.shield = false; spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af'); continue; }
           const dmg = Math.round(Math.max(0, (expR + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
           t.hp -= dmg;
           if (dmg > 0) {
@@ -1485,9 +1545,23 @@ function drawAimUI() {
   ctx.beginPath();
   ctx.moveTo(sx, sy);
   let dots = 0;
+  let trajBounced = false;
+  const wCheck = tanks[0].weapon === 4 ? tanks[0].bonusWeapon : tanks[0].type.weapons[tanks[0].weapon];
+  const canBounce = wCheck && wCheck.behavior === 'bounce';
   for (let step = 0; step < 300; step++) {
     sx += vx; vy += grav; sy += vy;
-    if (sy >= terrainAt(sx) || sx < 0 || sx > W) break;
+    if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
+    if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
+    if (sy >= terrainAt(sx)) {
+      if (canBounce && !trajBounced) {
+        trajBounced = true;
+        vy = -Math.abs(vy) * 0.6;
+        vx *= 0.8;
+        sy = terrainAt(sx) - 2;
+        continue;
+      }
+      break;
+    }
     ctx.lineTo(sx, sy);
     dots++;
   }
@@ -1684,6 +1758,86 @@ function drawSelect() {
   }
 }
 
+function drawMapSelect() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0a2a');
+  grad.addColorStop(1, '#1a1a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Back button
+  ctx.fillStyle = '#333';
+  ctx.fillRect(20, 15, 80, 30);
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(20, 15, 80, 30);
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('< BACK', 60, 35);
+
+  // Title
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 28px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('SELECT MAP', W / 2, 45);
+  ctx.fillStyle = '#666'; ctx.font = '11px monospace';
+  ctx.fillText('Playing as ' + tankTypes[menuSelection].name, W / 2, 68);
+
+  // Random button
+  ctx.fillStyle = '#555'; ctx.fillRect(W / 2 - 60, 80, 120, 30);
+  ctx.strokeStyle = '#777'; ctx.lineWidth = 1; ctx.strokeRect(W / 2 - 60, 80, 120, 30);
+  ctx.fillStyle = '#ddd'; ctx.font = 'bold 12px monospace';
+  ctx.fillText('RANDOM', W / 2, 100);
+
+  // Map cards
+  const totalW = maps.length * 85;
+  for (let i = 0; i < maps.length; i++) {
+    const mp = maps[i];
+    const bx = W / 2 - totalW / 2 + i * 85;
+    const by = 140;
+    const hovered = mapHover === i;
+
+    // Card bg with map sky colors
+    const cg = ctx.createLinearGradient(bx, by, bx, by + 180);
+    cg.addColorStop(0, mp.sky1);
+    cg.addColorStop(0.5, mp.sky2);
+    cg.addColorStop(1, mp.ground);
+    ctx.fillStyle = cg;
+    ctx.fillRect(bx, by, 75, 180);
+    ctx.strokeStyle = hovered ? '#fff' : '#444';
+    ctx.lineWidth = hovered ? 2 : 1;
+    ctx.strokeRect(bx, by, 75, 180);
+
+    // Map name
+    ctx.fillStyle = hovered ? '#fff' : '#ccc';
+    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(mp.name, bx + 37, by + 20);
+
+    // Terrain type
+    const ttLabel = mp.terrainType === 'sand' ? 'Sand' : mp.terrainType === 'rock' ? 'Rock' : 'Dirt';
+    ctx.fillStyle = mp.terrainType === 'sand' ? '#da0' : mp.terrainType === 'rock' ? '#888' : '#6a6';
+    ctx.font = '9px monospace';
+    ctx.fillText(ttLabel, bx + 37, by + 35);
+
+    // Gravity
+    ctx.fillStyle = '#999'; ctx.font = '8px monospace';
+    ctx.fillText('Grav: ' + mp.gravity, bx + 37, by + 50);
+
+    // Boosts
+    if (mp.boosts) {
+      ctx.fillStyle = '#aa8'; ctx.font = '7px monospace';
+      const boostStr = mp.boosts.join(', ');
+      ctx.fillText(boostStr.length > 12 ? boostStr.substring(0, 12) + '..' : boostStr, bx + 37, by + 170);
+    }
+
+    // Mini terrain preview
+    ctx.strokeStyle = mp.groundLine; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let px = 0; px < 65; px++) {
+      const py = by + 80 + Math.sin(px * 0.15 + i * 2) * 10 * (mp.roughness / 3);
+      if (px === 0) ctx.moveTo(bx + 5 + px, py);
+      else ctx.lineTo(bx + 5 + px, py);
+    }
+    ctx.stroke();
+  }
+}
+
 function drawStatBar(x, y, w, pct, color) {
   pct = Math.min(1, Math.max(0, pct));
   ctx.fillStyle = '#222';
@@ -1737,6 +1891,18 @@ function drawGame() {
   ctx.lineTo(W, H); ctx.closePath();
   ctx.fillStyle = m.ground; ctx.fill();
   ctx.strokeStyle = m.groundLine; ctx.lineWidth = 2; ctx.stroke();
+
+  // Ricochet walls
+  const wallAlpha = 0.3 + Math.sin(Date.now() / 500) * 0.1;
+  ctx.fillStyle = `rgba(150,150,255,${wallAlpha})`;
+  ctx.fillRect(0, 0, 3, H);
+  ctx.fillRect(W - 3, 0, 3, H);
+  ctx.strokeStyle = `rgba(200,200,255,${wallAlpha + 0.1})`;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.beginPath(); ctx.moveTo(1.5, 0); ctx.lineTo(1.5, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W - 1.5, 0); ctx.lineTo(W - 1.5, H); ctx.stroke();
+  ctx.setLineDash([]);
 
   // Snow overlay
   if (m.name === 'Snow') {
@@ -2005,6 +2171,17 @@ function drawGame() {
     const t = tanks[i];
     const ty = terrainAt(t.x);
     drawTank(t, t.x, ty, 1);
+    // Shield bubble
+    if (t.shield) {
+      const sa = 0.25 + Math.sin(Date.now() / 300) * 0.1;
+      ctx.strokeStyle = `rgba(80,180,255,${sa + 0.2})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(t.x, ty - 15, 25, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(80,180,255,${sa * 0.3})`;
+      ctx.fill();
+    }
     // Shock visual — electric arcs
     if (t.shockTimer > 0) {
       ctx.strokeStyle = `rgba(130,180,255,${0.4 + Math.random() * 0.4})`;
@@ -2279,7 +2456,8 @@ function drawGame() {
 
   // Map name
   ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-  ctx.fillText(m.name + (m.boosts ? ' (boost: ' + m.boosts.join(', ') + ')' : ''), W - 15, 15);
+  const ttName = m.terrainType === 'sand' ? ' [Sand]' : m.terrainType === 'rock' ? ' [Rock]' : '';
+  ctx.fillText(m.name + ttName + (m.boosts ? ' (boost: ' + m.boosts.join(', ') + ')' : ''), W - 15, 15);
 
   // Turn + angle
   if (!gameOver) {
@@ -2307,6 +2485,7 @@ function drawGame() {
 function draw() {
   if (state === 'menu') drawMenu();
   else if (state === 'select') drawSelect();
+  else if (state === 'mapSelect') drawMapSelect();
   else drawGame();
 }
 
