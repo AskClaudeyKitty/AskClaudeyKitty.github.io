@@ -295,6 +295,8 @@ let shakeAmount = 0;
 let lastProjCount = 0;
 let botTrajectory = []; // trajectory points for bot's aim preview
 let turnCount = 0;
+let simpleAiming = false;
+let chaosMode = false;
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -514,6 +516,10 @@ canvas.addEventListener('mousedown', e => {
   const selY = H - 63;
   const slotW = 55;
   const totalSlots = tanks[0].bonusWeapon ? 5 : 4;
+
+  // Toggle button clicks
+  if (m.x >= 10 && m.x <= 80 && m.y >= 10 && m.y <= 30) { simpleAiming = !simpleAiming; return; }
+  if (m.x >= 85 && m.x <= 150 && m.y >= 10 && m.y <= 30) { chaosMode = !chaosMode; return; }
 
   // Weapon slot clicks
   for (let i = 0; i < totalSlots; i++) {
@@ -1015,7 +1021,7 @@ function update() {
     if (hitGround) {
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
-      const maxBounce = p.isFragment ? 4 : 10;
+      const maxBounce = chaosMode ? (p.isFragment ? 4 : 10) : 0;
       if (p.bounceCount < maxBounce) {
         p.bounceCount++;
         createExplosion(p.x, p.y, w);
@@ -1617,12 +1623,14 @@ function drawAimUI() {
       if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
       if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
       if (sy >= terrainAt(sx)) {
-        if (!trajBounced) trajBounced = 0;
-        if (trajBounced < 10) {
-          trajBounced++;
-          vy = -Math.abs(vy);
-          sy = terrainAt(sx) - 2;
-          continue;
+        if (!simpleAiming && chaosMode) {
+          if (!trajBounced) trajBounced = 0;
+          if (trajBounced < 10) {
+            trajBounced++;
+            vy = -Math.abs(vy);
+            sy = terrainAt(sx) - 2;
+            continue;
+          }
         }
         break;
       }
@@ -2517,6 +2525,23 @@ function drawGame() {
       ctx.fillStyle = tanks[0].fuel > 0 ? '#aaf' : '#555';
       ctx.fillText('>', W - 162, my + 25);
     }
+  }
+
+  // Toggle buttons (top-left)
+  if (!gameOver && turn === 0 && !projectiles.length) {
+    ctx.fillStyle = simpleAiming ? '#484' : '#333';
+    ctx.fillRect(10, 10, 70, 20);
+    ctx.strokeStyle = simpleAiming ? '#6a6' : '#555'; ctx.lineWidth = 1;
+    ctx.strokeRect(10, 10, 70, 20);
+    ctx.fillStyle = '#ccc'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(simpleAiming ? 'SIMPLE ON' : 'SIMPLE', 45, 23);
+
+    ctx.fillStyle = chaosMode ? '#844' : '#333';
+    ctx.fillRect(85, 10, 65, 20);
+    ctx.strokeStyle = chaosMode ? '#f44' : '#555'; ctx.lineWidth = 1;
+    ctx.strokeRect(85, 10, 65, 20);
+    ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '9px monospace';
+    ctx.fillText(chaosMode ? 'CHAOS!' : 'CHAOS', 117, 23);
   }
 
   // Map name
