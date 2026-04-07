@@ -1011,6 +1011,44 @@ function update() {
         p.bounceCount++;
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
+        // Trigger behaviors on every bounce
+        if (w.behavior === 'split' && !p.isFragment) {
+          const frags = w.fragments || 4;
+          for (let f = 0; f < frags; f++) {
+            const angle = Math.PI * 0.3 + (f / (frags-1)) * Math.PI * 0.4;
+            projectiles.push({ x: p.x, y: terrainAt(p.x) - 5, vx: Math.cos(angle) * (1.5 + Math.random() * 2) * (Math.random() < 0.5 ? 1 : -1), vy: -Math.sin(angle) * (3 + Math.random() * 2), owner: p.owner, weaponData: { ...w, radius: w.fragRadius || 12, behavior: null, dmgMult: w.dmgMult * 0.7 }, dmgBonus: p.dmgBonus, isFragment: true });
+          }
+        }
+        if (w.behavior === 'rain' && !p.isFragment) {
+          const frags = w.fragments || 5;
+          for (let f = 0; f < frags; f++) {
+            const rx = p.x + (f - (frags-1)/2) * (50 / frags) + (Math.random()-0.5) * 8;
+            projectiles.push({ x: rx, y: -10 - Math.random() * 30, vx: (Math.random()-0.5) * 0.3, vy: 3 + Math.random() * 3, owner: p.owner, weaponData: { ...w, radius: w.radius || 15, behavior: null, dmgMult: w.dmgMult * 0.7 }, dmgBonus: p.dmgBonus, isFragment: true });
+          }
+        }
+        if (w.behavior === 'cluster' && !p.isFragment) {
+          const frags = w.fragments || 5;
+          for (let f = 0; f < frags; f++) {
+            const angle = Math.PI * 0.3 + (f / (frags-1)) * Math.PI * 0.4;
+            projectiles.push({ x: p.x, y: terrainAt(p.x) - 5, vx: Math.cos(angle) * (1.5 + Math.random() * 2) * (p.vx > 0 ? 1 : -1), vy: -Math.sin(angle) * (2 + Math.random() * 2), owner: p.owner, weaponData: { ...w, radius: w.fragRadius || 12, behavior: null, dmgMult: w.dmgMult * 0.6 }, dmgBonus: p.dmgBonus, isFragment: true });
+          }
+        }
+        if (w.behavior === 'drill') {
+          const dr = w.radius * 1.3;
+          for (let tx = Math.floor(p.x - dr); tx <= Math.ceil(p.x + dr); tx++) {
+            if (tx >= 0 && tx < W) { const d = Math.abs(tx - p.x); terrain[tx] += Math.sqrt(Math.max(0, dr*dr - d*d)) * 0.4; terrain[tx] = Math.min(terrain[tx], H - 5); }
+          }
+          shakeTime = 20; shakeAmount = dr / 6;
+        }
+        // Spawn hazards on bounce
+        if (w.effect === 'fire') hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'fire', life: 180, dmg: 0.4 });
+        else if (w.effect === 'poison') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'poison', life: 250, dmg: 0.3 });
+        else if (w.effect === 'hellfire') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'hellfire', life: 300, dmg: 1.4 });
+        else if (w.effect === 'ice') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'ice', life: 2400, dmg: 0 });
+        else if (w.effect === 'radiation') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.8, type: 'radiation', life: 3600, dmg: 0.5 });
+        else if (w.effect === 'lava') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'lava', life: 1800, dmg: 0.8 });
+        else if (w.effect === 'mud') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
+        else if (w.effect === 'shock' || w.effect === 'curse') { /* handled elsewhere */ }
         p.vy = -Math.abs(p.vy);
         p.y = terrainAt(p.x) - 2;
         continue;
