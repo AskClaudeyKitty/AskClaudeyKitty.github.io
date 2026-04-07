@@ -912,6 +912,7 @@ function impactDamage(px, py, w, p) {
       t.hp -= dmg;
       if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
       if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300;
+      if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
     }
   }
 }
@@ -1254,6 +1255,7 @@ function update() {
             spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44');
             if (w.effect === 'shock') t.shockTimer = 300;
           }
+          if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
         }
       }
       // Spawn hazard zone for fire/poison weapons
@@ -1308,11 +1310,12 @@ function update() {
   for (const t of tanks) {
     if (t.shockTimer > 0) {
       t.shockTimer--;
-      t.hp -= 0.4; // same as fire damage
+      t.hp -= 0.4;
       if (Math.random() < 0.04) {
         spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, 'SHOCK!', '#8af');
         SFX.shock();
       }
+      if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
     }
   }
 
@@ -1438,6 +1441,7 @@ function update() {
       if (terrainAt(t.x) > H * 0.78) {
         t.hp -= 0.2;
         if (Math.random() < 0.05) spawnFloatingText(t.x, terrainAt(t.x) - 50, '-LAVA', '#f40');
+        if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
       }
     }
   }
