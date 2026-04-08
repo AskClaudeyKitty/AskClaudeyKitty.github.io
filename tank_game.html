@@ -1181,8 +1181,7 @@ function update() {
         if (p.bounceCount < 100) {
           p.bounceCount++;
           // Spawn 2 copies going different directions (cap at 50 total)
-          const swarmCount = projectiles.filter(pp => pp.weaponData.behavior === 'swarm').length;
-          for (let s = 0; s < 2 && swarmCount < 50; s++) {
+          for (let s = 0; s < 2; s++) {
             projectiles.push({
               x: p.x, y: terrainAt(p.x) - 2,
               vx: (Math.random() - 0.5) * 6 + p.vx * 0.4,
