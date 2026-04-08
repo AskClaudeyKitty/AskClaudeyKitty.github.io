@@ -1185,13 +1185,14 @@ function update() {
           for (let s = 0; s < 2 && swarmCount < 50; s++) {
             projectiles.push({
               x: p.x, y: terrainAt(p.x) - 2,
-              vx: (Math.random() - 0.5) * 10 + p.vx * 0.5,
-              vy: -(3 + Math.random() * 8),
+              vx: (Math.random() - 0.5) * 6 + p.vx * 0.4,
+              vy: -(2 + Math.random() * 5),
               owner: p.owner, weaponData: w, dmgBonus: p.dmgBonus,
               bounceCount: p.bounceCount
             });
           }
-          p.vy = -Math.abs(p.vy);
+          p.vy = -Math.abs(p.vy) * 0.85;
+          p.vx *= 0.85;
           p.y = terrainAt(p.x) - 2;
           continue;
         }
