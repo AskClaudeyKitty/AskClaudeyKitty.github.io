@@ -362,6 +362,11 @@ const tankTypes = [
     weapons: [
       { name: 'THE DRILL', color: '#fa0', radius: 200, dmgMult: 100.0, count: 1, spread: 0, icon: '[DRILL]', ammo: 1, behavior: 'erase' },
     ]},
+  // ??? — mysterious bouncing swarm
+  { name: '???', color: '#fff', bodyW: 26, bodyH: 10, barrelLen: 22, barrelW: 4, hp: 500, speed: 1.5, fuel: 100, desc: '???', locked: true, unlockCode: '146',
+    weapons: [
+      { name: '???', color: '#fff', radius: 10, dmgMult: 100000, count: 1, spread: 0, icon: '?', ammo: 1, behavior: 'swarm' },
+    ]},
 ];
 
 // Win counter
@@ -1149,6 +1154,17 @@ function update() {
       }
     }
 
+    // Swarm: on hitting enemy, damage + remove ALL swarm projectiles
+    if (hitTank && w.behavior === 'swarm') {
+      createExplosion(p.x, p.y, w);
+      impactDamage(p.x, p.y, w, p);
+      // Remove all swarm projectiles
+      for (let j = projectiles.length - 1; j >= 0; j--) {
+        if (projectiles[j].weaponData.behavior === 'swarm') projectiles.splice(j, 1);
+      }
+      continue;
+    }
+
     // Fragments (secondaries) disappear on hitting enemy
     if (hitTank && p.isFragment) {
       createExplosion(p.x, p.y, w);
@@ -1161,6 +1177,29 @@ function update() {
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
+      // Swarm: 100 bounces, no ground damage, spawn 2 copies
+      if (w.behavior === 'swarm') {
+        if (!p.bounceCount) p.bounceCount = 0;
+        if (p.bounceCount < 100) {
+          p.bounceCount++;
+          // Spawn 2 copies going different directions
+          for (let s = 0; s < 2; s++) {
+            projectiles.push({
+              x: p.x, y: terrainAt(p.x) - 2,
+              vx: (Math.random() - 0.5) * 10 + p.vx * 0.5,
+              vy: -(3 + Math.random() * 8),
+              owner: p.owner, weaponData: w, dmgBonus: p.dmgBonus,
+              bounceCount: p.bounceCount
+            });
+          }
+          p.vy = -Math.abs(p.vy);
+          p.y = terrainAt(p.x) - 2;
+          continue;
+        }
+        projectiles.splice(i, 1);
+        continue;
+      }
+
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
       const maxBounce = chaosMode ? (p.isFragment ? 4 : 10) : 0;
