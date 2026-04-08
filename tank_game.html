@@ -600,7 +600,7 @@ canvas.addEventListener('mousedown', e => {
     // Tank card clicks
     for (let i = 0; i < tankTypes.length; i++) {
       const t = tankTypes[i];
-      const isLocked = t.locked && totalWins < (t.unlockWins || 0) && (!t.unlockCode || !unlockedCodes.includes(t.unlockCode));
+      const isLocked = t.locked && (t.unlockCode ? !unlockedCodes.includes(t.unlockCode) : totalWins < (t.unlockWins || 0));
       const col = i % 3;
       const row = Math.floor(i / 3);
       const bx = W / 2 - 210 + col * 145;
@@ -1968,7 +1968,7 @@ function drawSelect() {
     const hovered = menuHover === i;
     const selected = menuSelection === i;
 
-    const isLocked = t.locked && totalWins < (t.unlockWins || 0) && (!t.unlockCode || !unlockedCodes.includes(t.unlockCode));
+    const isLocked = t.locked && (t.unlockCode ? !unlockedCodes.includes(t.unlockCode) : totalWins < (t.unlockWins || 0));
 
     // Card background
     ctx.fillStyle = isLocked ? '#0e0e1a' : hovered ? '#2a2a4a' : '#151530';
