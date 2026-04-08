@@ -357,6 +357,14 @@ const tankTypes = [
     weapons: [
       { name: 'Oblivion', color: '#f0f', radius: 70, dmgMult: 330.0, count: 5, spread: 8, icon: '!!!', ammo: 1, effect: 'chaosAll', behavior: 'chaosWeapon', fragments: 10, fragRadius: 30 },
     ]},
+  // ACTUAL DRILL — erases terrain on impact
+  { name: 'Actual Drill', color: '#fa0', bodyW: 32, bodyH: 12, barrelLen: 28, barrelW: 6, hp: 800, speed: 1.2, fuel: 100, desc: 'Erases ground', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Erase',      color: '#fa0', radius: 40, dmgMult: 2.0, count: 1, spread: 0, icon: 'X', ammo: 1, behavior: 'erase' },
+      { name: 'Wide Erase',  color: '#fc0', radius: 70, dmgMult: 1.5, count: 1, spread: 0, icon: 'XX', ammo: 2, behavior: 'erase' },
+      { name: 'Scatter Erase', color: '#ff0', radius: 30, dmgMult: 1.0, count: 3, spread: 5, icon: 'xxx', ammo: 2, behavior: 'erase' },
+      { name: 'Mega Erase', color: '#fff', radius: 120, dmgMult: 3.0, count: 1, spread: 0, icon: '[XXX]', ammo: 1, behavior: 'erase' },
+    ]},
 ];
 
 // Win counter
@@ -1192,6 +1200,17 @@ function update() {
             projectiles.push({ x: rx, y: -10 - Math.random() * 40, vx: (Math.random()-0.5) * 0.3, vy: 3 + Math.random() * 3, owner: p.owner, weaponData: { ...w, radius: 25, behavior: null, dmgMult: w.dmgMult * 0.5, effect: w.effect }, dmgBonus: p.dmgBonus, isFragment: true });
           }
         }
+        // Erase: completely remove terrain in radius
+        if (w.behavior === 'erase') {
+          const er = w.radius;
+          for (let tx = Math.floor(p.x - er); tx <= Math.ceil(p.x + er); tx++) {
+            if (tx >= 0 && tx < W) {
+              const d = Math.abs(tx - p.x);
+              if (d < er) terrain[tx] = H - 5;
+            }
+          }
+          shakeTime = 15; shakeAmount = er / 8;
+        }
         // chaosWeapon: ALL behaviors at once
         if (w.behavior === 'chaosWeapon') {
           // Split fragments
@@ -1390,6 +1409,18 @@ function update() {
         continue;
       }
 
+      // Erase: remove terrain entirely
+      if (w.behavior === 'erase') {
+        const er = w.radius;
+        createExplosion(p.x, p.y, w);
+        for (let tx = Math.floor(p.x - er); tx <= Math.ceil(p.x + er); tx++) {
+          if (tx >= 0 && tx < W) {
+            const d = Math.abs(tx - p.x);
+            if (d < er) terrain[tx] = H - 5;
+          }
+        }
+        shakeTime = 15; shakeAmount = er / 8;
+      } else
       // Drill: bigger crater
       if (w.behavior === 'drill') {
         const drillRadius = w.radius * 1.3;
