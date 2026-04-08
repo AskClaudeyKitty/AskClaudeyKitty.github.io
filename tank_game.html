@@ -1154,11 +1154,8 @@ function update() {
       }
     }
 
-    // Swarm: on hitting enemy, damage + remove ALL swarm projectiles
+    // Swarm: on hitting enemy, just remove ALL swarm projectiles (no damage)
     if (hitTank && w.behavior === 'swarm') {
-      createExplosion(p.x, p.y, w);
-      impactDamage(p.x, p.y, w, p);
-      // Remove all swarm projectiles
       for (let j = projectiles.length - 1; j >= 0; j--) {
         if (projectiles[j].weaponData.behavior === 'swarm') projectiles.splice(j, 1);
       }
