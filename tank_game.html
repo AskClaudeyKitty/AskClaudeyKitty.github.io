@@ -999,8 +999,8 @@ function update() {
     p.y += p.vy;
 
     // Ricochet off left/right walls
-    if (p.x <= 0 && p.vx < 0) { p.x = 1; p.vx = -p.vx * 0.8; if (!p.ricochets) p.ricochets = 0; p.ricochets++; }
-    if (p.x >= W && p.vx > 0) { p.x = W - 1; p.vx = -p.vx * 0.8; if (!p.ricochets) p.ricochets = 0; p.ricochets++; }
+    if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx); }
+    if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx); }
 
     // Check direct hit on enemy tank (not the one who fired)
     let hitTank = false;
@@ -1025,7 +1025,7 @@ function update() {
     }
 
     const hitGround = (p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank;
-    const outOfBounds = p.ricochets > 3 || p.y > H + 50;
+    const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
