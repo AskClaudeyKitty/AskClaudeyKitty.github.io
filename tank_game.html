@@ -407,6 +407,7 @@ let turnCount = 0;
 let simpleAiming = false;
 let chaosMode = false;
 let tripleMode = false;
+let testBotMode = false;
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -496,11 +497,12 @@ function initTanks() {
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
   });
+  const botHp = testBotMode ? 100000 : b.hp;
   Object.assign(tanks[1], {
-    x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
-    name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, isBot: true, type: b,
+    x: W - 160 + Math.random() * 80, angle: 135, hp: botHp, maxHp: botHp, color: '#e55',
+    name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, isBot: true, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false, testBot: testBotMode
   });
 }
 
@@ -594,10 +596,10 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
       if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
     }
-    // Music toggle
-    if (m.x >= W / 2 - 50 && m.x <= W / 2 + 50 && m.y >= 420 && m.y <= 445) {
-      musicEnabled = !musicEnabled;
-      if (!musicEnabled) stopMusic();
+    // Music + Test Bot toggles
+    if (m.y >= 420 && m.y <= 445) {
+      if (m.x >= W / 2 - 110 && m.x <= W / 2 - 5) { musicEnabled = !musicEnabled; if (!musicEnabled) stopMusic(); }
+      if (m.x >= W / 2 + 5 && m.x <= W / 2 + 110) { testBotMode = !testBotMode; }
     }
     return;
   }
@@ -730,7 +732,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (gameOver && e.key === 'r') return resetGame();
-  if (e.key === 'm') { state = 'menu'; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; return; }
+  if (e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; return; }
   if (turn !== 0 || projectiles.length || gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
@@ -782,11 +784,12 @@ function resetGame() {
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
   });
+  const botHp2 = testBotMode ? 100000 : b.hp;
   Object.assign(tanks[1], {
-    x: W - 160 + Math.random() * 80, angle: 135, hp: b.hp, maxHp: b.hp, color: '#e55',
-    name: 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
+    x: W - 160 + Math.random() * 80, angle: 135, hp: botHp2, maxHp: botHp2, color: '#e55',
+    name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false, testBot: testBotMode
   });
   turn = 0;
   projectiles = [];
@@ -1094,7 +1097,10 @@ function update() {
       tank.x = Math.max(15, Math.min(W - 15, tank.x));
       checkCratePickup(tank, 0);
     }
-    if (turn === 1 && tanks[1].isBot) botShoot();
+    if (turn === 1 && tanks[1].isBot) {
+      if (tanks[1].testBot) { turn = 0; tanks[0].fuel = Math.min(tanks[0].fuel + 20, tanks[0].maxFuel); }
+      else botShoot();
+    }
   }
 
   // Projectile physics
@@ -1942,13 +1948,20 @@ function drawMenu() {
   ctx.fillStyle = tripleMode ? '#c8f' : '#ccc'; ctx.font = '10px monospace';
   ctx.fillText(tripleMode ? 'TRIPLE: ON' : 'TRIPLE: OFF', btnX + (btnW + btnGap) * 2 + btnW / 2, 400);
 
-  // Music toggle
+  // Music + Test Bot toggles
   ctx.fillStyle = musicEnabled ? '#446' : '#333';
-  ctx.fillRect(W / 2 - 50, 420, 100, 25);
+  ctx.fillRect(W / 2 - 110, 420, 105, 25);
   ctx.strokeStyle = musicEnabled ? '#68a' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 - 50, 420, 100, 25);
+  ctx.strokeRect(W / 2 - 110, 420, 105, 25);
   ctx.fillStyle = musicEnabled ? '#8af' : '#888'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', W / 2, 437);
+  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', W / 2 - 57, 437);
+
+  ctx.fillStyle = testBotMode ? '#664' : '#333';
+  ctx.fillRect(W / 2 + 5, 420, 105, 25);
+  ctx.strokeStyle = testBotMode ? '#aa4' : '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 + 5, 420, 105, 25);
+  ctx.fillStyle = testBotMode ? '#ff4' : '#888'; ctx.font = '10px monospace';
+  ctx.fillText(testBotMode ? 'TEST BOT: ON' : 'TEST BOT', W / 2 + 57, 437);
 
   // Wins + version
   ctx.fillStyle = '#555';
