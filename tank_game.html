@@ -1154,8 +1154,10 @@ function update() {
       }
     }
 
-    // Swarm: on hitting enemy, just remove ALL swarm projectiles (no damage)
+    // Swarm: on hitting enemy, damage + remove ALL swarm projectiles
     if (hitTank && w.behavior === 'swarm') {
+      createExplosion(p.x, p.y, w);
+      impactDamage(p.x, p.y, w, p);
       for (let j = projectiles.length - 1; j >= 0; j--) {
         if (projectiles[j].weaponData.behavior === 'swarm') projectiles.splice(j, 1);
       }
@@ -1179,8 +1181,9 @@ function update() {
         if (!p.bounceCount) p.bounceCount = 0;
         if (p.bounceCount < 100) {
           p.bounceCount++;
-          // Spawn 2 copies going different directions
-          for (let s = 0; s < 2; s++) {
+          // Spawn 2 copies going different directions (cap at 50 total)
+          const swarmCount = projectiles.filter(pp => pp.weaponData.behavior === 'swarm').length;
+          for (let s = 0; s < 2 && swarmCount < 50; s++) {
             projectiles.push({
               x: p.x, y: terrainAt(p.x) - 2,
               vx: (Math.random() - 0.5) * 10 + p.vx * 0.5,
