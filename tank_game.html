@@ -1154,16 +1154,6 @@ function update() {
       }
     }
 
-    // Swarm: on hitting enemy, damage + mark ALL swarm projectiles for removal
-    if (hitTank && w.behavior === 'swarm') {
-      createExplosion(p.x, p.y, w);
-      impactDamage(p.x, p.y, w, p);
-      for (const pp of projectiles) { if (pp.weaponData && pp.weaponData.behavior === 'swarm') pp._remove = true; }
-      projectiles = projectiles.filter(pp => !pp._remove);
-      i = -1; // restart loop since array changed
-      continue;
-    }
-
     // Fragments (secondaries) disappear on hitting enemy
     if (hitTank && p.isFragment) {
       createExplosion(p.x, p.y, w);
@@ -1178,6 +1168,15 @@ function update() {
     if (hitGround) {
       // Swarm: 100 bounces, no ground damage, spawn 2 copies
       if (w.behavior === 'swarm') {
+        // If hit enemy, damage + remove all swarm
+        if (hitTank) {
+          createExplosion(p.x, p.y, w);
+          impactDamage(p.x, p.y, w, p);
+          for (const pp of projectiles) { if (pp.weaponData && pp.weaponData.behavior === 'swarm') pp._remove = true; }
+          projectiles = projectiles.filter(pp => !pp._remove);
+          i = -1;
+          continue;
+        }
         if (!p.bounceCount) p.bounceCount = 0;
         if (p.bounceCount < 100) {
           p.bounceCount++;
