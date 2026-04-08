@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Typing Speed Test</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; color: #eee; font-family: monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
+  .container { max-width: 700px; width: 90%; text-align: center; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #e94560; }
+  .subtitle { color: #666; font-size: 0.8rem; margin-bottom: 1.5rem; }
+  .stats { display: flex; justify-content: center; gap: 2rem; margin: 1rem 0; }
+  .stat { background: #16213e; padding: 0.8rem 1.2rem; border-radius: 8px; min-width: 80px; }
+  .stat-label { font-size: 0.7rem; color: #888; }
+  .stat-value { font-size: 1.5rem; font-weight: bold; color: #e94560; }
+  #time-value { color: #0f3460; }
+  #accuracy-value { color: #53a653; }
+  .word-display { background: #16213e; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; min-height: 100px; line-height: 2.2; font-size: 1.3rem; text-align: left; }
+  .word { display: inline-block; margin: 0 4px; padding: 2px 4px; border-radius: 3px; }
+  .word.current { background: #0f3460; color: #fff; }
+  .word.correct { color: #53a653; }
+  .word.wrong { color: #e94560; text-decoration: underline; }
+  .word.upcoming { color: #555; }
+  #input { width: 100%; padding: 1rem; font-size: 1.2rem; font-family: monospace; background: #16213e; color: #eee; border: 2px solid #0f3460; border-radius: 8px; outline: none; text-align: center; }
+  #input:focus { border-color: #e94560; }
+  #input:disabled { opacity: 0.5; }
+  .btn { padding: 0.8rem 2rem; font-size: 1rem; font-family: monospace; background: #e94560; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 1rem; }
+  .btn:hover { background: #c73a52; }
+  .difficulty { margin: 1rem 0; }
+  .difficulty button { padding: 0.4rem 1rem; margin: 0 0.3rem; font-family: monospace; font-size: 0.85rem; border: 1px solid #333; background: #16213e; color: #888; border-radius: 5px; cursor: pointer; }
+  .difficulty button.active { border-color: #e94560; color: #e94560; }
+  .results { display: none; background: #16213e; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
+  .results h2 { color: #e94560; margin-bottom: 1rem; }
+  .result-row { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #1a1a2e; }
+  .result-label { color: #888; }
+  .result-value { font-weight: bold; }
+  .best { color: #e94560; font-size: 0.8rem; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Typing Speed Test</h1>
+  <div class="subtitle">Type the words as fast as you can!</div>
+
+  <div class="difficulty">
+    <button id="diff-easy" class="active" onclick="setDifficulty('easy')">Easy</button>
+    <button id="diff-medium" onclick="setDifficulty('medium')">Medium</button>
+    <button id="diff-hard" onclick="setDifficulty('hard')">Hard</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">WPM</div><div class="stat-value" id="wpm-value">0</div></div>
+    <div class="stat"><div class="stat-label">TIME</div><div class="stat-value" id="time-value">30</div></div>
+    <div class="stat"><div class="stat-label">ACC</div><div class="stat-value" id="accuracy-value">100%</div></div>
+  </div>
+
+  <div class="word-display" id="words"></div>
+  <input id="input" type="text" placeholder="Type here to start..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <div><button class="btn" onclick="resetGame()">Restart</button></div>
+
+  <div class="results" id="results">
+    <h2>Results</h2>
+    <div class="result-row"><span class="result-label">Words Per Minute</span><span class="result-value" id="r-wpm">0</span></div>
+    <div class="result-row"><span class="result-label">Characters Per Minute</span><span class="result-value" id="r-cpm">0</span></div>
+    <div class="result-row"><span class="result-label">Accuracy</span><span class="result-value" id="r-accuracy">0%</span></div>
+    <div class="result-row"><span class="result-label">Correct Words</span><span class="result-value" id="r-correct">0</span></div>
+    <div class="result-row"><span class="result-label">Wrong Words</span><span class="result-value" id="r-wrong">0</span></div>
+    <div class="best" id="best-display"></div>
+  </div>
+</div>
+
+<script>
+const easyWords = ['the','be','to','of','and','a','in','that','have','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','make','can','like','time','no','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us'];
+const mediumWords = ['ability','achieve','balance','believe','capture','develop','element','fashion','genuine','harvest','imagine','justice','kitchen','liberty','machine','natural','observe','pattern','quality','reality','science','trouble','uniform','variety','weather','ancient','battery','channel','diamond','eastern','forward','general','horizon','instant','journal','kingdom','leather','million','network','opinion','perfect','quarter','release','special','trouble','venture','western','account','brother','cabinet','defense','emperor','fiction','graphic','history','include','journey','lecture','mineral','nuclear','organic','primary','require','shelter','thermal','upgrade','veteran','warrior','academy','blanket'];
+const hardWords = ['algorithm','benchmark','calculate','debugging','elaborate','frequency','generally','hierarchy','implement','juxtapose','knowledge','labyrinth','mechanism','negotiate','objective','paradigm','quarterly','recursive','synchrony','therefore','ubiquitous','vertebrae','wandering','xylophone','yesterday','zealously','aberration','biosphere','chromosome','diagnostic','ephemeral','fibonacci','governance','heuristic','idempotent','juxtaposed','kilobyte','logarithm','middleware','namespace','oscillate','polymorphic','quaternion','redundancy','serialized','throttling','unilateral','validation','wavelength'];
+
+let difficulty = 'easy';
+let words = [];
+let currentIndex = 0;
+let correctCount = 0;
+let wrongCount = 0;
+let totalChars = 0;
+let correctChars = 0;
+let startTime = null;
+let timerInterval = null;
+let gameTime = 30;
+let timeLeft = 30;
+let gameOver = false;
+
+function setDifficulty(d) {
+  difficulty = d;
+  document.querySelectorAll('.difficulty button').forEach(b => b.classList.remove('active'));
+  document.getElementById('diff-' + d).classList.add('active');
+  resetGame();
+}
+
+function getWordList() {
+  if (difficulty === 'easy') return easyWords;
+  if (difficulty === 'medium') return mediumWords;
+  return hardWords;
+}
+
+function generateWords() {
+  const pool = getWordList();
+  words = [];
+  for (let i = 0; i < 80; i++) {
+    words.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+}
+
+function renderWords() {
+  const el = document.getElementById('words');
+  el.innerHTML = words.map((w, i) => {
+    let cls = 'word upcoming';
+    if (i < currentIndex) cls = 'word ' + (w._correct ? 'correct' : 'wrong');
+    if (i === currentIndex) cls = 'word current';
+    return `<span class="${cls}">${w}</span>`;
+  }).join('');
+}
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    timeLeft = Math.max(0, gameTime - elapsed);
+    document.getElementById('time-value').textContent = Math.ceil(timeLeft);
+    updateWPM();
+    if (timeLeft <= 0) endGame();
+  }, 100);
+}
+
+function updateWPM() {
+  if (!startTime) return;
+  const elapsed = (Date.now() - startTime) / 1000 / 60;
+  if (elapsed > 0) {
+    const wpm = Math.round(correctCount / elapsed);
+    document.getElementById('wpm-value').textContent = wpm;
+  }
+  const total = correctCount + wrongCount;
+  const acc = total > 0 ? Math.round((correctCount / total) * 100) : 100;
+  document.getElementById('accuracy-value').textContent = acc + '%';
+}
+
+function endGame() {
+  gameOver = true;
+  clearInterval(timerInterval);
+  document.getElementById('input').disabled = true;
+  document.getElementById('time-value').textContent = '0';
+
+  const elapsed = gameTime / 60;
+  const wpm = Math.round(correctCount / elapsed);
+  const cpm = Math.round(correctChars / elapsed);
+  const total = correctCount + wrongCount;
+  const acc = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+  document.getElementById('r-wpm').textContent = wpm;
+  document.getElementById('r-cpm').textContent = cpm;
+  document.getElementById('r-accuracy').textContent = acc + '%';
+  document.getElementById('r-correct').textContent = correctCount;
+  document.getElementById('r-wrong').textContent = wrongCount;
+
+  // Best score
+  const key = 'typing_best_' + difficulty;
+  const best = parseInt(localStorage.getItem(key) || '0');
+  if (wpm > best) {
+    localStorage.setItem(key, wpm);
+    document.getElementById('best-display').textContent = 'New personal best! Previous: ' + best + ' WPM';
+  } else {
+    document.getElementById('best-display').textContent = 'Personal best: ' + best + ' WPM';
+  }
+
+  document.getElementById('results').style.display = 'block';
+}
+
+function resetGame() {
+  gameOver = false;
+  currentIndex = 0;
+  correctCount = 0;
+  wrongCount = 0;
+  totalChars = 0;
+  correctChars = 0;
+  startTime = null;
+  timeLeft = gameTime;
+  clearInterval(timerInterval);
+  document.getElementById('input').disabled = false;
+  document.getElementById('input').value = '';
+  document.getElementById('input').focus();
+  document.getElementById('wpm-value').textContent = '0';
+  document.getElementById('time-value').textContent = gameTime;
+  document.getElementById('accuracy-value').textContent = '100%';
+  document.getElementById('results').style.display = 'none';
+  generateWords();
+  renderWords();
+}
+
+document.getElementById('input').addEventListener('input', function(e) {
+  if (gameOver) return;
+  if (!startTime) startTimer();
+
+  const val = this.value;
+  if (val.endsWith(' ')) {
+    const typed = val.trim();
+    if (typed.length === 0) return;
+    totalChars += typed.length;
+    if (typed === words[currentIndex]) {
+      correctCount++;
+      correctChars += typed.length;
+      words[currentIndex]._correct = true;
+    } else {
+      wrongCount++;
+      words[currentIndex]._correct = false;
+    }
+    currentIndex++;
+    this.value = '';
+    renderWords();
+    updateWPM();
+
+    if (currentIndex >= words.length) endGame();
+  }
+});
+
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if (e.key === 'Tab') { e.preventDefault(); resetGame(); }
+});
+
+resetGame();
+</script>
+<script>
+(function(){
+  if(document.cookie.indexOf('owner_nocount=1')!==-1)return;
+  var k='played_typing_test';
+  if(sessionStorage.getItem(k))return;
+  sessionStorage.setItem(k,'1');
+  var u='https://khsdgbglmzyuiqsfalcv.supabase.co/rest/v1/rpc/increment_play';
+  var h={'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k'};
+  fetch(u,{method:'POST',headers:h,body:JSON.stringify({game_name:'typing_test'})}).catch(function(){});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Platform Runner</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: monospace; }
+  canvas { border: 2px solid #444; }
+  #info { color: #888; font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="400"></canvas>
+<div id="info">SPACE / TAP to jump | Double jump available | Avoid obstacles, collect coins!</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Game state
+let gameState = 'menu'; // menu, playing, dead
+let score = 0;
+let highScore = parseInt(localStorage.getItem('platformRunnerHigh') || '0');
+let coins = 0;
+let distance = 0;
+let speed = 4;
+let maxSpeed = 12;
+let frameCount = 0;
+
+// Player
+const player = {
+  x: 100, y: 0, vy: 0, w: 24, h: 32,
+  grounded: false, jumpCount: 0, maxJumps: 2,
+  color: '#4af', trail: []
+};
+
+// World
+const gravity = 0.6;
+const jumpForce = -12;
+const groundY = H - 60;
+let platforms = [];
+let obstacles = [];
+let coinList = [];
+let particles = [];
+let bgStars = [];
+
+// Generate background stars
+for (let i = 0; i < 60; i++) {
+  bgStars.push({ x: Math.random() * W, y: Math.random() * (H - 80), size: Math.random() * 2 + 0.5, speed: Math.random() * 0.5 + 0.2 });
+}
+
+function reset() {
+  player.y = groundY - player.h;
+  player.vy = 0;
+  player.grounded = true;
+  player.jumpCount = 0;
+  player.trail = [];
+  score = 0;
+  coins = 0;
+  distance = 0;
+  speed = 4;
+  frameCount = 0;
+  platforms = [];
+  obstacles = [];
+  coinList = [];
+  particles = [];
+
+  // Initial platforms
+  platforms.push({ x: 0, y: groundY, w: W + 200, h: 40, type: 'ground' });
+  for (let i = 0; i < 5; i++) spawnSection(W + i * 300);
+}
+
+function spawnSection(startX) {
+  const r = Math.random();
+
+  // Ground section with gap
+  if (r < 0.3) {
+    const gapW = 60 + Math.random() * 40 + speed * 5;
+    platforms.push({ x: startX + gapW, y: groundY, w: 300, h: 40, type: 'ground' });
+    // Coins over gap
+    for (let i = 0; i < 3; i++) {
+      coinList.push({ x: startX + gapW / 2 - 20 + i * 20, y: groundY - 60 - i * 15, size: 8, collected: false });
+    }
+  }
+  // Floating platform
+  else if (r < 0.6) {
+    platforms.push({ x: startX, y: groundY, w: 200, h: 40, type: 'ground' });
+    const py = groundY - 80 - Math.random() * 60;
+    platforms.push({ x: startX + 50, y: py, w: 80 + Math.random() * 60, h: 14, type: 'float' });
+    coinList.push({ x: startX + 80, y: py - 25, size: 8, collected: false });
+  }
+  // Obstacle section
+  else if (r < 0.85) {
+    platforms.push({ x: startX, y: groundY, w: 300, h: 40, type: 'ground' });
+    const obsX = startX + 80 + Math.random() * 100;
+    const obsH = 25 + Math.random() * 25;
+    obstacles.push({ x: obsX, y: groundY - obsH, w: 20, h: obsH, type: 'spike' });
+    // Coin above obstacle
+    coinList.push({ x: obsX, y: groundY - obsH - 40, size: 8, collected: false });
+  }
+  // Staircase
+  else {
+    platforms.push({ x: startX, y: groundY, w: 100, h: 40, type: 'ground' });
+    for (let s = 0; s < 3; s++) {
+      const py = groundY - 40 - s * 35;
+      platforms.push({ x: startX + 80 + s * 70, y: py, w: 60, h: 12, type: 'float' });
+      coinList.push({ x: startX + 110 + s * 70, y: py - 20, size: 8, collected: false });
+    }
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 1) * 3,
+      life: 20 + Math.random() * 20, color, size: 2 + Math.random() * 3
+    });
+  }
+}
+
+// Input
+let jumpPressed = false;
+function doJump() {
+  if (gameState === 'menu') { gameState = 'playing'; reset(); return; }
+  if (gameState === 'dead') { gameState = 'playing'; reset(); return; }
+  if (player.jumpCount < player.maxJumps) {
+    player.vy = jumpForce;
+    player.jumpCount++;
+    player.grounded = false;
+    spawnParticles(player.x + player.w / 2, player.y + player.h, '#4af', 5);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !jumpPressed) { jumpPressed = true; doJump(); e.preventDefault(); }
+});
+document.addEventListener('keyup', e => { if (e.code === 'Space') jumpPressed = false; });
+canvas.addEventListener('touchstart', e => { doJump(); e.preventDefault(); });
+canvas.addEventListener('mousedown', e => { if (gameState !== 'playing') doJump(); });
+
+function update() {
+  if (gameState !== 'playing') return;
+  frameCount++;
+
+  // Speed increases over time
+  speed = Math.min(maxSpeed, 4 + distance * 0.001);
+
+  // Scroll world
+  for (const p of platforms) p.x -= speed;
+  for (const o of obstacles) o.x -= speed;
+  for (const c of coinList) c.x -= speed;
+
+  // Remove off-screen, spawn new
+  platforms = platforms.filter(p => p.x + p.w > -50);
+  obstacles = obstacles.filter(o => o.x + o.w > -50);
+  coinList = coinList.filter(c => c.x > -20);
+
+  const rightmost = Math.max(...platforms.map(p => p.x + p.w), 0);
+  if (rightmost < W + 200) {
+    spawnSection(rightmost + 30 + Math.random() * 50);
+  }
+
+  // Player physics
+  player.vy += gravity;
+  player.y += player.vy;
+
+  // Platform collision
+  player.grounded = false;
+  for (const p of platforms) {
+    if (player.x + player.w > p.x && player.x < p.x + p.w &&
+        player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + 10 &&
+        player.vy >= 0) {
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+      player.jumpCount = 0;
+    }
+  }
+
+  // Fall to death
+  if (player.y > H + 50) { die(); return; }
+
+  // Obstacle collision
+  for (const o of obstacles) {
+    if (player.x + player.w - 4 > o.x && player.x + 4 < o.x + o.w &&
+        player.y + player.h - 2 > o.y && player.y + 2 < o.y + o.h) {
+      die(); return;
+    }
+  }
+
+  // Coin collection
+  for (const c of coinList) {
+    if (c.collected) continue;
+    const dx = (player.x + player.w / 2) - c.x;
+    const dy = (player.y + player.h / 2) - c.y;
+    if (Math.hypot(dx, dy) < 20) {
+      c.collected = true;
+      coins++;
+      score += 50;
+      spawnParticles(c.x, c.y, '#fd0', 8);
+    }
+  }
+
+  // Trail
+  if (frameCount % 2 === 0) {
+    player.trail.push({ x: player.x, y: player.y, alpha: 1 });
+    if (player.trail.length > 10) player.trail.shift();
+  }
+  for (const t of player.trail) t.alpha -= 0.08;
+  player.trail = player.trail.filter(t => t.alpha > 0);
+
+  // Particles
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+  }
+  particles = particles.filter(p => p.life > 0);
+
+  // Distance / score
+  distance += speed;
+  score = Math.floor(distance / 10) + coins * 50;
+}
+
+function die() {
+  gameState = 'dead';
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#f44', 20);
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem('platformRunnerHigh', highScore);
+  }
+}
+
+function draw() {
+  // Sky
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0a1a');
+  grad.addColorStop(1, '#1a1a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars (parallax)
+  for (const s of bgStars) {
+    ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(frameCount * 0.02 + s.x) * 0.2})`;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+    if (gameState === 'playing') {
+      s.x -= s.speed * speed * 0.3;
+      if (s.x < 0) { s.x = W; s.y = Math.random() * (H - 80); }
+    }
+  }
+
+  if (gameState === 'menu') {
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 40px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('PLATFORM RUNNER', W / 2, 140);
+    ctx.fillStyle = '#888'; ctx.font = '14px monospace';
+    ctx.fillText('SPACE or TAP to start', W / 2, 200);
+    ctx.fillStyle = '#555'; ctx.font = '12px monospace';
+    ctx.fillText('High Score: ' + highScore, W / 2, 240);
+
+    // Animated player preview
+    const previewY = 280 + Math.sin(frameCount * 0.05) * 8;
+    ctx.fillStyle = '#4af';
+    ctx.fillRect(W / 2 - 12, previewY, 24, 32);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(W / 2 - 6, previewY + 8, 4, 4);
+    ctx.fillRect(W / 2 + 2, previewY + 8, 4, 4);
+    return;
+  }
+
+  // Platforms
+  for (const p of platforms) {
+    if (p.type === 'ground') {
+      ctx.fillStyle = '#2a5a2a';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.fillStyle = '#3a7a3a';
+      ctx.fillRect(p.x, p.y, p.w, 3);
+    } else {
+      ctx.fillStyle = '#445';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.fillStyle = '#667';
+      ctx.fillRect(p.x, p.y, p.w, 2);
+    }
+  }
+
+  // Obstacles
+  for (const o of obstacles) {
+    ctx.fillStyle = '#e44';
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+    // Spike top
+    ctx.fillStyle = '#f66';
+    ctx.beginPath();
+    ctx.moveTo(o.x, o.y);
+    ctx.lineTo(o.x + o.w / 2, o.y - 8);
+    ctx.lineTo(o.x + o.w, o.y);
+    ctx.fill();
+  }
+
+  // Coins
+  for (const c of coinList) {
+    if (c.collected) continue;
+    const glow = Math.sin(frameCount * 0.1 + c.x * 0.01) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(255,220,0,${glow})`;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,200,${glow * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(c.x - 2, c.y - 2, c.size * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Trail
+  for (const t of player.trail) {
+    ctx.fillStyle = `rgba(70,170,255,${t.alpha * 0.3})`;
+    ctx.fillRect(t.x, t.y, player.w, player.h);
+  }
+
+  // Player
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(player.x + 6, player.y + 8, 4, 4);
+  ctx.fillRect(player.x + 14, player.y + 8, 4, 4);
+  // Pupils (look in direction of movement)
+  ctx.fillStyle = '#111';
+  ctx.fillRect(player.x + 8, player.y + 10, 2, 2);
+  ctx.fillRect(player.x + 16, player.y + 10, 2, 2);
+
+  // Particles
+  for (const p of particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 40;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, 15, 30);
+  ctx.fillStyle = '#fd0'; ctx.font = '14px monospace';
+  ctx.fillText('Coins: ' + coins, 15, 50);
+  ctx.fillStyle = '#888'; ctx.font = '12px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('Speed: ' + speed.toFixed(1) + 'x', W - 15, 30);
+  ctx.fillText('High: ' + highScore, W - 15, 50);
+
+  // Jump indicator
+  if (!player.grounded && player.jumpCount < player.maxJumps) {
+    ctx.fillStyle = 'rgba(70,170,255,0.5)';
+    ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('2nd JUMP', player.x + player.w / 2, player.y - 10);
+  }
+
+  // Death screen
+  if (gameState === 'dead') {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, H / 2 - 60, W, 120);
+    ctx.fillStyle = '#f44'; ctx.font = 'bold 30px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', W / 2, H / 2 - 15);
+    ctx.fillStyle = '#fff'; ctx.font = '16px monospace';
+    ctx.fillText('Score: ' + score + '  |  Coins: ' + coins, W / 2, H / 2 + 15);
+    ctx.fillStyle = '#888'; ctx.font = '13px monospace';
+    ctx.fillText('SPACE or TAP to retry', W / 2, H / 2 + 45);
+    if (score >= highScore && score > 0) {
+      ctx.fillStyle = '#fd0'; ctx.font = 'bold 14px monospace';
+      ctx.fillText('NEW HIGH SCORE!', W / 2, H / 2 - 40);
+    }
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  frameCount++;
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+<script>
+(function(){
+  if(document.cookie.indexOf('owner_nocount=1')!==-1)return;
+  var k='played_platform_runner';
+  if(sessionStorage.getItem(k))return;
+  sessionStorage.setItem(k,'1');
+  var u='https://khsdgbglmzyuiqsfalcv.supabase.co/rest/v1/rpc/increment_play';
+  var h={'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k'};
+  fetch(u,{method:'POST',headers:h,body:JSON.stringify({game_name:'platform_runner'})}).catch(function(){});
+})();
+</script>
+</body>
+</html>
