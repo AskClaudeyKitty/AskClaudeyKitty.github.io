@@ -708,7 +708,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (gameOver && e.key === 'r') return resetGame();
-  if (gameOver && e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; return; }
+  if (e.key === 'm') { state = 'menu'; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; return; }
   if (turn !== 0 || projectiles.length || gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
