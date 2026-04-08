@@ -1154,13 +1154,13 @@ function update() {
       }
     }
 
-    // Swarm: on hitting enemy, damage + remove ALL swarm projectiles
+    // Swarm: on hitting enemy, damage + mark ALL swarm projectiles for removal
     if (hitTank && w.behavior === 'swarm') {
       createExplosion(p.x, p.y, w);
       impactDamage(p.x, p.y, w, p);
-      for (let j = projectiles.length - 1; j >= 0; j--) {
-        if (projectiles[j].weaponData.behavior === 'swarm') projectiles.splice(j, 1);
-      }
+      for (const pp of projectiles) { if (pp.weaponData && pp.weaponData.behavior === 'swarm') pp._remove = true; }
+      projectiles = projectiles.filter(pp => !pp._remove);
+      i = -1; // restart loop since array changed
       continue;
     }
 
