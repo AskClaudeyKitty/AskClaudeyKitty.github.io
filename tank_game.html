@@ -496,9 +496,11 @@ function initTanks() {
   const p = tankTypes[menuSelection];
   const botPool = tankTypes.filter(t => !t.locked);
   const b = botPool[Math.floor(Math.random() * botPool.length)];
+  const playerHp = testBotMode ? 999999 : p.hp;
+  const playerFuel = testBotMode ? 999999 : p.fuel;
   Object.assign(tanks[0], {
-    x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, color: p.color,
-    name: p.name, weapon: 0, fuel: p.fuel, maxFuel: p.fuel, isBot: false, type: p,
+    x: 80 + Math.random() * 80, angle: 45, hp: playerHp, maxHp: playerHp, color: p.color,
+    name: p.name, weapon: 0, fuel: playerFuel, maxFuel: playerFuel, isBot: false, type: p,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
   });
@@ -652,7 +654,8 @@ canvas.addEventListener('mousedown', e => {
     if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; return; }
     return;
   }
-  if (state !== 'game' || turn !== 0 || projectiles.length || gameOver) return;
+  if (state !== 'game' || gameOver) return;
+  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
 
   const selY = H - 63;
   const slotW = 55;
@@ -699,7 +702,7 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mouseup', e => {
   moveLeft = false; moveRight = false;
   if (state !== 'game') return;
-  if (dragging && turn === 0 && !projectiles.length && !gameOver) {
+  if (dragging && (turn === 0 || testBotMode) && (!projectiles.length || testBotMode) && !gameOver) {
     dragging = false;
     if (dragPower > 1) {
       fireWeapon(tanks[0], null, dragPower);
@@ -784,8 +787,10 @@ function resetGame() {
   const p = tanks[0].type;
   const botPool = tankTypes.filter(t => !t.locked);
   const b = botPool[Math.floor(Math.random() * botPool.length)];
+  const playerHp2 = testBotMode ? 999999 : p.hp;
+  const playerFuel2 = testBotMode ? 999999 : p.fuel;
   Object.assign(tanks[0], {
-    x: 80 + Math.random() * 80, angle: 45, hp: p.hp, maxHp: p.hp, weapon: 0, fuel: p.fuel, maxFuel: p.fuel,
+    x: 80 + Math.random() * 80, angle: 45, hp: playerHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
   });
@@ -826,7 +831,7 @@ function fireWeapon(tank, holdTime, directPower) {
     if (tank.bonusAmmo <= 0) { tank.bonusWeapon = null; tank.bonusAmmo = 0; }
   } else {
     w = tank.type.weapons[tank.weapon];
-    if (tank.ammo[tank.weapon] > 0) tank.ammo[tank.weapon]--;
+    if (!testBotMode && tank.ammo[tank.weapon] > 0) tank.ammo[tank.weapon]--;
     checkAmmoRefill(tank);
   }
   const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
@@ -1067,8 +1072,8 @@ function update() {
   const grav = maps[currentMap].gravity;
   const tank = tanks[turn];
 
-  if (!projectiles.length && !gameOver) {
-    if (turn === 0) {
+  if ((!projectiles.length || testBotMode) && !gameOver) {
+    if (turn === 0 || testBotMode) {
       let spd = tank.type.speed;
       let onIce = false, inWater = false;
       for (const h of hazards) {
