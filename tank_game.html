@@ -297,6 +297,7 @@ let botTrajectory = []; // trajectory points for bot's aim preview
 let turnCount = 0;
 let simpleAiming = false;
 let chaosMode = false;
+let tripleMode = false;
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -476,9 +477,14 @@ canvas.addEventListener('mousedown', e => {
   if (state === 'menu') {
     // BATTLE button
     if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; }
-    // Toggle buttons
-    if (m.x >= W / 2 - 110 && m.x <= W / 2 - 5 && m.y >= 380 && m.y <= 410) { simpleAiming = !simpleAiming; }
-    if (m.x >= W / 2 + 5 && m.x <= W / 2 + 110 && m.y >= 380 && m.y <= 410) { chaosMode = !chaosMode; }
+    // Toggle buttons (match drawing layout)
+    const btnW2 = 95, btnGap2 = 6, totalBtnW2 = btnW2 * 3 + btnGap2 * 2;
+    const btnX2 = W / 2 - totalBtnW2 / 2;
+    if (m.y >= 380 && m.y <= 410) {
+      if (m.x >= btnX2 && m.x <= btnX2 + btnW2) simpleAiming = !simpleAiming;
+      if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
+      if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
+    }
     return;
   }
   if (state === 'select') {
@@ -688,17 +694,20 @@ function fireWeapon(tank, holdTime, directPower) {
     if (tank.ammo[tank.weapon] > 0) tank.ammo[tank.weapon]--;
     checkAmmoRefill(tank);
   }
-  for (let i = 0; i < w.count; i++) {
-    const angleOff = (i - (w.count - 1) / 2) * w.spread;
-    const rad = (tank.angle + angleOff) * Math.PI / 180;
-    projectiles.push({
-      x: tank.x, y: terrainAt(tank.x) - 20,
-      vx: Math.cos(rad) * power,
-      vy: -Math.sin(rad) * power,
-      owner: turn,
-      weaponData: w,
-      dmgBonus
-    });
+  const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
+  for (const tOff of tripleOffsets) {
+    for (let i = 0; i < w.count; i++) {
+      const angleOff = (i - (w.count - 1) / 2) * w.spread + tOff;
+      const rad = (tank.angle + angleOff) * Math.PI / 180;
+      projectiles.push({
+        x: tank.x, y: terrainAt(tank.x) - 20,
+        vx: Math.cos(rad) * power,
+        vy: -Math.sin(rad) * power,
+        owner: turn,
+        weaponData: w,
+        dmgBonus
+      });
+    }
   }
   // Auto-switch to next available weapon
   switchToNextWeapon(tank);
@@ -1607,10 +1616,12 @@ function drawAimUI() {
   const canBounce = true; // all weapons bounce
   const shotCount = wCheck ? (wCheck.count || 1) : 1;
   const shotSpread = wCheck ? (wCheck.spread || 0) : 0;
+  const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
   let lastSx = 0, lastSy = 0;
 
+  for (const tOff of tripleOffsets) {
   for (let shot = 0; shot < shotCount; shot++) {
-    const angleOff = (shot - (shotCount - 1) / 2) * shotSpread;
+    const angleOff = (shot - (shotCount - 1) / 2) * shotSpread + tOff;
     const shotRad = (tank.angle + angleOff) * Math.PI / 180;
     let sx = tank.x, sy = tankY - 20;
     let vx = Math.cos(shotRad) * power, vy = -Math.sin(shotRad) * power;
@@ -1651,6 +1662,7 @@ function drawAimUI() {
     ctx.moveTo(sx - 12, sy); ctx.lineTo(sx + 12, sy);
     ctx.moveTo(sx, sy - 12); ctx.lineTo(sx, sy + 12);
     ctx.stroke();
+  }
   }
 
   // Power bar at top
@@ -1703,20 +1715,30 @@ function drawMenu() {
   ctx.font = '10px monospace';
   ctx.fillText('or press ENTER', W / 2, 360);
 
-  // Options
+  // Options (3 buttons)
+  const btnW = 95, btnGap = 6, totalBtnW = btnW * 3 + btnGap * 2;
+  const btnX = W / 2 - totalBtnW / 2;
+
   ctx.fillStyle = simpleAiming ? '#484' : '#333';
-  ctx.fillRect(W / 2 - 110, 380, 105, 30);
+  ctx.fillRect(btnX, 380, btnW, 30);
   ctx.strokeStyle = simpleAiming ? '#6a6' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 - 110, 380, 105, 30);
-  ctx.fillStyle = '#ccc'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(simpleAiming ? 'SIMPLE: ON' : 'SIMPLE: OFF', W / 2 - 57, 400);
+  ctx.strokeRect(btnX, 380, btnW, 30);
+  ctx.fillStyle = '#ccc'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(simpleAiming ? 'SIMPLE: ON' : 'SIMPLE: OFF', btnX + btnW / 2, 400);
 
   ctx.fillStyle = chaosMode ? '#844' : '#333';
-  ctx.fillRect(W / 2 + 5, 380, 105, 30);
+  ctx.fillRect(btnX + btnW + btnGap, 380, btnW, 30);
   ctx.strokeStyle = chaosMode ? '#f44' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 + 5, 380, 105, 30);
-  ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '11px monospace';
-  ctx.fillText(chaosMode ? 'CHAOS: ON' : 'CHAOS: OFF', W / 2 + 57, 400);
+  ctx.strokeRect(btnX + btnW + btnGap, 380, btnW, 30);
+  ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '10px monospace';
+  ctx.fillText(chaosMode ? 'CHAOS: ON' : 'CHAOS: OFF', btnX + btnW + btnGap + btnW / 2, 400);
+
+  ctx.fillStyle = tripleMode ? '#848' : '#333';
+  ctx.fillRect(btnX + (btnW + btnGap) * 2, 380, btnW, 30);
+  ctx.strokeStyle = tripleMode ? '#a4f' : '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(btnX + (btnW + btnGap) * 2, 380, btnW, 30);
+  ctx.fillStyle = tripleMode ? '#c8f' : '#ccc'; ctx.font = '10px monospace';
+  ctx.fillText(tripleMode ? 'TRIPLE: ON' : 'TRIPLE: OFF', btnX + (btnW + btnGap) * 2 + btnW / 2, 400);
 
   // Wins + version
   ctx.fillStyle = '#555';
