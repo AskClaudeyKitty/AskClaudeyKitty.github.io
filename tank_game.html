@@ -759,7 +759,8 @@ document.addEventListener('keydown', e => {
   }
   if (gameOver && e.key === 'r') return resetGame();
   if (e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; return; }
-  if (turn !== 0 || projectiles.length || gameOver) return;
+  if (!testBotMode && (turn !== 0 || projectiles.length || gameOver)) return;
+  if (gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
     const maxWeaponIdx = tanks[0].type.weapons.length;
@@ -886,21 +887,23 @@ function switchToNextWeapon(tank) {
 }
 
 // ========== EXPLOSION ==========
-function createExplosion(x, y, w) {
+function createExplosion(x, y, w, noTerrain) {
   const radius = w.radius;
   explosions.push({ x, y, radius, alpha: 1, color: w.color });
   if (radius > 30) SFX.explode(radius);
   else SFX.explodeSmall();
   shakeTime = 10;
   shakeAmount = radius / 10;
-  for (let tx = Math.floor(x - radius); tx <= Math.ceil(x + radius); tx++) {
-    if (tx >= 0 && tx < W) {
-      const dist = Math.abs(tx - x);
-      const depth = Math.sqrt(Math.max(0, radius * radius - dist * dist));
-      const tt = terrainType[tx] || 'normal';
-      const mult = tt === 'sand' ? 0.9 : tt === 'rock' ? 0.15 : 0.5;
-      terrain[tx] += depth * mult;
-      terrain[tx] = Math.min(terrain[tx], H - 5);
+  if (!noTerrain) {
+    for (let tx = Math.floor(x - radius); tx <= Math.ceil(x + radius); tx++) {
+      if (tx >= 0 && tx < W) {
+        const dist = Math.abs(tx - x);
+        const depth = Math.sqrt(Math.max(0, radius * radius - dist * dist));
+        const tt = terrainType[tx] || 'normal';
+        const mult = tt === 'sand' ? 0.9 : tt === 'rock' ? 0.15 : 0.5;
+        terrain[tx] += depth * mult;
+        terrain[tx] = Math.min(terrain[tx], H - 5);
+      }
     }
   }
 }
@@ -1301,7 +1304,7 @@ function update() {
       const maxBounce = w.bouncy || (chaosMode ? (p.isFragment ? 4 : 10) : 0);
       if (p.bounceCount < maxBounce) {
         p.bounceCount++;
-        createExplosion(p.x, p.y, w);
+        createExplosion(p.x, p.y, w, !!w.bouncy);
         impactDamage(p.x, p.y, w, p);
         // Trigger behaviors on every bounce (no isFragment check — always trigger)
         if (w.behavior === 'split') {
