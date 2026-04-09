@@ -418,6 +418,8 @@ let simpleAiming = false;
 let chaosMode = false;
 let tripleMode = false;
 let testBotMode = false;
+let windEnabled = false;
+let windStrength = 0;
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -608,10 +610,13 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
       if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
     }
-    // Music + Test Bot toggles
+    // Row 2: Music, Test Bot, Wind
     if (m.y >= 420 && m.y <= 445) {
-      if (m.x >= W / 2 - 110 && m.x <= W / 2 - 5) { musicEnabled = !musicEnabled; if (!musicEnabled) stopMusic(); }
-      if (m.x >= W / 2 + 5 && m.x <= W / 2 + 110) { testBotMode = !testBotMode; }
+      const r2W2 = 95, r2Gap2 = 6, r2Total2 = r2W2 * 3 + r2Gap2 * 2;
+      const r2X2 = W / 2 - r2Total2 / 2;
+      if (m.x >= r2X2 && m.x <= r2X2 + r2W2) { musicEnabled = !musicEnabled; if (!musicEnabled) stopMusic(); }
+      if (m.x >= r2X2 + r2W2 + r2Gap2 && m.x <= r2X2 + r2W2 * 2 + r2Gap2) { testBotMode = !testBotMode; }
+      if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
     }
     return;
   }
@@ -1007,6 +1012,7 @@ function botShoot() {
         let sx = bot.x, sy = terrainAt(bot.x) - 20;
         let vx = Math.cos(rad) * power, vy = -Math.sin(rad) * power;
         for (let step = 0; step < 300; step++) {
+          if (windEnabled) vx += windStrength;
           sx += vx; vy += grav; sy += vy;
           if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
           if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
@@ -1142,6 +1148,7 @@ function update() {
     }
 
     const isHoming = w.behavior === 'homing' && !p.isFragment;
+    if (windEnabled) p.vx += windStrength;
     p.x += p.vx;
     if (!isHoming) p.vy += grav;
     p.y += p.vy;
@@ -1735,6 +1742,7 @@ function update() {
     checkWin();
     if (!gameOver) {
       turn = 1 - turn;
+      if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4;
       tanks[turn].fuel = Math.min(tanks[turn].fuel + 20, tanks[turn].maxFuel);
       botDelay = 0;
       botMoveDone = false;
@@ -1937,6 +1945,7 @@ function drawAimUI() {
     ctx.moveTo(sx, sy);
     let trajBounced = false;
     for (let step = 0; step < 300; step++) {
+      if (windEnabled) vx += windStrength;
       sx += vx; vy += grav; sy += vy;
       if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
       if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
@@ -2044,20 +2053,30 @@ function drawMenu() {
   ctx.fillStyle = tripleMode ? '#c8f' : '#ccc'; ctx.font = '10px monospace';
   ctx.fillText(tripleMode ? 'TRIPLE: ON' : 'TRIPLE: OFF', btnX + (btnW + btnGap) * 2 + btnW / 2, 400);
 
-  // Music + Test Bot toggles
+  // Row 2: Music, Test Bot, Wind
+  const r2W = 95, r2Gap = 6, r2Total = r2W * 3 + r2Gap * 2;
+  const r2X = W / 2 - r2Total / 2;
+
   ctx.fillStyle = musicEnabled ? '#446' : '#333';
-  ctx.fillRect(W / 2 - 110, 420, 105, 25);
+  ctx.fillRect(r2X, 420, r2W, 25);
   ctx.strokeStyle = musicEnabled ? '#68a' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 - 110, 420, 105, 25);
+  ctx.strokeRect(r2X, 420, r2W, 25);
   ctx.fillStyle = musicEnabled ? '#8af' : '#888'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', W / 2 - 57, 437);
+  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', r2X + r2W / 2, 437);
 
   ctx.fillStyle = testBotMode ? '#664' : '#333';
-  ctx.fillRect(W / 2 + 5, 420, 105, 25);
+  ctx.fillRect(r2X + r2W + r2Gap, 420, r2W, 25);
   ctx.strokeStyle = testBotMode ? '#aa4' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 + 5, 420, 105, 25);
+  ctx.strokeRect(r2X + r2W + r2Gap, 420, r2W, 25);
   ctx.fillStyle = testBotMode ? '#ff4' : '#888'; ctx.font = '10px monospace';
-  ctx.fillText(testBotMode ? 'TEST BOT: ON' : 'TEST BOT', W / 2 + 57, 437);
+  ctx.fillText(testBotMode ? 'TEST: ON' : 'TEST BOT', r2X + r2W + r2Gap + r2W / 2, 437);
+
+  ctx.fillStyle = windEnabled ? '#464' : '#333';
+  ctx.fillRect(r2X + (r2W + r2Gap) * 2, 420, r2W, 25);
+  ctx.strokeStyle = windEnabled ? '#6a6' : '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(r2X + (r2W + r2Gap) * 2, 420, r2W, 25);
+  ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
+  ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 437);
 
   // Wins + version
   ctx.fillStyle = '#555';
@@ -2894,6 +2913,25 @@ function drawGame() {
   ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
   const ttName = m.terrainType === 'sand' ? ' [Sand]' : m.terrainType === 'rock' ? ' [Rock]' : '';
   ctx.fillText(m.name + ttName + (m.boosts ? ' (boost: ' + m.boosts.join(', ') + ')' : ''), W - 15, 15);
+
+  // Wind indicator
+  if (windEnabled) {
+    const wx = W / 2, wy = 45;
+    const arrowLen = windStrength * 80;
+    ctx.fillStyle = '#aaa'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('WIND', wx, wy - 8);
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + arrowLen, wy); ctx.stroke();
+    // Arrowhead
+    if (Math.abs(arrowLen) > 2) {
+      const dir = arrowLen > 0 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(wx + arrowLen, wy);
+      ctx.lineTo(wx + arrowLen - dir * 6, wy - 4);
+      ctx.lineTo(wx + arrowLen - dir * 6, wy + 4);
+      ctx.closePath(); ctx.fillStyle = '#aaa'; ctx.fill();
+    }
+  }
 
   // Turn + angle
   if (!gameOver) {
