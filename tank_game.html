@@ -1191,13 +1191,10 @@ function update() {
       const dy = (terrainAt(owner.x) - 20) - p.y;
       const dist = Math.hypot(dx, dy);
       if (dist > 5) {
-        const strength = w.buzzsaw ? 0.8 : 0.5;
+        const strength = w.buzzsaw ? 1.5 : 1.0;
         p.vx += (dx / dist) * strength;
         p.vy += (dy / dist) * strength;
       }
-      // Cap speed
-      const spd = Math.hypot(p.vx, p.vy);
-      if (spd > 15) { p.vx *= 15/spd; p.vy *= 15/spd; }
       // Boomerang despawns when it returns close to owner
       if (!p._boomerangOut && dist > 80) p._boomerangOut = true;
       if (p._boomerangOut && dist < 30) { projectiles.splice(i, 1); continue; }
@@ -2036,8 +2033,7 @@ function drawAimUI() {
       if (isBoomerangTraj) {
         const dx = tank.x - sx, dy = (tankY - 20) - sy;
         const dist = Math.hypot(dx, dy);
-        if (dist > 5) { const str = wCheck.buzzsaw ? 0.8 : 0.5; vx += (dx/dist)*str; vy += (dy/dist)*str; }
-        const spd = Math.hypot(vx, vy); if (spd > 15) { vx *= 15/spd; vy *= 15/spd; }
+        if (dist > 5) { const str = wCheck.buzzsaw ? 1.5 : 1.0; vx += (dx/dist)*str; vy += (dy/dist)*str; }
         if (step > 20 && dist < 25) break; // returned
       }
       if (windEnabled) vx += windStrength;
