@@ -380,6 +380,19 @@ const tankTypes = [
       { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 2.5, count: 1, spread: 0, icon: 'O', ammo: 2, bouncy: 6 },
       { name: 'Pinball',     color: '#fcc', radius: 8, dmgMult: 0.8, count: 1, spread: 0, icon: '.', ammo: 1, behavior: 'pinball' },
     ]},
+  // RANDOM — each shot is a random weapon from any tank
+  { name: 'Random', color: '#aaa', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 900, speed: 1.3, fuel: 100, desc: 'Roll the dice', locked: true, unlockCode: '146',
+    weapons: [
+      { name: '???', color: '#aaa', radius: 20, dmgMult: 1.0, count: 1, spread: 0, icon: '?', ammo: 1, behavior: 'random' },
+    ]},
+  // BOOMERANG — shots curve back toward you
+  { name: 'Boomerang', color: '#f80', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 850, speed: 1.4, fuel: 110, desc: 'Comes back around', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Throw',      color: '#f80', radius: 20, dmgMult: 1.5, count: 1, spread: 0, icon: ')', ammo: 1, behavior: 'boomerang' },
+      { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 1.2, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang' },
+      { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 2.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
+      { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 0.8, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
+    ]},
 ];
 
 // Win counter
@@ -853,6 +866,13 @@ function fireWeapon(tank, holdTime, directPower) {
     if (!testBotMode && tank.ammo[tank.weapon] > 0) tank.ammo[tank.weapon]--;
     checkAmmoRefill(tank);
   }
+  // Random: replace with random weapon from any unlocked tank
+  if (w.behavior === 'random') {
+    const allW = [];
+    for (const tt of tankTypes) { if (!tt.locked || (tt.unlockCode && unlockedCodes.includes(tt.unlockCode))) { for (const ww of tt.weapons) { if (ww.behavior !== 'random') allW.push(ww); } } }
+    w = allW[Math.floor(Math.random() * allW.length)];
+    spawnFloatingText(tank.x, terrainAt(tank.x) - 65, w.name + '!', w.color);
+  }
   const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
   for (const tOff of tripleOffsets) {
     for (let i = 0; i < w.count; i++) {
@@ -1158,10 +1178,27 @@ function update() {
       }
     }
 
+    // Boomerang: curve back toward owner
+    if (w.behavior === 'boomerang') {
+      const owner = tanks[p.owner];
+      const dx = owner.x - p.x;
+      const dy = (terrainAt(owner.x) - 20) - p.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 5) {
+        const strength = w.buzzsaw ? 0.35 : 0.2;
+        p.vx += (dx / dist) * strength;
+        p.vy += (dy / dist) * strength;
+      }
+      // Boomerang despawns when it returns close to owner
+      if (!p._boomerangOut && dist > 100) p._boomerangOut = true;
+      if (p._boomerangOut && dist < 25) { projectiles.splice(i, 1); continue; }
+    }
+
     const isHoming = w.behavior === 'homing' && !p.isFragment;
+    const isBoomerang = w.behavior === 'boomerang';
     if (windEnabled) p.vx += windStrength;
     p.x += p.vx;
-    if (!isHoming) p.vy += grav;
+    if (!isHoming && !isBoomerang) p.vy += grav;
     p.y += p.vy;
 
     // Ricochet off left/right walls
@@ -1182,6 +1219,12 @@ function update() {
       }
     }
 
+    // Boomerang: damage enemy on pass-through
+    if (hitTank && w.behavior === 'boomerang') {
+      impactDamage(p.x, p.y, w, p);
+      hitTank = false;
+    }
+
     // Bouncy weapons: damage enemy but bounce off
     if (hitTank && (w.bouncy || w.behavior === 'pinball')) {
       impactDamage(p.x, p.y, w, p);
@@ -1198,7 +1241,7 @@ function update() {
       continue;
     }
 
-    const hitGround = (p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank;
+    const hitGround = w.behavior === 'boomerang' ? false : ((p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank);
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
@@ -1979,9 +2022,18 @@ function drawAimUI() {
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     let trajBounced = false;
-    for (let step = 0; step < 300; step++) {
+    const isBoomerangTraj = wCheck && wCheck.behavior === 'boomerang';
+    for (let step = 0; step < (isBoomerangTraj ? 500 : 300); step++) {
+      if (isBoomerangTraj) {
+        const dx = tank.x - sx, dy = (tankY - 20) - sy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 5) { const str = wCheck.buzzsaw ? 0.35 : 0.2; vx += (dx/dist)*str; vy += (dy/dist)*str; }
+        if (step > 20 && dist < 25) break; // returned
+      }
       if (windEnabled) vx += windStrength;
-      sx += vx; vy += grav; sy += vy;
+      sx += vx;
+      if (!isBoomerangTraj) vy += grav;
+      sy += vy;
       if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
       if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
       if (sy >= terrainAt(sx)) {
