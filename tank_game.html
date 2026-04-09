@@ -375,9 +375,9 @@ const tankTypes = [
   // RUBBER — bouncy bouncy
   { name: 'Rubber', color: '#f88', bodyW: 26, bodyH: 10, barrelLen: 22, barrelW: 4, hp: 750, speed: 1.8, fuel: 130, desc: 'Bouncy bouncy', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Bouncy Ball', color: '#f88', radius: 15, dmgMult: 1.5, count: 1, spread: 0, icon: 'o', ammo: 1 },
-      { name: 'Super Ball',  color: '#faa', radius: 12, dmgMult: 1.2, count: 3, spread: 4, icon: 'ooo', ammo: 3 },
-      { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 2.5, count: 1, spread: 0, icon: 'O', ammo: 2 },
+      { name: 'Bouncy Ball', color: '#f88', radius: 15, dmgMult: 1.5, count: 1, spread: 0, icon: 'o', ammo: 1, bouncy: 10 },
+      { name: 'Super Ball',  color: '#faa', radius: 12, dmgMult: 1.2, count: 3, spread: 4, icon: 'ooo', ammo: 3, bouncy: 8 },
+      { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 2.5, count: 1, spread: 0, icon: 'O', ammo: 2, bouncy: 6 },
       { name: 'Pinball',     color: '#fcc', radius: 8, dmgMult: 0.8, count: 1, spread: 0, icon: '.', ammo: 1, behavior: 'pinball' },
     ]},
 ];
@@ -1290,7 +1290,7 @@ function update() {
 
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
-      const maxBounce = chaosMode ? (p.isFragment ? 4 : 10) : 0;
+      const maxBounce = w.bouncy || (chaosMode ? (p.isFragment ? 4 : 10) : 0);
       if (p.bounceCount < maxBounce) {
         p.bounceCount++;
         createExplosion(p.x, p.y, w);
