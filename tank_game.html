@@ -1184,20 +1184,26 @@ function update() {
       }
     }
 
-    // Boomerang: curve back toward owner
+    // Boomerang: fly outward, then curve back toward owner
     if (w.behavior === 'boomerang') {
+      if (!p._boomFrame) p._boomFrame = 0;
+      p._boomFrame++;
       const owner = tanks[p.owner];
       const dx = owner.x - p.x;
       const dy = (terrainAt(owner.x) - 20) - p.y;
       const dist = Math.hypot(dx, dy);
-      if (dist > 5) {
-        const strength = w.buzzsaw ? 1.5 : 1.0;
+      // Only start curving after flying outward for 40 frames
+      if (p._boomFrame > (w.buzzsaw ? 25 : 40) && dist > 5) {
+        const strength = w.buzzsaw ? 1.2 : 0.8;
         p.vx += (dx / dist) * strength;
         p.vy += (dy / dist) * strength;
       }
-      // Boomerang despawns when it returns close to owner
-      if (!p._boomerangOut && dist > 80) p._boomerangOut = true;
+      // Mark as out once far enough
+      if (!p._boomerangOut && dist > 60) p._boomerangOut = true;
+      // Despawn when returns close to owner (only after going out)
       if (p._boomerangOut && dist < 30) { projectiles.splice(i, 1); continue; }
+      // Despawn if takes too long
+      if (p._boomFrame > 300) { projectiles.splice(i, 1); continue; }
     }
 
     const isHoming = w.behavior === 'homing' && !p.isFragment;
@@ -2033,8 +2039,9 @@ function drawAimUI() {
       if (isBoomerangTraj) {
         const dx = tank.x - sx, dy = (tankY - 20) - sy;
         const dist = Math.hypot(dx, dy);
-        if (dist > 5) { const str = wCheck.buzzsaw ? 1.5 : 1.0; vx += (dx/dist)*str; vy += (dy/dist)*str; }
-        if (step > 20 && dist < 25) break; // returned
+        const delay = wCheck.buzzsaw ? 25 : 40;
+        if (step > delay && dist > 5) { const str = wCheck.buzzsaw ? 1.2 : 0.8; vx += (dx/dist)*str; vy += (dy/dist)*str; }
+        if (step > delay && dist < 30) break; // returned
       }
       if (windEnabled) vx += windStrength;
       sx += vx;
