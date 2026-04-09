@@ -866,11 +866,17 @@ function fireWeapon(tank, holdTime, directPower) {
     if (!testBotMode && tank.ammo[tank.weapon] > 0) tank.ammo[tank.weapon]--;
     checkAmmoRefill(tank);
   }
-  // Random: replace with random weapon from any unlocked tank
+  // Random: use bonus weapon if available, otherwise pick random
   if (w.behavior === 'random') {
-    const allW = [];
-    for (const tt of tankTypes) { if (!tt.locked || (tt.unlockCode && unlockedCodes.includes(tt.unlockCode))) { for (const ww of tt.weapons) { if (ww.behavior !== 'random') allW.push(ww); } } }
-    w = allW[Math.floor(Math.random() * allW.length)];
+    if (tank.bonusWeapon && tank.bonusAmmo > 0) {
+      w = tank.bonusWeapon;
+      tank.bonusAmmo--;
+      if (tank.bonusAmmo <= 0) { tank.bonusWeapon = null; tank.bonusAmmo = 0; }
+    } else {
+      const allW = [];
+      for (const tt of tankTypes) { if (!tt.locked || (tt.unlockCode && unlockedCodes.includes(tt.unlockCode))) { for (const ww of tt.weapons) { if (ww.behavior !== 'random') allW.push(ww); } } }
+      w = allW[Math.floor(Math.random() * allW.length)];
+    }
     spawnFloatingText(tank.x, terrainAt(tank.x) - 65, w.name + '!', w.color);
   }
   const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
