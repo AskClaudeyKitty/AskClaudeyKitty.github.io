@@ -372,6 +372,14 @@ const tankTypes = [
     weapons: [
       { name: 'NUKE', color: '#f00', radius: 10, dmgMult: 1.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'groundzero' },
     ]},
+  // RUBBER — bouncy bouncy
+  { name: 'Rubber', color: '#f88', bodyW: 26, bodyH: 10, barrelLen: 22, barrelW: 4, hp: 750, speed: 1.8, fuel: 130, desc: 'Bouncy bouncy', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Bouncy Ball', color: '#f88', radius: 15, dmgMult: 1.5, count: 1, spread: 0, icon: 'o', ammo: 1 },
+      { name: 'Super Ball',  color: '#faa', radius: 12, dmgMult: 1.2, count: 3, spread: 4, icon: 'ooo', ammo: 3 },
+      { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 2.5, count: 1, spread: 0, icon: 'O', ammo: 2 },
+      { name: 'Pinball',     color: '#fcc', radius: 8, dmgMult: 0.8, count: 1, spread: 0, icon: '.', ammo: 1, behavior: 'pinball' },
+    ]},
 ];
 
 // Win counter
@@ -1224,6 +1232,22 @@ function update() {
         impactDamage(p.x, p.y, w, p);
         for (let tx = 0; tx < W; tx++) { terrain[tx] += 30; terrain[tx] = Math.min(terrain[tx], H - 5); }
         shakeTime = 30; shakeAmount = 20;
+        projectiles.splice(i, 1);
+        continue;
+      }
+
+      // Pinball: 50 bounces, no terrain damage, just bounce and hit
+      if (w.behavior === 'pinball') {
+        if (!p.bounceCount) p.bounceCount = 0;
+        if (p.bounceCount < 50) {
+          p.bounceCount++;
+          impactDamage(p.x, p.y, w, p);
+          p.vy = -Math.abs(p.vy);
+          p.y = terrainAt(p.x) - 2;
+          continue;
+        }
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, w, p);
         projectiles.splice(i, 1);
         continue;
       }
