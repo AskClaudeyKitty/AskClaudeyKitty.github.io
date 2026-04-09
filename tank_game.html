@@ -1179,6 +1179,14 @@ function update() {
       }
     }
 
+    // Bouncy weapons: damage enemy but bounce off
+    if (hitTank && (w.bouncy || w.behavior === 'pinball')) {
+      impactDamage(p.x, p.y, w, p);
+      p.vx = -p.vx + (Math.random() - 0.5) * 2;
+      p.vy = -Math.abs(p.vy) * 0.9;
+      hitTank = false; // don't count as ground hit
+    }
+
     // Fragments (secondaries) disappear on hitting enemy
     if (hitTank && p.isFragment) {
       createExplosion(p.x, p.y, w);
