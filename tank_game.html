@@ -1178,6 +1178,9 @@ function update() {
     if (hitGround) {
       // Ground Zero: initial shot spawns one nuke orb from sky
       if (w.behavior === 'groundzero') {
+        // Initial hit does 3 damage
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, { ...w, dmgMult: 3 }, p);
         // Spawn single orb at impact point, dropping from sky
         projectiles.push({
           x: p.x, y: -20,
