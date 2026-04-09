@@ -367,6 +367,11 @@ const tankTypes = [
     weapons: [
       { name: '???', color: '#fff', radius: 10, dmgMult: 100000, count: 1, spread: 0, icon: '?', ammo: 1, behavior: 'swarm' },
     ]},
+  // GROUND ZERO — the nuke
+  { name: 'Ground Zero', color: '#f00', bodyW: 30, bodyH: 11, barrelLen: 26, barrelW: 5, hp: 1, speed: 1.0, fuel: 50, desc: 'THE NUKE', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'NUKE', color: '#f00', radius: 10, dmgMult: 1.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'groundzero' },
+    ]},
 ];
 
 // Win counter
@@ -1171,6 +1176,48 @@ function update() {
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
+      // Ground Zero: initial shot spawns one nuke orb from sky
+      if (w.behavior === 'groundzero') {
+        // Spawn single orb at impact point, dropping from sky
+        projectiles.push({
+          x: p.x, y: -20,
+          vx: 0, vy: 4,
+          owner: p.owner,
+          weaponData: { ...w, radius: 20, dmgMult: 999999999999, behavior: 'nukeOrb', color: '#f44' },
+          dmgBonus: p.dmgBonus, bounceCount: 0
+        });
+        projectiles.splice(i, 1);
+        continue;
+      }
+
+      // Nuke Orb: strips entire map layer each bounce, 20 bounces
+      if (w.behavior === 'nukeOrb') {
+        if (!p.bounceCount) p.bounceCount = 0;
+        if (p.bounceCount < 20) {
+          p.bounceCount++;
+          // Strip a layer off the ENTIRE map
+          for (let tx = 0; tx < W; tx++) {
+            terrain[tx] += 15;
+            terrain[tx] = Math.min(terrain[tx], H - 5);
+          }
+          // Massive explosion + damage
+          createExplosion(p.x, p.y, { ...w, radius: 60 });
+          impactDamage(p.x, p.y, w, p);
+          shakeTime = 20; shakeAmount = 15;
+          SFX.explode(80);
+          p.vy = -Math.abs(p.vy) * 0.9;
+          p.y = terrainAt(p.x) - 2;
+          continue;
+        }
+        // Final impact
+        createExplosion(p.x, p.y, { ...w, radius: 100 });
+        impactDamage(p.x, p.y, w, p);
+        for (let tx = 0; tx < W; tx++) { terrain[tx] += 30; terrain[tx] = Math.min(terrain[tx], H - 5); }
+        shakeTime = 30; shakeAmount = 20;
+        projectiles.splice(i, 1);
+        continue;
+      }
+
       // Swarm: 100 bounces, no ground damage, spawn 2 copies
       if (w.behavior === 'swarm') {
         // If hit enemy, damage + remove all swarm
