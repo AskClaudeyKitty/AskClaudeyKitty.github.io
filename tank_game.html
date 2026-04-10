@@ -375,10 +375,10 @@ const tankTypes = [
   // RUBBER — bouncy bouncy
   { name: 'Rubber', color: '#f88', bodyW: 26, bodyH: 10, barrelLen: 22, barrelW: 4, hp: 66666, speed: 1.8, fuel: 130, desc: 'Bouncy bouncy', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Bouncy Ball', color: '#f88', radius: 15, dmgMult: 1.5, count: 1, spread: 0, icon: 'o', ammo: 1, bouncy: 10 },
-      { name: 'Super Ball',  color: '#faa', radius: 12, dmgMult: 1.2, count: 3, spread: 4, icon: 'ooo', ammo: 3, bouncy: 8 },
-      { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 2.5, count: 1, spread: 0, icon: 'O', ammo: 2, bouncy: 6 },
-      { name: 'Pinball',     color: '#fcc', radius: 8, dmgMult: 0.8, count: 1, spread: 0, icon: '.', ammo: 1, behavior: 'pinball' },
+      { name: 'Bouncy Ball', color: '#f88', radius: 15, dmgMult: 15, count: 1, spread: 0, icon: 'o', ammo: 1, bouncy: 10 },
+      { name: 'Super Ball',  color: '#faa', radius: 12, dmgMult: 12, count: 3, spread: 4, icon: 'ooo', ammo: 3, bouncy: 8 },
+      { name: 'Rubber Bomb', color: '#f66', radius: 25, dmgMult: 25, count: 1, spread: 0, icon: 'O', ammo: 2, bouncy: 6 },
+      { name: 'Pinball',     color: '#fcc', radius: 8, dmgMult: 8, count: 1, spread: 0, icon: '.', ammo: 1, behavior: 'pinball' },
     ]},
   // RANDOM — each shot is a random weapon from any tank
   { name: 'Random', color: '#aaa', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 66666, speed: 1.3, fuel: 100, desc: 'Roll the dice', locked: true, unlockCode: '146',
@@ -388,10 +388,10 @@ const tankTypes = [
   // BOOMERANG — shots curve back toward you
   { name: 'Boomerang', color: '#f80', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 66666, speed: 1.4, fuel: 110, desc: 'Comes back around', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Throw',      color: '#f80', radius: 20, dmgMult: 7.5, count: 1, spread: 0, icon: ')', ammo: 1, behavior: 'boomerang', bouncy: 20 },
-      { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 6.0, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang', bouncy: 20 },
-      { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang', bouncy: 20 },
-      { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true, bouncy: 20 },
+      { name: 'Throw',      color: '#f80', radius: 20, dmgMult: 7.5, count: 1, spread: 0, icon: ')', ammo: 1, behavior: 'boomerang' },
+      { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 6.0, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang' },
+      { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
+      { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
     ]},
 ];
 
@@ -1259,7 +1259,7 @@ function update() {
       continue;
     }
 
-    const hitGround = (p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank;
+    const hitGround = w.behavior === 'boomerang' ? false : ((p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank);
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
