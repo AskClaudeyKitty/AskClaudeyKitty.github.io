@@ -2104,8 +2104,14 @@ function drawAimUI() {
     ctx.moveTo(sx, sy);
     let trajBounced = false;
     const isBoomerangTraj = wCheck && wCheck.behavior === 'boomerang';
-    // Boomerang trajectory simulation
-    let boomFrame = 0, outward = true, throwSpeed = Math.hypot(vx, vy);
+    // Boomerang trajectory simulation - must match actual physics EXACTLY
+    let boomFrame = 0, outward = true;
+    if (isBoomerangTraj) {
+      // Apply same slowFactor as actual physics
+      const slowFactor = 0.6;
+      vx *= slowFactor;
+      vy *= slowFactor;
+    }
     for (let step = 0; step < (isBoomerangTraj ? 400 : 300); step++) {
       if (isBoomerangTraj) {
         boomFrame++;
