@@ -1105,7 +1105,29 @@ function impactDamage(px, py, w, p) {
   for (const t of tanks) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
-      if (t.shield) { t.shield = false; spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af'); continue; }
+      if (t.shield) {
+        // Rebound shield: shot bounces back at shooter with 80% velocity
+        t.shield = false;
+        spawnFloatingText(t.x, terrainAt(t.x) - 55, 'REBOUND!', '#4af');
+        // Create rebound projectile heading back at shooter
+        const shooter = tanks[p.owner];
+        if (shooter) {
+          const dx = shooter.x - px;
+          const dy = (terrainAt(shooter.x) - 20) - py;
+          const angle = Math.atan2(dy, dx);
+          const speed = Math.hypot(p.vx, p.vy) * 0.8;
+          projectiles.push({
+            x: px, y: py,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            owner: t === tanks[0] ? 0 : 1, // rebound belongs to shield owner
+            weaponData: { ...w, radius: w.radius * 0.7, dmgMult: w.dmgMult * 0.6 },
+            dmgBonus: p.dmgBonus,
+            isRebound: true
+          });
+        }
+        continue;
+      }
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
       if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
