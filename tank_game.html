@@ -1208,17 +1208,14 @@ function update() {
     }
 
     // Boomerang: fly out in arc, then return to thrower in circular path
+    // NOTE: This must match trajectory preview logic exactly
     if (w.behavior === 'boomerang') {
       if (!p._boomFrame) {
         p._boomFrame = 0;
         p._outward = true;
-        // Slow down boomerang speed
-        const slowFactor = 0.6;
-        p.vx *= slowFactor;
-        p.vy *= slowFactor;
-        // Store initial throw direction and speed
-        p._throwSpeed = Math.hypot(p.vx, p.vy);
-        p._throwAngle = Math.atan2(-p.vy, p.vx); // angle of throw
+        // Apply same slowFactor as trajectory preview
+        p.vx *= 0.6;
+        p.vy *= 0.6;
       }
       p._boomFrame++;
       const owner = tanks[p.owner];
@@ -1226,43 +1223,35 @@ function update() {
       const dx = ox - p.x, dy = oy - p.y;
       const distToOwner = Math.hypot(dx, dy);
       
-      // Outward phase: first 30 frames fly away
+      // Outward phase: first 30 frames
       if (p._outward && p._boomFrame < 30) {
-        // Slight upward curve during outward flight
-        p.vy -= 0.15;
-      }
-      // Turnaround: start curving back
-      else if (p._outward && p._boomFrame >= 30) {
+        p.vy -= 0.15; // upward curve
+      } else if (p._outward && p._boomFrame >= 30) {
         p._outward = false;
       }
       
-      // Return phase: curve back to owner in boomerang arc
+      // Return phase: curve back to owner
       if (!p._outward) {
         if (distToOwner > 10) {
-          // Calculate desired direction toward owner
           const desiredAngle = Math.atan2(dy, dx);
           const currentAngle = Math.atan2(p.vy, p.vx);
-          // Smoothly turn toward owner (boomerang curve)
           let angleDiff = desiredAngle - currentAngle;
           while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
           while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
           const turnStrength = w.buzzsaw ? 0.15 : 0.08;
           const newAngle = currentAngle + angleDiff * turnStrength;
-          // Maintain speed
-          const speed = Math.hypot(p.vx, p.vy) * 0.99; // slight drag
+          const speed = Math.hypot(p.vx, p.vy) * 0.99;
           p.vx = Math.cos(newAngle) * speed;
           p.vy = Math.sin(newAngle) * speed;
-          // Add lift when moving (boomerang aerodynamics)
-          p.vy -= 0.1;
+          p.vy -= 0.1; // aerodynamic lift
         } else {
-          // Caught by owner - despawn
+          // Caught by owner
           projectiles.splice(i, 1);
           continue;
         }
       }
       
-      // Despawn if been flying too long (10 seconds)
-      if (p._boomFrame > 600) {
+      if (p._boomFrame > 400) {
         projectiles.splice(i, 1);
         continue;
       }
