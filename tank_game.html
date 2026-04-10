@@ -388,10 +388,10 @@ const tankTypes = [
   // BOOMERANG — shots curve back toward you
   { name: 'Boomerang', color: '#f80', bodyW: 28, bodyH: 10, barrelLen: 24, barrelW: 4, hp: 66666, speed: 1.4, fuel: 110, desc: 'Comes back around', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Throw',      color: '#f80', radius: 20, dmgMult: 1.5, count: 1, spread: 0, icon: ')', ammo: 1, behavior: 'boomerang' },
-      { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 1.2, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang' },
-      { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 2.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
-      { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 0.8, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
+      { name: 'Throw',      color: '#f80', radius: 20, dmgMult: 7.5, count: 1, spread: 0, icon: ')', ammo: 1, behavior: 'boomerang', bouncy: 20 },
+      { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 6.0, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang', bouncy: 20 },
+      { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang', bouncy: 20 },
+      { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true, bouncy: 20 },
     ]},
 ];
 
@@ -884,10 +884,11 @@ function fireWeapon(tank, holdTime, directPower) {
     for (let i = 0; i < w.count; i++) {
       const angleOff = (i - (w.count - 1) / 2) * w.spread + tOff;
       const rad = (tank.angle + angleOff) * Math.PI / 180;
+      const speedMult = w.behavior === 'boomerang' ? 2.5 : 1;
       projectiles.push({
         x: tank.x, y: terrainAt(tank.x) - 20,
-        vx: Math.cos(rad) * power,
-        vy: -Math.sin(rad) * power,
+        vx: Math.cos(rad) * power * speedMult,
+        vy: -Math.sin(rad) * power * speedMult,
         owner: turn,
         weaponData: w,
         dmgBonus
@@ -1184,7 +1185,7 @@ function update() {
       }
     }
 
-    // Boomerang: fly outward, then curve back toward owner
+    // Boomerang: fly outward fast, then curve back, phase through owner, despawn 10s after curving
     if (w.behavior === 'boomerang') {
       if (!p._boomFrame) p._boomFrame = 0;
       p._boomFrame++;
@@ -1192,18 +1193,16 @@ function update() {
       const dx = owner.x - p.x;
       const dy = (terrainAt(owner.x) - 20) - p.y;
       const dist = Math.hypot(dx, dy);
-      // Only start curving after flying outward for 40 frames
-      if (p._boomFrame > (w.buzzsaw ? 25 : 40) && dist > 5) {
+      const delay = w.buzzsaw ? 25 : 40;
+      // Start curving after delay
+      if (p._boomFrame > delay && dist > 5) {
+        if (!p._curveStart) p._curveStart = p._boomFrame;
         const strength = w.buzzsaw ? 1.2 : 0.8;
         p.vx += (dx / dist) * strength;
         p.vy += (dy / dist) * strength;
       }
-      // Mark as out once far enough
-      if (!p._boomerangOut && dist > 60) p._boomerangOut = true;
-      // Despawn when returns close to owner (only after going out)
-      if (p._boomerangOut && dist < 30) { projectiles.splice(i, 1); continue; }
-      // Despawn if takes too long
-      if (p._boomFrame > 300) { projectiles.splice(i, 1); continue; }
+      // Despawn 10 seconds (600 frames) after curve started
+      if (p._curveStart && (p._boomFrame - p._curveStart) > 600) { projectiles.splice(i, 1); continue; }
     }
 
     const isHoming = w.behavior === 'homing' && !p.isFragment;
@@ -1231,9 +1230,16 @@ function update() {
       }
     }
 
-    // Boomerang: damage enemy on pass-through
+    // Boomerang: damage ENEMY only on pass-through, phase through owner
     if (hitTank && w.behavior === 'boomerang') {
-      impactDamage(p.x, p.y, w, p);
+      // Check if enemy is the one we're hitting
+      const enemy = tanks[1 - p.owner];
+      const ey = terrainAt(enemy.x);
+      const edx = p.x - enemy.x;
+      const edy = p.y - (ey - 10);
+      if (Math.abs(edx) < 18 && edy > -25 && edy < 5) {
+        impactDamage(p.x, p.y, w, p);
+      }
       hitTank = false;
     }
 
@@ -1253,7 +1259,7 @@ function update() {
       continue;
     }
 
-    const hitGround = w.behavior === 'boomerang' ? false : ((p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank);
+    const hitGround = (p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank;
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
