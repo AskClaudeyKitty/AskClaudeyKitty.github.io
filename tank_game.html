@@ -1212,6 +1212,10 @@ function update() {
       if (!p._boomFrame) {
         p._boomFrame = 0;
         p._outward = true;
+        // Slow down boomerang speed
+        const slowFactor = 0.6;
+        p.vx *= slowFactor;
+        p.vy *= slowFactor;
         // Store initial throw direction and speed
         p._throwSpeed = Math.hypot(p.vx, p.vy);
         p._throwAngle = Math.atan2(-p.vy, p.vx); // angle of throw
@@ -2100,13 +2104,38 @@ function drawAimUI() {
     ctx.moveTo(sx, sy);
     let trajBounced = false;
     const isBoomerangTraj = wCheck && wCheck.behavior === 'boomerang';
-    for (let step = 0; step < (isBoomerangTraj ? 500 : 300); step++) {
+    // Boomerang trajectory simulation
+    let boomFrame = 0, outward = true, throwSpeed = Math.hypot(vx, vy);
+    for (let step = 0; step < (isBoomerangTraj ? 400 : 300); step++) {
       if (isBoomerangTraj) {
+        boomFrame++;
         const dx = tank.x - sx, dy = (tankY - 20) - sy;
-        const dist = Math.hypot(dx, dy);
-        const delay = wCheck.buzzsaw ? 25 : 40;
-        if (step > delay && dist > 5) { const str = wCheck.buzzsaw ? 1.2 : 0.8; vx += (dx/dist)*str; vy += (dy/dist)*str; }
-        if (step > delay && dist < 30) break; // returned
+        const distToOwner = Math.hypot(dx, dy);
+        // Outward phase: first 30 frames
+        if (outward && boomFrame < 30) {
+          vy -= 0.15; // upward curve
+        } else if (outward && boomFrame >= 30) {
+          outward = false;
+        }
+        // Return phase: curve back to owner
+        if (!outward) {
+          if (distToOwner > 10) {
+            const desiredAngle = Math.atan2(dy, dx);
+            const currentAngle = Math.atan2(vy, vx);
+            let angleDiff = desiredAngle - currentAngle;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            const turnStrength = wCheck.buzzsaw ? 0.15 : 0.08;
+            const newAngle = currentAngle + angleDiff * turnStrength;
+            const speed = Math.hypot(vx, vy) * 0.99;
+            vx = Math.cos(newAngle) * speed;
+            vy = Math.sin(newAngle) * speed;
+            vy -= 0.1; // aerodynamic lift
+          } else {
+            break; // returned to owner
+          }
+        }
+        if (boomFrame > 400) break;
       }
       if (windEnabled) vx += windStrength;
       sx += vx;
