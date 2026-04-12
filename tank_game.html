@@ -1264,9 +1264,11 @@ function update() {
     if (!isHoming && !isBoomerang) p.vy += grav;
     p.y += p.vy;
 
-    // Ricochet off left/right walls
-    if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx); }
-    if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx); }
+    // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
+    if (!isBoomerang) {
+      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx); }
+      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx); }
+    }
 
     // Check direct hit on enemy tank (not the one who fired, unless rebound)
     let hitTank = false;
@@ -2136,8 +2138,11 @@ function drawAimUI() {
       sx += vx;
       if (!isBoomerangTraj) vy += grav;
       sy += vy;
-      if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
-      if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
+      // Skip wall bounce for boomerang trajectory
+      if (!isBoomerangTraj) {
+        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
+        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
+      }
       if (sy >= terrainAt(sx)) {
         if (!simpleAiming && chaosMode) {
           if (!trajBounced) trajBounced = 0;
