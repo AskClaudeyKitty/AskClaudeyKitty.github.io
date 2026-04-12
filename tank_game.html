@@ -1251,7 +1251,8 @@ function update() {
         }
       }
       
-      if (p._boomFrame > 400) {
+      // Despawn at same frame count as trajectory
+      if (p._boomFrame >= 400) {
         projectiles.splice(i, 1);
         continue;
       }
@@ -2128,11 +2129,10 @@ function drawAimUI() {
             vx = Math.cos(newAngle) * speed;
             vy = Math.sin(newAngle) * speed;
             vy -= 0.1; // aerodynamic lift
-          } else {
-            break; // returned to owner
           }
+          // Don't break - keep drawing full path like actual projectile does
         }
-        if (boomFrame > 400) break;
+        if (boomFrame >= 400) break;
       }
       if (windEnabled) vx += windStrength;
       sx += vx;
@@ -2143,7 +2143,8 @@ function drawAimUI() {
         if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
         if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
       }
-      if (sy >= terrainAt(sx)) {
+      // Skip terrain collision for boomerang trajectory (they fly through)
+      if (!isBoomerangTraj && sy >= terrainAt(sx)) {
         if (!simpleAiming && chaosMode) {
           if (!trajBounced) trajBounced = 0;
           if (trajBounced < 10) {
