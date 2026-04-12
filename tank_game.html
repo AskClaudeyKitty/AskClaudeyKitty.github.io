@@ -1106,6 +1106,12 @@ function impactDamage(px, py, w, p) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
       if (t.shield) {
+        // Vampire Shield: heal 50% of blocked damage
+        const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
+        const heal = Math.round(blockedDmg * 0.5);
+        t.hp = Math.min(t.maxHp, t.hp + heal);
+        if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
+        
         // Rebound shield: shot bounces back at shooter with 80% velocity
         t.shield = false;
         spawnFloatingText(t.x, terrainAt(t.x) - 55, 'REBOUND!', '#4af');
@@ -1266,9 +1272,10 @@ function update() {
     p.y += p.vy;
 
     // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
+    // Superbounce: 300% speed on wall bounce
     if (!isBoomerang) {
-      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx); }
-      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx); }
+      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx) * 3.0; }
+      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx) * 3.0; }
     }
 
     // Check direct hit on enemy tank (not the one who fired, unless rebound)
@@ -2139,9 +2146,10 @@ function drawAimUI() {
       if (!isBoomerangTraj) vy += grav;
       sy += vy;
       // Skip wall bounce for boomerang trajectory
+      // Superbounce trajectory: 300% speed
       if (!isBoomerangTraj) {
-        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
-        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
+        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 3.0; }
+        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 3.0; }
       }
       // Skip terrain collision for boomerang trajectory (they fly through)
       if (!isBoomerangTraj && sy >= terrainAt(sx)) {
