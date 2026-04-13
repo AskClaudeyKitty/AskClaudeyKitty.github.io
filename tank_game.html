@@ -393,6 +393,14 @@ const tankTypes = [
       { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
       { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
     ]},
+  // INVINCIBLE — infinite shield, 1M HP, always vampire shields
+  { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1000000, speed: 0.8, fuel: 50, desc: 'UNBREAKABLE', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'God Punch', color: '#fff', radius: 35, dmgMult: 50.0, count: 1, spread: 0, icon: '☆', ammo: -1 },
+      { name: 'Divine Wrath', color: '#ff0', radius: 50, dmgMult: 100.0, count: 1, spread: 0, icon: '☀', ammo: 3, behavior: 'drill' },
+      { name: 'Omnislash', color: '#f0f', radius: 25, dmgMult: 30.0, count: 5, spread: 5, icon: '✦', ammo: 2 },
+      { name: 'Apocalypse', color: '#f00', radius: 80, dmgMult: 200.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'drillRain' },
+    ], infiniteShield: true, vampireShield: true },
 ];
 
 // Win counter
