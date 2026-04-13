@@ -71,7 +71,12 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('canvas');
+        // 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
+const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const btn = document.getElementById('explosion-btn');
 

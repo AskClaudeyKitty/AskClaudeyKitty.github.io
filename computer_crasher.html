@@ -78,7 +78,12 @@
     </div>
 
 <script>
-    let isRunning = false;
+    // 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
+let isRunning = false;
     let animationId = null;
     let startTime = null;
     let frameCount = 0;
@@ -497,7 +502,14 @@
 
     // ── GAME LOOP ─────────────────────────────────────────────────────────────
     function gameLoop(currentTime) {
+        animationId = requestAnimationFrame(gameLoop);
         if (!isRunning) return;
+        
+        // 60 FPS cap
+        const deltaTime = currentTime - __lastTime;
+        if (deltaTime < __FRAME_TIME) return;
+        __lastTime = currentTime - (deltaTime % __FRAME_TIME);
+        
         const elapsedTime = (startTime ? (currentTime - startTime) / 1000 : 0);
 
         // Quadratic spawn — grows explosively
@@ -517,8 +529,6 @@
         drawConfetti();
         drawGravBalls();
         updateDisplay(currentTime);
-
-        animationId = requestAnimationFrame(gameLoop);
     }
 
     function startSimulation() {

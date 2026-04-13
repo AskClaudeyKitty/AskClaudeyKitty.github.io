@@ -69,7 +69,12 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // ============== WebGL Setup ==============
+        // 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
+// ============== WebGL Setup ==============
         const canvas = document.getElementById('canvas');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;

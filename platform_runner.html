@@ -13,6 +13,11 @@
 <canvas id="c" width="800" height="400"></canvas>
 <div id="info">SPACE / TAP to jump | Double jump available | Avoid obstacles, collect coins!</div>
 <script>
+// 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;

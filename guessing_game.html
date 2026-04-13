@@ -1588,7 +1588,12 @@
     </div>
 
     <script>
-        // =====================================================
+        // 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
+// =====================================================
         // GLOBAL VARIABLES
         // =====================================================
         let currentGame = 'guess';

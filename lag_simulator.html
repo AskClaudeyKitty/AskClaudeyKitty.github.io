@@ -216,7 +216,12 @@
     </div>
 
     <script>
-        let isRunning = false;
+        // 60 FPS cap - runs at same speed regardless of display refresh rate
+let __lastTime = 0;
+const __TARGET_FPS = 60;
+const __FRAME_TIME = 1000 / __TARGET_FPS;
+
+let isRunning = false;
         let animationId = null;
         let startTime = null;
         let frameCount = 0;
