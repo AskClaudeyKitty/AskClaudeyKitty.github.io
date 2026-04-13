@@ -393,14 +393,14 @@ const tankTypes = [
       { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
       { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
     ]},
-  // INVINCIBLE — starts at 1 HP, gains HP through vampire shields
+  // INVINCIBLE — starts at 1 HP, infinite shield, gains HP through vampire shields
   { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'God Punch', color: '#fff', radius: 35, dmgMult: 50.0, count: 1, spread: 0, icon: '☆', ammo: -1 },
-      { name: 'Divine Wrath', color: '#ff0', radius: 50, dmgMult: 100.0, count: 1, spread: 0, icon: '☀', ammo: 3, behavior: 'drill' },
-      { name: 'Omnislash', color: '#f0f', radius: 25, dmgMult: 30.0, count: 5, spread: 5, icon: '✦', ammo: 2 },
-      { name: 'Apocalypse', color: '#f00', radius: 80, dmgMult: 200.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'drillRain' },
-    ], vampireShield: true },
+      { name: 'God Punch', color: '#fff', radius: 20, dmgMult: 15.0, count: 1, spread: 0, icon: '☆', ammo: -1 },
+      { name: 'Divine Wrath', color: '#ff0', radius: 30, dmgMult: 25.0, count: 1, spread: 0, icon: '☀', ammo: 3, behavior: 'drill' },
+      { name: 'Omnislash', color: '#f0f', radius: 15, dmgMult: 10.0, count: 3, spread: 5, icon: '✦', ammo: 2 },
+      { name: 'Apocalypse', color: '#f00', radius: 50, dmgMult: 50.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'drillRain' },
+    ], infiniteShield: true, vampireShield: true },
 ];
 
 // Win counter
@@ -451,8 +451,7 @@ let windEnabled = false;
 let windStrength = 0;
 
 // Locked mechanics (code 146)
-let vampireShieldEnabled = false;
-let superBounceEnabled = false;
+let shieldBoxEnabled = false; // Crates always give shields
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -496,7 +495,11 @@ function checkCratePickup(tank, tankIndex) {
   for (let i = crates.length - 1; i >= 0; i--) {
     const c = crates[i];
     if (Math.abs(tank.x - c.x) < 25) {
-      if (Math.random() < 0.25 && !tank.shield) {
+      // Shield Box mode: crates always give shields (if not already shielded)
+      if (shieldBoxEnabled && !tank.shield) {
+        tank.shield = true;
+        spawnFloatingText(c.x, c.y - 20, '+SHIELD!', '#4af');
+      } else if (Math.random() < 0.25 && !tank.shield) {
         // Shield pickup
         tank.shield = true;
         spawnFloatingText(c.x, c.y - 20, '+SHIELD!', '#4af');
@@ -657,10 +660,8 @@ canvas.addEventListener('mousedown', e => {
     if (m.y >= 455 && m.y <= 480) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 95, r3Gap2 = 6, r3Total2 = r3W2 * 2 + r3Gap2;
-        const r3X2 = W / 2 - r3Total2 / 2;
-        if (m.x >= r3X2 && m.x <= r3X2 + r3W2) vampireShieldEnabled = !vampireShieldEnabled;
-        if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) superBounceEnabled = !superBounceEnabled;
+        const r3W2 = 140, r3X2 = W / 2 - r3W2 / 2;
+        if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
       }
     }
     return;
@@ -1130,8 +1131,8 @@ function impactDamage(px, py, w, p) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
       if (t.shield) {
-        // Vampire Shield: heal 50% of blocked damage (if enabled or infiniteShield)
-        if (vampireShieldEnabled || t.infiniteShield) {
+        // Vampire Shield: heal 50% of blocked damage (if infiniteShield)
+        if (t.infiniteShield) {
           const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
           const heal = Math.round(blockedDmg * 0.5);
           t.hp = Math.min(t.maxHp, t.hp + heal);
@@ -1300,11 +1301,9 @@ function update() {
     p.y += p.vy;
 
     // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
-    // Superbounce: 300% speed on wall bounce if enabled
     if (!isBoomerang) {
-      const bounceMult = superBounceEnabled ? 3.0 : 1.0;
-      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx) * bounceMult; }
-      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx) * bounceMult; }
+      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx) * 0.8; }
+      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx) * 0.8; }
     }
 
     // Check direct hit on enemy tank (not the one who fired, unless rebound)
@@ -2175,11 +2174,9 @@ function drawAimUI() {
       if (!isBoomerangTraj) vy += grav;
       sy += vy;
       // Skip wall bounce for boomerang trajectory
-      // Superbounce trajectory: 300% speed if enabled
       if (!isBoomerangTraj) {
-        const bounceMult = superBounceEnabled ? 3.0 : 0.8;
-        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * bounceMult; }
-        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * bounceMult; }
+        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
+        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 0.8; }
       }
       // Skip terrain collision for boomerang trajectory (they fly through)
       if (!isBoomerangTraj && sy >= terrainAt(sx)) {
@@ -2313,24 +2310,15 @@ function drawMenu() {
 
   // Row 3: Locked Mechanics (code 146)
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 95, r3Gap = 6, r3Total = r3W * 2 + r3Gap;
-  const r3X = W / 2 - r3Total / 2;
+  const r3W = 140, r3X = W / 2 - r3W / 2;
 
-  // Vampire Shield toggle
-  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#484' : '#333') : '#222';
+  // Shield Box toggle - crates always give shields
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#484' : '#333') : '#222';
   ctx.fillRect(r3X, 455, r3W, 25);
-  ctx.strokeStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
   ctx.strokeRect(r3X, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace';
-  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP: ON' : 'VAMP: OFF') : 'LOCKED', r3X + r3W / 2, 472);
-
-  // Superbounce toggle
-  ctx.fillStyle = is146Unlocked ? (superBounceEnabled ? '#844' : '#333') : '#222';
-  ctx.fillRect(r3X + r3W + r3Gap, 455, r3W, 25);
-  ctx.strokeStyle = is146Unlocked ? (superBounceEnabled ? '#f44' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + r3W + r3Gap, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (superBounceEnabled ? '#f88' : '#888') : '#444'; ctx.font = '10px monospace';
-  ctx.fillText(is146Unlocked ? (superBounceEnabled ? 'BOUNCE: ON' : 'BOUNCE: OFF') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 472);
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD BOX: ON' : 'SHIELD BOX: OFF') : 'LOCKED', r3X + r3W / 2, 472);
 
   // Wins + version
   ctx.fillStyle = '#555';
