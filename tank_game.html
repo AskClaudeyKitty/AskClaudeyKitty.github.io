@@ -442,6 +442,10 @@ let testBotMode = false;
 let windEnabled = false;
 let windStrength = 0;
 
+// Locked mechanics (code 146)
+let vampireShieldEnabled = false;
+let superBounceEnabled = false;
+
 // ========== TERRAIN ==========
 function generateTerrain() {
   terrain.length = 0;
@@ -526,11 +530,13 @@ function initTanks() {
   const b = botPool[Math.floor(Math.random() * botPool.length)];
   const playerHp = testBotMode ? 999999 : p.hp;
   const playerFuel = testBotMode ? 999999 : p.fuel;
+  // Invincible tank starts with infinite shield
+  const startShield = p.infiniteShield ? true : false;
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: playerHp, maxHp: playerHp, color: p.color,
     name: p.name, weapon: 0, fuel: playerFuel, maxFuel: playerFuel, isBot: false, type: p,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: startShield, infiniteShield: p.infiniteShield || false
   });
   const botHp = testBotMode ? 100000 : b.hp;
   Object.assign(tanks[1], {
@@ -638,6 +644,16 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= r2X2 && m.x <= r2X2 + r2W2) { musicEnabled = !musicEnabled; if (!musicEnabled) stopMusic(); }
       if (m.x >= r2X2 + r2W2 + r2Gap2 && m.x <= r2X2 + r2W2 * 2 + r2Gap2) { testBotMode = !testBotMode; }
       if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
+    }
+    // Row 3: Locked Mechanics (code 146)
+    if (m.y >= 455 && m.y <= 480) {
+      const is146Unlocked = unlockedCodes.includes('146');
+      if (is146Unlocked) {
+        const r3W2 = 95, r3Gap2 = 6, r3Total2 = r3W2 * 2 + r3Gap2;
+        const r3X2 = W / 2 - r3Total2 / 2;
+        if (m.x >= r3X2 && m.x <= r3X2 + r3W2) vampireShieldEnabled = !vampireShieldEnabled;
+        if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) superBounceEnabled = !superBounceEnabled;
+      }
     }
     return;
   }
@@ -1106,14 +1122,18 @@ function impactDamage(px, py, w, p) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
       if (t.shield) {
-        // Vampire Shield: heal 50% of blocked damage
-        const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
-        const heal = Math.round(blockedDmg * 0.5);
-        t.hp = Math.min(t.maxHp, t.hp + heal);
-        if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
+        // Vampire Shield: heal 50% of blocked damage (if enabled or infiniteShield)
+        if (vampireShieldEnabled || t.infiniteShield) {
+          const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
+          const heal = Math.round(blockedDmg * 0.5);
+          t.hp = Math.min(t.maxHp, t.hp + heal);
+          if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
+        }
         
         // Rebound shield: shot bounces back at shooter with 80% velocity
-        t.shield = false;
+        if (!t.infiniteShield) {
+          t.shield = false; // Only remove if not infinite
+        }
         spawnFloatingText(t.x, terrainAt(t.x) - 55, 'REBOUND!', '#4af');
         // Create rebound projectile heading back at shooter
         const shooter = tanks[p.owner];
@@ -1272,10 +1292,11 @@ function update() {
     p.y += p.vy;
 
     // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
-    // Superbounce: 300% speed on wall bounce
+    // Superbounce: 300% speed on wall bounce if enabled
     if (!isBoomerang) {
-      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx) * 3.0; }
-      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx) * 3.0; }
+      const bounceMult = superBounceEnabled ? 3.0 : 1.0;
+      if (p.x <= 0) { p.x = 1; p.vx = Math.abs(p.vx) * bounceMult; }
+      if (p.x >= W) { p.x = W - 1; p.vx = -Math.abs(p.vx) * bounceMult; }
     }
 
     // Check direct hit on enemy tank (not the one who fired, unless rebound)
@@ -2146,10 +2167,11 @@ function drawAimUI() {
       if (!isBoomerangTraj) vy += grav;
       sy += vy;
       // Skip wall bounce for boomerang trajectory
-      // Superbounce trajectory: 300% speed
+      // Superbounce trajectory: 300% speed if enabled
       if (!isBoomerangTraj) {
-        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 3.0; }
-        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * 3.0; }
+        const bounceMult = superBounceEnabled ? 3.0 : 0.8;
+        if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * bounceMult; }
+        if (sx >= W && vx > 0) { sx = W - 1; vx = -vx * bounceMult; }
       }
       // Skip terrain collision for boomerang trajectory (they fly through)
       if (!isBoomerangTraj && sy >= terrainAt(sx)) {
@@ -2280,6 +2302,27 @@ function drawMenu() {
   ctx.strokeRect(r2X + (r2W + r2Gap) * 2, 420, r2W, 25);
   ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
   ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 437);
+
+  // Row 3: Locked Mechanics (code 146)
+  const is146Unlocked = unlockedCodes.includes('146');
+  const r3W = 95, r3Gap = 6, r3Total = r3W * 2 + r3Gap;
+  const r3X = W / 2 - r3Total / 2;
+
+  // Vampire Shield toggle
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#484' : '#333') : '#222';
+  ctx.fillRect(r3X, 455, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X, 455, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace';
+  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP: ON' : 'VAMP: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+
+  // Superbounce toggle
+  ctx.fillStyle = is146Unlocked ? (superBounceEnabled ? '#844' : '#333') : '#222';
+  ctx.fillRect(r3X + r3W + r3Gap, 455, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (superBounceEnabled ? '#f44' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X + r3W + r3Gap, 455, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (superBounceEnabled ? '#f88' : '#888') : '#444'; ctx.font = '10px monospace';
+  ctx.fillText(is146Unlocked ? (superBounceEnabled ? 'BOUNCE: ON' : 'BOUNCE: OFF') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 472);
 
   // Wins + version
   ctx.fillStyle = '#555';
