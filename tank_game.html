@@ -393,8 +393,8 @@ const tankTypes = [
       { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
       { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
     ]},
-  // INVINCIBLE — starts at 1 HP, infinite shield, gains HP through vampire shields
-  { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
+  // INVINCIBLE — starts at 1 HP, max 1M HP, infinite shield, gains HP through vampire shields
+  { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1000000, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
     weapons: [
       { name: 'God Punch', color: '#fff', radius: 20, dmgMult: 15.0, count: 1, spread: 0, icon: '☆', ammo: -1 },
       { name: 'Divine Wrath', color: '#ff0', radius: 30, dmgMult: 25.0, count: 1, spread: 0, icon: '☀', ammo: 3, behavior: 'drill' },
@@ -542,10 +542,11 @@ function initTanks() {
   const b = botPool[Math.floor(Math.random() * botPool.length)];
   const playerHp = testBotMode ? 999999 : p.hp;
   const playerFuel = testBotMode ? 999999 : p.fuel;
-  // Invincible tank starts with infinite shield
+  // Invincible tank starts with infinite shield and 1 HP (but max 1M)
   const startShield = p.infiniteShield ? true : false;
+  const startHp = p.name === 'Invincible' ? 1 : playerHp;
   Object.assign(tanks[0], {
-    x: 80 + Math.random() * 80, angle: 45, hp: playerHp, maxHp: playerHp, color: p.color,
+    x: 80 + Math.random() * 80, angle: 45, hp: startHp, maxHp: playerHp, color: p.color,
     name: p.name, weapon: 0, fuel: playerFuel, maxFuel: playerFuel, isBot: false, type: p,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: startShield, infiniteShield: p.infiniteShield || false
