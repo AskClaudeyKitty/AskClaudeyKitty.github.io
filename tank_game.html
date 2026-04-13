@@ -452,6 +452,7 @@ let windStrength = 0;
 
 // Locked mechanics (code 146)
 let shieldBoxEnabled = false; // Crates always give shields
+let clusterLuckEnabled = false; // All weapons have cluster effect
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -660,8 +661,10 @@ canvas.addEventListener('mousedown', e => {
     if (m.y >= 455 && m.y <= 480) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 140, r3X2 = W / 2 - r3W2 / 2;
+        const r3W2 = 95, r3Gap2 = 6, r3Total2 = r3W2 * 2 + r3Gap2;
+        const r3X2 = W / 2 - r3Total2 / 2;
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
+        if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
       }
     }
     return;
@@ -910,12 +913,17 @@ function fireWeapon(tank, holdTime, directPower) {
       const angleOff = (i - (w.count - 1) / 2) * w.spread + tOff;
       const rad = (tank.angle + angleOff) * Math.PI / 180;
       const speedMult = w.behavior === 'boomerang' ? 2.5 : 1;
+      // Cluster Luck: add cluster behavior to all weapons
+      let weaponData = w;
+      if (clusterLuckEnabled && w.behavior !== 'cluster') {
+        weaponData = { ...w, behavior: 'cluster', fragments: 5, fragRadius: w.radius * 0.6 };
+      }
       projectiles.push({
         x: tank.x, y: terrainAt(tank.x) - 20,
         vx: Math.cos(rad) * power * speedMult,
         vy: -Math.sin(rad) * power * speedMult,
         owner: turn,
-        weaponData: w,
+        weaponData: weaponData,
         dmgBonus
       });
     }
@@ -2310,15 +2318,24 @@ function drawMenu() {
 
   // Row 3: Locked Mechanics (code 146)
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 140, r3X = W / 2 - r3W / 2;
+  const r3W = 95, r3Gap = 6, r3Total = r3W * 2 + r3Gap;
+  const r3X = W / 2 - r3Total / 2;
 
   // Shield Box toggle - crates always give shields
   ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#484' : '#333') : '#222';
   ctx.fillRect(r3X, 455, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
   ctx.strokeRect(r3X, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD BOX: ON' : 'SHIELD BOX: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace';
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD: ON' : 'SHIELD: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+
+  // Cluster Luck toggle - all weapons have cluster effect
+  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#848' : '#333') : '#222';
+  ctx.fillRect(r3X + r3W + r3Gap, 455, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (clusterLuckEnabled ? '#a4f' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X + r3W + r3Gap, 455, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '10px monospace';
+  ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER: ON' : 'CLUSTER: OFF') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 472);
 
   // Wins + version
   ctx.fillStyle = '#555';
