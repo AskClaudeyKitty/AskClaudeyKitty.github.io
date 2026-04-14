@@ -1080,14 +1080,14 @@
             </div>
 
             <div style="text-align: left; padding: 0.5rem; background: var(--bg-primary); border-radius: 0.5rem; margin: 1rem 0;">
-                <strong>🔓 Cheat Panel:</strong><br><br>
+                <strong>🔓 Tester Panel:</strong><br><br>
                 <input type="text" id="dev-panel-input" placeholder="Enter code..." style="width: 60%; padding: 0.3rem;">
                 <button onclick="checkDevPanelCode()" style="font-size: 0.9rem; padding: 0.3rem 0.8rem; margin-left: 0.5rem;">Submit</button>
                 <div id="dev-panel-message" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
             </div>
 
             <div id="developer-panel" style="display: none; text-align: left; padding: 1rem; background: var(--card-bg); border-radius: 0.5rem; color: white;">
-                <strong>👨‍💻 Cheat Panel</strong><br><br>
+                <strong>👨‍💻 Tester Panel</strong><br><br>
                 <label style="display: block; margin-bottom: 0.5rem;">Wins: <input type="number" id="dev-wins" value="0" style="width: 70px; padding: 0.3rem; border: none;"> <button onclick="setWins()" style="background: #48bb78; border: none; padding: 0.3rem 0.8rem;">Set</button></label>
                 <label style="display: block;">Losses: <input type="number" id="dev-losses" value="0" style="width: 70px; padding: 0.3rem; border: none;"> <button onclick="setLosses()" style="background: #f56565; border: none; padding: 0.3rem 0.8rem;">Set</button></label>
                 <br><br>
@@ -4943,7 +4943,7 @@ const __FRAME_TIME = 1000 / __TARGET_FPS;
 
             if (code === DEV_PANEL_CODE) {
                 developerModeUnlocked = true;
-                messageEl.textContent = '🔓 Cheat panel unlocked!';
+                messageEl.textContent = '🔓 Tester panel unlocked!';
                 messageEl.style.color = '#48bb78';
                 document.getElementById('developer-panel').style.display = 'block';
                 updateDevSaveList();

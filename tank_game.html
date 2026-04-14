@@ -455,6 +455,21 @@ let shieldBoxEnabled = false; // Crates always give shields
 let clusterLuckEnabled = false; // All weapons have cluster effect
 let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
 
+// Test Panel (unlocked with code 146)
+let testPanelOpen = false;
+let testPanelScroll = 0;
+
+// All weapons pool for test panel
+const allWeaponsPool = [];
+function initAllWeaponsPool() {
+  allWeaponsPool.length = 0;
+  for (const t of tankTypes) {
+    for (const w of t.weapons) {
+      allWeaponsPool.push({ ...w, tankName: t.name });
+    }
+  }
+}
+
 // ========== TERRAIN ==========
 function generateTerrain() {
   terrain.length = 0;
@@ -749,6 +764,78 @@ canvas.addEventListener('mousedown', e => {
   const my = selY - 8;
   if (m.x >= W - 220 && m.x <= W - 185 && m.y >= my && m.y <= my + 38) { moveLeft = true; return; }
   if (m.x >= W - 180 && m.x <= W - 145 && m.y >= my && m.y <= my + 38) { moveRight = true; return; }
+
+  // Test Panel button click (top right)
+  const is146Unlocked2 = unlockedCodes.includes('146');
+  if (is146Unlocked2) {
+    const tpx2 = W - 100, tpy2 = 35;
+    if (m.x >= tpx2 && m.x <= tpx2 + 85 && m.y >= tpy2 && m.y <= tpy2 + 25) {
+      testPanelOpen = !testPanelOpen;
+      return;
+    }
+    
+    // Test Panel dropdown clicks
+    if (testPanelOpen) {
+      const panelW2 = 200;
+      const panelH2 = 280;
+      const panelX2 = W - panelW2 - 10;
+      const panelY2 = tpy2 + 30;
+      
+      // Close button
+      if (m.x >= panelX2 + panelW2 - 25 && m.x <= panelX2 + panelW2 - 5 && m.y >= panelY2 + 5 && m.y <= panelY2 + 23) {
+        testPanelOpen = false;
+        return;
+      }
+      
+      // Spawn Shield Crate button
+      const btnY1 = panelY2 + 35;
+      if (m.x >= panelX2 + 10 && m.x <= panelX2 + panelW2 - 10 && m.y >= btnY1 && m.y <= btnY1 + 28) {
+        // Spawn a shield crate at random position above terrain
+        const cx = 50 + Math.random() * (W - 100);
+        const cy = 50 + Math.random() * 100;
+        crates.push({ x: cx, y: cy, vx: 0, vy: 0, size: 24, type: 'shield' });
+        spawnFloatingText(cx, cy, 'SHIELD CRATE!', '#4af');
+        return;
+      }
+      
+      // Spawn Weapon Crate button
+      const btnY2 = panelY2 + 70;
+      if (m.x >= panelX2 + 10 && m.x <= panelX2 + panelW2 - 10 && m.y >= btnY2 && m.y <= btnY2 + 28) {
+        // Spawn a weapon crate at random position above terrain
+        const cx = 50 + Math.random() * (W - 100);
+        const cy = 50 + Math.random() * 100;
+        const weaponPool = [];
+        for (const t of tankTypes) {
+          for (const w of t.weapons) {
+            if (w.behavior !== 'random') weaponPool.push(w);
+          }
+        }
+        const randomWeapon = weaponPool[Math.floor(Math.random() * weaponPool.length)];
+        crates.push({ x: cx, y: cy, vx: 0, vy: 0, size: 24, weapon: randomWeapon });
+        spawnFloatingText(cx, cy, 'WEAPON CRATE!', '#fa4');
+        return;
+      }
+      
+      // Weapon list clicks
+      const listY2 = panelY2 + 125;
+      const itemH2 = 22;
+      const visibleItems2 = 6;
+      if (m.x >= panelX2 + 8 && m.x <= panelX2 + panelW2 - 8 && m.y >= listY2 && m.y <= listY2 + itemH2 * visibleItems2) {
+        if (allWeaponsPool.length === 0) initAllWeaponsPool();
+        const clickedIndex = Math.floor((m.y - listY2) / itemH2) + testPanelScroll;
+        if (clickedIndex >= 0 && clickedIndex < allWeaponsPool.length) {
+          const selectedWeapon = allWeaponsPool[clickedIndex];
+          // Give player the selected weapon as bonus
+          tanks[0].bonusWeapon = selectedWeapon;
+          tanks[0].bonusAmmo = selectedWeapon.ammo === -1 ? 999 : 3;
+          tanks[0].weapon = 4; // Switch to bonus weapon
+          spawnFloatingText(tanks[0].x, terrainAt(tanks[0].x) - 60, 'GOT ' + selectedWeapon.name + '!', selectedWeapon.color);
+          testPanelOpen = false;
+          return;
+        }
+      }
+    }
+  }
 
   // Check ammo for drag
   if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) { if (!tanks[0].bonusAmmo) return; }
@@ -3216,6 +3303,140 @@ function drawGame() {
   ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
   const ttName = m.terrainType === 'sand' ? ' [Sand]' : m.terrainType === 'rock' ? ' [Rock]' : '';
   ctx.fillText(m.name + ttName + (m.boosts ? ' (boost: ' + m.boosts.join(', ') + ')' : ''), W - 15, 15);
+
+  // Test Panel button (top right, only if code 146 unlocked)
+  const is146Unlocked = unlockedCodes.includes('146');
+  if (is146Unlocked) {
+    const tpx = W - 100, tpy = 35;
+    ctx.fillStyle = testPanelOpen ? '#484' : '#333';
+    ctx.fillRect(tpx, tpy, 85, 25);
+    ctx.strokeStyle = testPanelOpen ? '#4f4' : '#555';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tpx, tpy, 85, 25);
+    ctx.fillStyle = testPanelOpen ? '#4f4' : '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('TEST PANEL', tpx + 42, tpy + 16);
+
+    // Test Panel dropdown
+    if (testPanelOpen) {
+      const panelW = 200;
+      const panelH = 280;
+      const panelX = W - panelW - 10;
+      const panelY = tpy + 30;
+      
+      // Panel background
+      ctx.fillStyle = 'rgba(20, 20, 40, 0.95)';
+      ctx.fillRect(panelX, panelY, panelW, panelH);
+      ctx.strokeStyle = '#4f4';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(panelX, panelY, panelW, panelH);
+      
+      // Title
+      ctx.fillStyle = '#4f4';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TEST PANEL', panelX + panelW / 2, panelY + 18);
+      
+      // Spawn Shield button
+      const btnY1 = panelY + 35;
+      ctx.fillStyle = '#335';
+      ctx.fillRect(panelX + 10, btnY1, panelW - 20, 28);
+      ctx.strokeStyle = '#66f';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(panelX + 10, btnY1, panelW - 20, 28);
+      ctx.fillStyle = '#aaf';
+      ctx.font = '10px monospace';
+      ctx.fillText('SPAWN SHIELD CRATE', panelX + panelW / 2, btnY1 + 18);
+      
+      // Spawn Weapon Crate button
+      const btnY2 = panelY + 70;
+      ctx.fillStyle = '#335';
+      ctx.fillRect(panelX + 10, btnY2, panelW - 20, 28);
+      ctx.strokeStyle = '#fa4';
+      ctx.strokeRect(panelX + 10, btnY2, panelW - 20, 28);
+      ctx.fillStyle = '#ff8';
+      ctx.fillText('SPAWN WEAPON CRATE', panelX + panelW / 2, btnY2 + 18);
+      
+      // Weapon list title
+      ctx.fillStyle = '#888';
+      ctx.font = '9px monospace';
+      ctx.fillText('SELECT WEAPON:', panelX + panelW / 2, panelY + 115);
+      
+      // Initialize pool if empty
+      if (allWeaponsPool.length === 0) initAllWeaponsPool();
+      
+      // Scrollable weapon list
+      const listY = panelY + 125;
+      const itemH = 22;
+      const visibleItems = 6;
+      const maxScroll = Math.max(0, allWeaponsPool.length - visibleItems);
+      testPanelScroll = Math.max(0, Math.min(testPanelScroll, maxScroll));
+      
+      // Clip region for scrolling
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(panelX + 5, listY, panelW - 10, itemH * visibleItems);
+      ctx.clip();
+      
+      for (let i = 0; i < allWeaponsPool.length; i++) {
+        const wy = listY + (i - testPanelScroll) * itemH;
+        if (wy < listY - itemH || wy > listY + itemH * visibleItems) continue;
+        
+        const w = allWeaponsPool[i];
+        ctx.fillStyle = '#252';
+        ctx.fillRect(panelX + 8, wy, panelW - 16, itemH - 2);
+        ctx.strokeStyle = '#4a4';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(panelX + 8, wy, panelW - 16, itemH - 2);
+        
+        // Weapon color indicator
+        ctx.fillStyle = w.color;
+        ctx.fillRect(panelX + 12, wy + 4, 4, itemH - 10);
+        
+        // Weapon name
+        ctx.fillStyle = '#ccc';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(w.name.substring(0, 15), panelX + 20, wy + 13);
+        
+        // Tank source
+        ctx.fillStyle = '#888';
+        ctx.font = '7px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(w.tankName.substring(0, 8), panelX + panelW - 12, wy + 13);
+      }
+      ctx.restore();
+      
+      // Scroll indicators
+      if (testPanelScroll > 0) {
+        ctx.fillStyle = '#4f4';
+        ctx.beginPath();
+        ctx.moveTo(panelX + panelW / 2, panelY + 128);
+        ctx.lineTo(panelX + panelW / 2 - 6, panelY + 135);
+        ctx.lineTo(panelX + panelW / 2 + 6, panelY + 135);
+        ctx.fill();
+      }
+      if (testPanelScroll < maxScroll) {
+        ctx.fillStyle = '#4f4';
+        ctx.beginPath();
+        ctx.moveTo(panelX + panelW / 2, panelY + 265);
+        ctx.lineTo(panelX + panelW / 2 - 6, panelY + 258);
+        ctx.lineTo(panelX + panelW / 2 + 6, panelY + 258);
+        ctx.fill();
+      }
+      
+      // Close button
+      ctx.fillStyle = '#533';
+      ctx.fillRect(panelX + panelW - 25, panelY + 5, 20, 18);
+      ctx.strokeStyle = '#f66';
+      ctx.strokeRect(panelX + panelW - 25, panelY + 5, 20, 18);
+      ctx.fillStyle = '#f88';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('X', panelX + panelW - 15, panelY + 18);
+    }
+  }
 
   // Wind indicator
   if (windEnabled) {
