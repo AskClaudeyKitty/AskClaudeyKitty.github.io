@@ -453,6 +453,7 @@ let windStrength = 0;
 // Locked mechanics (code 146)
 let shieldBoxEnabled = false; // Crates always give shields
 let clusterLuckEnabled = false; // All weapons have cluster effect
+let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
 
 // ========== TERRAIN ==========
 function generateTerrain() {
@@ -662,10 +663,11 @@ canvas.addEventListener('mousedown', e => {
     if (m.y >= 455 && m.y <= 480) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 95, r3Gap2 = 6, r3Total2 = r3W2 * 2 + r3Gap2;
+        const r3W2 = 75, r3Gap2 = 4, r3Total2 = r3W2 * 3 + r3Gap2 * 2;
         const r3X2 = W / 2 - r3Total2 / 2;
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
         if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
+        if (m.x >= r3X2 + (r3W2 + r3Gap2) * 2 && m.x <= r3X2 + (r3W2 + r3Gap2) * 2 + r3W2) vampireShieldEnabled = !vampireShieldEnabled;
       }
     }
     return;
@@ -850,10 +852,13 @@ function resetGame() {
   const b = botPool[Math.floor(Math.random() * botPool.length)];
   const playerHp2 = testBotMode ? 999999 : p.hp;
   const playerFuel2 = testBotMode ? 999999 : p.fuel;
+  // Invincible tank keeps infinite shield on reset
+  const startShield2 = p.infiniteShield ? true : false;
+  const startHp2 = p.name === 'Invincible' ? 1 : playerHp2;
   Object.assign(tanks[0], {
-    x: 80 + Math.random() * 80, angle: 45, hp: playerHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
+    x: 80 + Math.random() * 80, angle: 45, hp: startHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: startShield2, infiniteShield: p.infiniteShield || false
   });
   const botHp2 = testBotMode ? 100000 : b.hp;
   Object.assign(tanks[1], {
@@ -1140,10 +1145,10 @@ function impactDamage(px, py, w, p) {
     const dist = Math.hypot(t.x - px, terrainAt(t.x) - py);
     if (dist < w.radius + 20) {
       if (t.shield) {
-        // Vampire Shield: heal 50% of blocked damage (if infiniteShield)
-        if (t.infiniteShield) {
+        // Vampire Shield: heal 200% of blocked damage (if enabled or infiniteShield)
+        if (vampireShieldEnabled || t.infiniteShield) {
           const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
-          const heal = Math.round(blockedDmg * 0.5);
+          const heal = Math.round(blockedDmg * 2.0);
           t.hp = Math.min(t.maxHp, t.hp + heal);
           if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
         }
@@ -1752,7 +1757,11 @@ function update() {
       for (const t of tanks) {
         const dist = Math.hypot(t.x - p.x, terrainAt(t.x) - p.y);
         if (dist < expR + 20) {
-          if (t.shield) { t.shield = false; spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af'); continue; }
+          if (t.shield) {
+            if (!t.infiniteShield) t.shield = false;
+            spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af');
+            continue;
+          }
           const dmg = Math.round(Math.max(0, (expR + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
           t.hp -= dmg;
           if (dmg > 0) {
@@ -1920,8 +1929,16 @@ function update() {
           t.inWater = true;
           t.waterSway = Math.sin(Date.now() / 200) * 3;
         } else {
-          // Shield blocks hazard damage (except infinite shield which always blocks)
+          // Shield blocks hazard damage
           if (t.shield) {
+            // Vampire heal on hazard block too (if enabled or infiniteShield)
+            if (vampireShieldEnabled || t.infiniteShield) {
+              const heal = Math.round(h.dmg * 2.0);
+              if (heal > 0) {
+                t.hp = Math.min(t.maxHp, t.hp + heal);
+                spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
+              }
+            }
             if (!t.infiniteShield) t.shield = false;
             spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af');
             continue;
@@ -2337,24 +2354,32 @@ function drawMenu() {
 
   // Row 3: Locked Mechanics (code 146)
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 95, r3Gap = 6, r3Total = r3W * 2 + r3Gap;
+  const r3W = 75, r3Gap = 4, r3Total = r3W * 3 + r3Gap * 2;
   const r3X = W / 2 - r3Total / 2;
 
-  // Shield Box toggle - crates always give shields
+  // Shield Box toggle
   ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#484' : '#333') : '#222';
   ctx.fillRect(r3X, 455, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
   ctx.strokeRect(r3X, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '10px monospace';
-  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD: ON' : 'SHIELD: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD CRATES: ON' : 'SHIELD CRATES: OFF') : 'LOCKED', r3X + r3W / 2, 472);
 
-  // Cluster Luck toggle - all weapons have cluster effect
+  // Cluster Luck toggle
   ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#848' : '#333') : '#222';
   ctx.fillRect(r3X + r3W + r3Gap, 455, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (clusterLuckEnabled ? '#a4f' : '#555') : '#333'; ctx.lineWidth = 1;
   ctx.strokeRect(r3X + r3W + r3Gap, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '10px monospace';
+  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '9px monospace';
   ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER: ON' : 'CLUSTER: OFF') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 472);
+
+  // Vampire Shield toggle
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#484' : '#333') : '#222';
+  ctx.fillRect(r3X + (r3W + r3Gap) * 2, 455, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 455, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
+  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP: ON' : 'VAMP: OFF') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 472);
 
   // Wins + version
   ctx.fillStyle = '#555';
