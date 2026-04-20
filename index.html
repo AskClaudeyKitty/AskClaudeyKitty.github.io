@@ -191,16 +191,19 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
         // Increment unique player count in Supabase
         fetch(SUPA_URL + '/rest/v1/rpc/increment_unique_players', {
             method: 'POST',
-            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' }
+            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+            body: '{}'
         }).catch(() => {});
     }
     
     // Fetch and display unique player count
-    fetch(SUPA_URL + '/rest/v1/unique_players?select=count', {
+    fetch(SUPA_URL + '/rest/v1/unique_players?id=eq.1&select=count', {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
     }).then(r => r.json()).then(data => {
-        if (data && data[0]) {
+        if (data && data[0] && data[0].count !== undefined) {
             document.getElementById('unique-players').textContent = data[0].count.toLocaleString();
+        } else {
+            document.getElementById('unique-players').textContent = '0';
         }
     }).catch(() => {
         document.getElementById('unique-players').textContent = '?';
