@@ -144,6 +144,7 @@
 <body>
     <div class="container">
         <h1>🎮 Game Collection</h1>
+        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players</div>
         <p>Welcome to the game hub!</p>
         <div class="game-links">
             <a href="lag_simulator.html">Lag Simulator<span class="play-count" data-game="lag_simulator"></span></a>
@@ -175,6 +176,37 @@
 // Play counter
 const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
+
+// Unique player counter
+(function() {
+    // Check if owner (don't count owner visits)
+    if (document.cookie.includes('owner_nocount=1')) return;
+    
+    // Get or create unique player ID
+    let playerId = localStorage.getItem('unique_player_id');
+    if (!playerId) {
+        playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('unique_player_id', playerId);
+        
+        // Increment unique player count in Supabase
+        fetch(SUPA_URL + '/rest/v1/rpc/increment_unique_players', {
+            method: 'POST',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' }
+        }).catch(() => {});
+    }
+    
+    // Fetch and display unique player count
+    fetch(SUPA_URL + '/rest/v1/unique_players?select=count', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    }).then(r => r.json()).then(data => {
+        if (data && data[0]) {
+            document.getElementById('unique-players').textContent = data[0].count.toLocaleString();
+        }
+    }).catch(() => {
+        document.getElementById('unique-players').textContent = '?';
+    });
+})();
+
 fetch(SUPA_URL + '/rest/v1/play_counts?select=game,count', {
   headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
 }).then(r => r.json()).then(data => {
