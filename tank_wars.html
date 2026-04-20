@@ -928,24 +928,24 @@
             terrain = [];
             const map = MAPS[selectedMap];
             
-            // Base height
-            let baseHeight = CANVAS_HEIGHT - 100;
+            // Base height - higher up = taller terrain
+            let baseHeight = CANVAS_HEIGHT - 250;
             
             for (let x = 0; x < CANVAS_WIDTH; x += TERRAIN_RESOLUTION) {
                 let height = baseHeight;
                 
                 // Add noise based on map type
                 if (map.terrain === 'normal') {
-                    height -= Math.sin(x * 0.01) * 50 + Math.sin(x * 0.03) * 20;
+                    height -= Math.sin(x * 0.01) * 80 + Math.sin(x * 0.03) * 40;
                 } else if (map.terrain === 'sand') {
-                    height -= Math.sin(x * 0.005) * 30 + Math.random() * 10;
+                    height -= Math.sin(x * 0.005) * 50 + Math.random() * 15;
                 } else if (map.terrain === 'rock') {
-                    height -= Math.sin(x * 0.02) * 80 + Math.sin(x * 0.05) * 30;
+                    height -= Math.sin(x * 0.02) * 120 + Math.sin(x * 0.05) * 50;
                 }
                 
                 // Add platform areas for tanks
                 if (Math.abs(x - 150) < 80 || Math.abs(x - (CANVAS_WIDTH - 150)) < 80) {
-                    height = Math.min(height, baseHeight - 30);
+                    height = Math.min(height, baseHeight - 50);
                 }
                 
                 terrain.push({ x: x, y: height });

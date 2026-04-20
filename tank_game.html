@@ -794,7 +794,7 @@ canvas.addEventListener('mousedown', e => {
         const cx = 50 + Math.random() * (W - 100);
         const cy = 50 + Math.random() * 100;
         crates.push({ x: cx, y: cy, vx: 0, vy: 0, size: 24, type: 'shield' });
-        spawnFloatingText(cx, cy, 'SHIELD CRATE!', '#4af');
+        spawnFloatingText(cx, cy, 'SHIELD!', '#4af');
         return;
       }
       
@@ -2450,7 +2450,7 @@ function drawMenu() {
   ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
   ctx.strokeRect(r3X, 455, r3W, 25);
   ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD CRATES: ON' : 'SHIELD CRATES: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD: ON' : 'SHIELD: OFF') : 'LOCKED', r3X + r3W / 2, 472);
 
   // Cluster Luck toggle
   ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#848' : '#333') : '#222';
@@ -3347,7 +3347,7 @@ function drawGame() {
       ctx.strokeRect(panelX + 10, btnY1, panelW - 20, 28);
       ctx.fillStyle = '#aaf';
       ctx.font = '10px monospace';
-      ctx.fillText('SPAWN SHIELD CRATE', panelX + panelW / 2, btnY1 + 18);
+ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
       
       // Spawn Weapon Crate button
       const btnY2 = panelY + 70;
