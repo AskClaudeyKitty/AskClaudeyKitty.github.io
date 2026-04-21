@@ -401,6 +401,14 @@ const tankTypes = [
       { name: 'Omnislash', color: '#f0f', radius: 18, dmgMult: 5.0, count: 3, spread: 5, icon: '✦', ammo: 2 },
       { name: 'Apocalypse', color: '#f00', radius: 55, dmgMult: 10.0, count: 1, spread: 0, icon: '☢', ammo: 1, behavior: 'drillRain' },
     ], infiniteShield: true, vampireShield: true },
+  // ZERO — pinpoint accuracy, massive damage, tiny radius
+  { name: 'Zero', color: '#0ff', bodyW: 26, bodyH: 9, barrelLen: 32, barrelW: 3, hp: 800, speed: 1.6, fuel: 90, desc: 'Pinpoint sniper', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Needle', color: '#0ff', radius: 1, dmgMult: 50.0, count: 1, spread: 0, icon: '|', ammo: 3 },
+      { name: 'Twin Needle', color: '#8ff', radius: 1, dmgMult: 45.0, count: 2, spread: 1, icon: '||', ammo: 2 },
+      { name: 'Zero Beam', color: '#aff', radius: 2, dmgMult: 80.0, count: 1, spread: 0, icon: '═', ammo: 2, behavior: 'pierce' },
+      { name: 'Null Point', color: '#fff', radius: 0, dmgMult: 999.0, count: 1, spread: 0, icon: '•', ammo: 1 },
+    ]},
 ];
 
 // Win counter
@@ -454,6 +462,8 @@ let windStrength = 0;
 let shieldBoxEnabled = false; // Crates always give shields
 let clusterLuckEnabled = false; // All weapons have cluster effect
 let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
+let lowGravityEnabled = false; // All maps use Moon gravity
+let noTerrainEnabled = false; // Flat ground, no terrain variation
 
 // Test Panel (unlocked with code 146)
 let testPanelOpen = false;
@@ -474,6 +484,15 @@ function initAllWeaponsPool() {
 function generateTerrain() {
   terrain.length = 0;
   const m = maps[currentMap];
+  // No terrain = flat ground
+  if (noTerrainEnabled) {
+    const flatY = H * m.baseY;
+    for (let x = 0; x <= W; x++) terrain[x] = flatY;
+    terrainType.length = 0;
+    const tt = m.terrainType || 'normal';
+    for (let x = 0; x <= W; x++) terrainType[x] = tt;
+    return;
+  }
   let y = H * m.baseY;
   for (let x = 0; x <= W; x++) {
     y += (Math.random() - 0.5) * m.roughness;
@@ -487,7 +506,7 @@ function generateTerrain() {
   }
   // Set terrain type from map
   terrainType.length = 0;
-  const tt = maps[currentMap].terrainType || 'normal';
+  const tt = m.terrainType || 'normal';
   for (let x = 0; x <= W; x++) terrainType[x] = tt;
 }
 
@@ -683,6 +702,16 @@ canvas.addEventListener('mousedown', e => {
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
         if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 2 && m.x <= r3X2 + (r3W2 + r3Gap2) * 2 + r3W2) vampireShieldEnabled = !vampireShieldEnabled;
+      }
+    }
+    // Row 4: More Locked Mechanics (code 146)
+    if (m.y >= 490 && m.y <= 515) {
+      const is146Unlocked = unlockedCodes.includes('146');
+      if (is146Unlocked) {
+        const r4W2 = 75, r4Gap2 = 4, r4Total2 = r4W2 * 3 + r4Gap2 * 2;
+        const r4X2 = W / 2 - r4Total2 / 2;
+        if (m.x >= r4X2 && m.x <= r4X2 + r4W2) lowGravityEnabled = !lowGravityEnabled;
+        if (m.x >= r4X2 + r4W2 + r4Gap2 && m.x <= r4X2 + r4W2 * 2 + r4Gap2) noTerrainEnabled = !noTerrainEnabled;
       }
     }
     return;
@@ -1162,7 +1191,7 @@ function botShoot() {
   if (botAimFrame === 1) {
     const bot = tanks[1];
     const target = tanks[0];
-    const grav = maps[currentMap].gravity;
+    const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
     const available = [];
     for (let i = 0; i < bot.type.weapons.length; i++) {
       if (bot.ammo[i] !== 0) available.push(i);
@@ -1260,7 +1289,7 @@ function impactDamage(px, py, w, p) {
 // ========== UPDATE ==========
 function update() {
   if (state !== 'game') return;
-  const grav = maps[currentMap].gravity;
+  const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
   const tank = tanks[turn];
 
   if ((!projectiles.length || testBotMode) && !gameOver) {
@@ -2463,6 +2492,26 @@ function drawMenu() {
   ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 455, r3W, 25);
   ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
   ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP: ON' : 'VAMP: OFF') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 472);
+
+  // Row 4: More Locked Mechanics
+  const r4W = 75, r4Gap = 4, r4Total = r4W * 3 + r4Gap * 2;
+  const r4X = W / 2 - r4Total / 2;
+
+  // Low Gravity toggle
+  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#448' : '#333') : '#222';
+  ctx.fillRect(r4X, 490, r4W, 25);
+  ctx.strokeStyle = is146Unlocked ? (lowGravityEnabled ? '#88f' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r4X, 490, r4W, 25);
+  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#aaf' : '#888') : '#444'; ctx.font = '9px monospace';
+  ctx.fillText(is146Unlocked ? (lowGravityEnabled ? 'LOW G: ON' : 'LOW G: OFF') : 'LOCKED', r4X + r4W / 2, 507);
+
+  // No Terrain toggle
+  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#844' : '#333') : '#222';
+  ctx.fillRect(r4X + r4W + r4Gap, 490, r4W, 25);
+  ctx.strokeStyle = is146Unlocked ? (noTerrainEnabled ? '#f88' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r4X + r4W + r4Gap, 490, r4W, 25);
+  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#faa' : '#888') : '#444'; ctx.font = '9px monospace';
+  ctx.fillText(is146Unlocked ? (noTerrainEnabled ? 'FLAT: ON' : 'FLAT: OFF') : 'LOCKED', r4X + r4W + r4Gap + r4W / 2, 507);
 
   // Wins + version
   ctx.fillStyle = '#555';
