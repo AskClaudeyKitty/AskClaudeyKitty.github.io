@@ -2231,7 +2231,7 @@ function drawTank(t, tx, ty, scale) {
 function drawAimUI() {
   if (turn !== 0 || projectiles.length || gameOver || !dragging) return;
   const tank = tanks[0];
-  const grav = maps[currentMap].gravity;
+  const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
   const rad = tank.angle * Math.PI / 180;
   const power = dragPower;
   const tankY = terrainAt(tank.x);
