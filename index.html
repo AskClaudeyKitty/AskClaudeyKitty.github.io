@@ -254,7 +254,8 @@ function resetPlayCounts() {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
         body: '{}'
     }).then(r => {
-        if (!r.ok) throw new Error('Play counts: Status ' + r.status);
+        console.log('Play counts response:', r.status);
+        if (!r.ok) return r.text().then(t => { throw new Error('Play counts: ' + r.status + ' ' + t); });
         return r.text();
     }).then(() => {
         // Reset unique players
@@ -264,10 +265,14 @@ function resetPlayCounts() {
             body: JSON.stringify({ count: 0 })
         });
     }).then(r => {
-        if (!r.ok) throw new Error('Unique players: Status ' + r.status);
+        console.log('Unique players response:', r.status);
+        if (!r.ok) return r.text().then(t => { throw new Error('Unique players: ' + r.status + ' ' + t); });
         alert('All counts reset!');
         location.reload();
-    }).catch(err => alert('Failed to reset: ' + err.message));
+    }).catch(err => {
+        console.error('Reset error:', err);
+        alert('Failed to reset: ' + err.message);
+    });
 }
 
 function buildSources() {
