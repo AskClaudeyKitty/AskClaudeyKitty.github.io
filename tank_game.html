@@ -1699,6 +1699,18 @@ function update() {
       if (w.behavior === 'cluster' && !p.isFragment) {
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
+        // Spawn hazard from main projectile effect
+        if (w.effect === 'fire') hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'fire', life: 180, dmg: 0.4 });
+        if (w.effect === 'poison') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'poison', life: 250, dmg: 0.3 });
+        if (w.effect === 'hellfire') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'hellfire', life: 300, dmg: 1.4 });
+        if (w.effect === 'ice') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'ice', life: 2400, dmg: 0 });
+        if (w.effect === 'radiation') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.8, type: 'radiation', life: 3600, dmg: 0.5 });
+        if (w.effect === 'lava') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'lava', life: 1800, dmg: 0.8 });
+        if (w.effect === 'mud') hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
+        if (w.effect === 'curse') {
+          hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
+          hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'poison', life: 400, dmg: 0.3 });
+        }
         const frags = w.fragments || 5;
         for (let f = 0; f < frags; f++) {
           const angle = Math.PI * 0.3 + (f / (frags-1)) * Math.PI * 0.4;
