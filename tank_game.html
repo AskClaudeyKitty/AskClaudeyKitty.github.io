@@ -266,6 +266,10 @@ let currentMap = 0; // randomized on game start
 // Behaviors: 'split' = fragments scatter on impact, 'cluster' = fragments arc on impact,
 // 'bounce' = bounces off terrain, 'rain' = bomblets from sky on impact,
 // 'drill' = deep crater, 'homing' = tracks enemy, 'spread' = fires fan of shots
+
+// YES constant - must be defined before tankTypes
+const yes = 9999999;
+
 const tankTypes = [
   // ABRAMS — classic military. Straightforward hard-hitting weapons.
   { name: 'Abrams', color: '#6a8', bodyW: 30, bodyH: 10, barrelLen: 26, barrelW: 4, hp: 1000, speed: 1.5, fuel: 100, desc: 'Classic military',
@@ -422,9 +426,6 @@ const tankTypes = [
 // Win counter
 let totalWins = parseInt(localStorage.getItem('tankBattleWins') || '0');
 let unlockedCodes = JSON.parse(localStorage.getItem('tankUnlockedCodes') || '[]');
-
-// YES constant
-const yes = 9999999;
 
 // ========== CRATE WEAPON POOL ==========
 const crateWeapons = [
