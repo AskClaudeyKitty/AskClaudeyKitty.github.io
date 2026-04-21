@@ -409,11 +409,22 @@ const tankTypes = [
       { name: 'Zero Beam', color: '#aff', radius: 2, dmgMult: 80.0, count: 1, spread: 0, icon: '═', ammo: 2, behavior: 'pierce' },
       { name: 'Null Point', color: '#fff', radius: 0, dmgMult: 999.0, count: 1, spread: 0, icon: '•', ammo: 1 },
     ]},
+  // YES — the ultimate confirmation
+  { name: 'Yes', color: '#2f2', bodyW: 30, bodyH: 10, barrelLen: 24, barrelW: 4, hp: yes, speed: yes, fuel: yes, desc: 'Always confirm', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Y', color: '#4f4', radius: 14, dmgMult: yes, count: 1, spread: 0, icon: 'Y', ammo: -1 },
+      { name: 'Yes', color: '#6f6', radius: 22, dmgMult: yes, count: 2, spread: 2, icon: 'YY', ammo: 3 },
+      { name: 'Yup', color: '#8f8', radius: 46, dmgMult: yes, count: 1, spread: 0, icon: 'YUP', ammo: 2 },
+      { name: 'Absolutely', color: '#afa', radius: 146, dmgMult: yes, count: 1, spread: 0, icon: 'YES!', ammo: 1, behavior: 'drillRain' },
+    ]},
 ];
 
 // Win counter
 let totalWins = parseInt(localStorage.getItem('tankBattleWins') || '0');
 let unlockedCodes = JSON.parse(localStorage.getItem('tankUnlockedCodes') || '[]');
+
+// YES constant
+const yes = 9999999;
 
 // ========== CRATE WEAPON POOL ==========
 const crateWeapons = [
@@ -2600,9 +2611,19 @@ function drawSelect() {
 
       // Stat bars
       const maxHp = 1600, maxSpd = 2, maxFuel = 130;
-      drawStatBar(bx + 45, by + 95, 75, t.hp / maxHp, '#4c4');
-      drawStatBar(bx + 45, by + 108, 75, t.speed / maxSpd, '#48f');
-      drawStatBar(bx + 45, by + 121, 75, t.fuel / maxFuel, '#fa4');
+      if (t.name === 'Yes') {
+        // YES tank shows YES instead of bars
+        ctx.fillStyle = '#4f4';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('YES', bx + 45, by + 102);
+        ctx.fillText('YES', bx + 45, by + 115);
+        ctx.fillText('YES', bx + 45, by + 128);
+      } else {
+        drawStatBar(bx + 45, by + 95, 75, t.hp / maxHp, '#4c4');
+        drawStatBar(bx + 45, by + 108, 75, t.speed / maxSpd, '#48f');
+        drawStatBar(bx + 45, by + 121, 75, t.fuel / maxFuel, '#fa4');
+      }
 
       // Description
       ctx.fillStyle = t.color;
