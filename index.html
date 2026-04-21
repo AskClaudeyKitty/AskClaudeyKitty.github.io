@@ -144,7 +144,7 @@
 <body>
     <div class="container">
         <h1>🎮 Game Collection</h1>
-        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players</div>
+        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players <span id="player-debug" style="font-size:0.7rem;color:#999;"></span></div>
         <p>Welcome to the game hub!</p>
         <div class="game-links">
             <a href="lag_simulator.html">Lag Simulator<span class="play-count" data-game="lag_simulator"></span></a>
@@ -174,27 +174,30 @@
     </div>
 
 <script>
-console.log('Script starting');
 // Play counter
 const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
 
 // Unique player counter
 (function() {
-    console.log('Player counter running');
+    const debugEl = document.getElementById('player-debug');
+    const log = (msg) => { console.log(msg); if(debugEl) debugEl.textContent += msg + ' '; };
+    log('Starting');
+    
     // Check if owner (don't count owner visits)
     if (document.cookie.includes('owner_nocount=1')) {
-        console.log('Owner mode - not counting');
+        log('Owner mode');
         return;
     }
     
     // Get or create unique player ID
     let playerId = localStorage.getItem('unique_player_id');
-    console.log('Player ID:', playerId);
+    log('ID:' + (playerId ? 'existing' : 'none'));
+    
     if (!playerId) {
         playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('unique_player_id', playerId);
-        console.log('New player, incrementing count...');
+        log('New player');
         
         // Increment unique player count in Supabase
         fetch(SUPA_URL + '/rest/v1/rpc/increment_unique_players', {
@@ -202,25 +205,25 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
             headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
             body: '{}'
         }).then(r => {
-            console.log('Increment response:', r.status);
+            log('Inc:' + r.status);
             return r.text();
-        }).then(t => console.log('Increment result:', t)).catch(e => console.error('Increment error:', e));
+        }).then(t => log('OK')).catch(e => log('Err:' + e.message));
     } else {
-        console.log('Returning player, not incrementing');
+        log('Returning');
     }
     
     // Fetch and display unique player count
     fetch(SUPA_URL + '/rest/v1/unique_players?id=eq.1&select=count', {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
     }).then(r => r.json()).then(data => {
-        console.log('Player count data:', data);
+        log('Data:' + JSON.stringify(data));
         if (data && data[0] && data[0].count !== undefined) {
             document.getElementById('unique-players').textContent = data[0].count.toLocaleString();
         } else {
             document.getElementById('unique-players').textContent = '0';
         }
     }).catch(e => {
-        console.error('Fetch count error:', e);
+        log('FetchErr');
         document.getElementById('unique-players').textContent = '?';
     });
 })();
