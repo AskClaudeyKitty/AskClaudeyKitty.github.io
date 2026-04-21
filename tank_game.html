@@ -693,25 +693,17 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= r2X2 + r2W2 + r2Gap2 && m.x <= r2X2 + r2W2 * 2 + r2Gap2) { testBotMode = !testBotMode; }
       if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
     }
-    // Row 3: Locked Mechanics (code 146)
-    if (m.y >= 455 && m.y <= 480) {
+    // Row 3: Locked Mechanics (code 146) - 5 buttons
+    if (m.y >= 450 && m.y <= 475) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 75, r3Gap2 = 4, r3Total2 = r3W2 * 3 + r3Gap2 * 2;
+        const r3W2 = 60, r3Gap2 = 4, r3Total2 = r3W2 * 5 + r3Gap2 * 4;
         const r3X2 = W / 2 - r3Total2 / 2;
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
         if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 2 && m.x <= r3X2 + (r3W2 + r3Gap2) * 2 + r3W2) vampireShieldEnabled = !vampireShieldEnabled;
-      }
-    }
-    // Row 4: More Locked Mechanics (code 146)
-    if (m.y >= 490 && m.y <= 515) {
-      const is146Unlocked = unlockedCodes.includes('146');
-      if (is146Unlocked) {
-        const r4W2 = 75, r4Gap2 = 4, r4Total2 = r4W2 * 3 + r4Gap2 * 2;
-        const r4X2 = W / 2 - r4Total2 / 2;
-        if (m.x >= r4X2 && m.x <= r4X2 + r4W2) lowGravityEnabled = !lowGravityEnabled;
-        if (m.x >= r4X2 + r4W2 + r4Gap2 && m.x <= r4X2 + r4W2 * 2 + r4Gap2) noTerrainEnabled = !noTerrainEnabled;
+        if (m.x >= r3X2 + (r3W2 + r3Gap2) * 3 && m.x <= r3X2 + (r3W2 + r3Gap2) * 3 + r3W2) lowGravityEnabled = !lowGravityEnabled;
+        if (m.x >= r3X2 + (r3W2 + r3Gap2) * 4 && m.x <= r3X2 + (r3W2 + r3Gap2) * 4 + r3W2) noTerrainEnabled = !noTerrainEnabled;
       }
     }
     return;
@@ -2464,54 +2456,50 @@ function drawMenu() {
   ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
   ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 437);
 
-  // Row 3: Locked Mechanics (code 146)
+  // Row 3: Locked Mechanics (code 146) - 5 buttons
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 75, r3Gap = 4, r3Total = r3W * 3 + r3Gap * 2;
+  const r3W = 60, r3Gap = 4, r3Total = r3W * 5 + r3Gap * 4;
   const r3X = W / 2 - r3Total / 2;
 
   // Shield Box toggle
   ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#484' : '#333') : '#222';
-  ctx.fillRect(r3X, 455, r3W, 25);
+  ctx.fillRect(r3X, 450, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD: ON' : 'SHIELD: OFF') : 'LOCKED', r3X + r3W / 2, 472);
+  ctx.strokeRect(r3X, 450, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD' : 'SHIELD') : 'LOCKED', r3X + r3W / 2, 467);
 
   // Cluster Luck toggle
   ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#848' : '#333') : '#222';
-  ctx.fillRect(r3X + r3W + r3Gap, 455, r3W, 25);
+  ctx.fillRect(r3X + r3W + r3Gap, 450, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (clusterLuckEnabled ? '#a4f' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + r3W + r3Gap, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER: ON' : 'CLUSTER: OFF') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 472);
+  ctx.strokeRect(r3X + r3W + r3Gap, 450, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER' : 'CLUSTER') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 467);
 
   // Vampire Shield toggle
   ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#484' : '#333') : '#222';
-  ctx.fillRect(r3X + (r3W + r3Gap) * 2, 455, r3W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 2, 450, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 455, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP: ON' : 'VAMP: OFF') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 472);
-
-  // Row 4: More Locked Mechanics
-  const r4W = 75, r4Gap = 4, r4Total = r4W * 3 + r4Gap * 2;
-  const r4X = W / 2 - r4Total / 2;
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 450, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP' : 'VAMP') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 467);
 
   // Low Gravity toggle
   ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#448' : '#333') : '#222';
-  ctx.fillRect(r4X, 490, r4W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 3, 450, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (lowGravityEnabled ? '#88f' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r4X, 490, r4W, 25);
-  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#aaf' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (lowGravityEnabled ? 'LOW G: ON' : 'LOW G: OFF') : 'LOCKED', r4X + r4W / 2, 507);
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 3, 450, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#aaf' : '#888') : '#444'; ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (lowGravityEnabled ? 'LOW G' : 'LOW G') : 'LOCKED', r3X + (r3W + r3Gap) * 3 + r3W / 2, 467);
 
   // No Terrain toggle
   ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#844' : '#333') : '#222';
-  ctx.fillRect(r4X + r4W + r4Gap, 490, r4W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 4, 450, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (noTerrainEnabled ? '#f88' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r4X + r4W + r4Gap, 490, r4W, 25);
-  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#faa' : '#888') : '#444'; ctx.font = '9px monospace';
-  ctx.fillText(is146Unlocked ? (noTerrainEnabled ? 'FLAT: ON' : 'FLAT: OFF') : 'LOCKED', r4X + r4W + r4Gap + r4W / 2, 507);
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 4, 450, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#faa' : '#888') : '#444'; ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (noTerrainEnabled ? 'FLAT' : 'FLAT') : 'LOCKED', r3X + (r3W + r3Gap) * 4 + r3W / 2, 467);
 
   // Wins + version
   ctx.fillStyle = '#555';
