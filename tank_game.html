@@ -1234,8 +1234,9 @@ function impactDamage(px, py, w, p) {
       if (t.shield) {
         // Vampire Shield: heal 200% of blocked damage (if enabled or infiniteShield)
         if (vampireShieldEnabled || t.infiniteShield) {
-          const blockedDmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
-          const heal = Math.round(blockedDmg * 2.0);
+          // Heal based on weapon's max potential damage (point blank hit)
+          const maxDmg = Math.round((w.radius + 20) * w.dmgMult * (p.dmgBonus || 1));
+          const heal = Math.round(maxDmg * 2.0);
           t.hp = Math.min(t.maxHp, t.hp + heal);
           if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
         }
