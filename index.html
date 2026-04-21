@@ -247,16 +247,25 @@ function checkCode(val) {
 }
 
 function resetPlayCounts() {
-    if (!confirm('Reset ALL play counts to 0?')) return;
+    if (!confirm('Reset ALL play counts AND unique players to 0?')) return;
+    // Reset game play counts
     fetch(SUPA_URL + '/rest/v1/rpc/reset_all_play_counts', {
         method: 'POST',
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
         body: '{}'
     }).then(r => {
-        if (!r.ok) throw new Error('Status ' + r.status);
+        if (!r.ok) throw new Error('Play counts: Status ' + r.status);
         return r.text();
     }).then(() => {
-        alert('Play counts reset!');
+        // Reset unique players
+        return fetch(SUPA_URL + '/rest/v1/unique_players?id=eq.1', {
+            method: 'PATCH',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ count: 0 })
+        });
+    }).then(r => {
+        if (!r.ok) throw new Error('Unique players: Status ' + r.status);
+        alert('All counts reset!');
         location.reload();
     }).catch(err => alert('Failed to reset: ' + err.message));
 }
@@ -273,6 +282,6 @@ function buildSources() {
     });
 }
 </script>
-<div id="ownerdot" style="position:fixed;bottom:4px;left:4px;width:8px;height:8px;border-radius:50%;opacity:0.15;cursor:default;z-index:99999;background:#888;"></div><input id="ownerinput" style="display:none;position:fixed;bottom:4px;left:16px;width:60px;height:14px;font-size:10px;border:1px solid #ccc;border-radius:3px;opacity:0.3;z-index:99999;background:#fff;outline:none;" maxlength="5"><script>document.getElementById('ownerdot').onclick=function(){var i=document.getElementById('ownerinput');i.style.display='block';i.focus();};document.getElementById('ownerinput').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();if(this.value==='12345'){document.cookie='owner_nocount=1;max-age=31536000;path=/';document.getElementById('reset-plays').style.display='inline-block';}this.value='';this.style.display='none';}if(e.key==='Escape'){this.value='';this.style.display='none';}};document.getElementById('reset-plays').onclick=resetPlayCounts;</script>
+<div id="ownerdot" style="position:fixed;bottom:4px;left:4px;width:8px;height:8px;border-radius:50%;opacity:0.15;cursor:default;z-index:99999;background:#888;"></div><input id="ownerinput" style="display:none;position:fixed;bottom:4px;left:16px;width:60px;height:14px;font-size:10px;border:1px solid #ccc;border-radius:3px;opacity:0.3;z-index:99999;background:#fff;outline:none;" maxlength="5"><script>if(document.cookie.includes('owner_nocount=1'))document.getElementById('reset-plays').style.display='inline-block';document.getElementById('ownerdot').onclick=function(){var i=document.getElementById('ownerinput');i.style.display='block';i.focus();};document.getElementById('ownerinput').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();if(this.value==='12345'){document.cookie='owner_nocount=1;max-age=31536000;path=/';document.getElementById('reset-plays').style.display='inline-block';}this.value='';this.style.display='none';}if(e.key==='Escape'){this.value='';this.style.display='none';}};document.getElementById('reset-plays').onclick=resetPlayCounts;</script>
 </body>
 </html>
