@@ -144,7 +144,7 @@
 <body>
     <div class="container">
         <h1>🎮 Game Collection</h1>
-        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players <span id="player-debug" style="font-size:0.7rem;color:#999;"></span></div>
+        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players</div>
         <p>Welcome to the game hub!</p>
         <div class="game-links">
             <a href="lag_simulator.html">Lag Simulator<span class="play-count" data-game="lag_simulator"></span></a>
@@ -180,50 +180,33 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 // Unique player counter
 (function() {
-    const debugEl = document.getElementById('player-debug');
-    const log = (msg) => { console.log(msg); if(debugEl) debugEl.textContent += msg + ' '; };
-    log('Starting');
-    
     // Check if owner (don't count owner visits)
-    if (document.cookie.includes('owner_nocount=1')) {
-        log('Owner mode');
-        return;
-    }
+    if (document.cookie.includes('owner_nocount=1')) return;
     
     // Get or create unique player ID
     let playerId = localStorage.getItem('unique_player_id');
-    log('ID:' + (playerId ? 'existing' : 'none'));
-    
     if (!playerId) {
         playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('unique_player_id', playerId);
-        log('New player');
         
         // Increment unique player count in Supabase
         fetch(SUPA_URL + '/rest/v1/rpc/increment_unique_players', {
             method: 'POST',
             headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
             body: '{}'
-        }).then(r => {
-            log('Inc:' + r.status);
-            return r.text();
-        }).then(t => log('OK')).catch(e => log('Err:' + e.message));
-    } else {
-        log('Returning');
+        }).catch(() => {});
     }
     
     // Fetch and display unique player count
     fetch(SUPA_URL + '/rest/v1/unique_players?id=eq.1&select=count', {
         headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
     }).then(r => r.json()).then(data => {
-        log('Data:' + JSON.stringify(data));
         if (data && data[0] && data[0].count !== undefined) {
             document.getElementById('unique-players').textContent = data[0].count.toLocaleString();
         } else {
             document.getElementById('unique-players').textContent = '0';
         }
-    }).catch(e => {
-        log('FetchErr');
+    }).catch(() => {
         document.getElementById('unique-players').textContent = '?';
     });
 })();
