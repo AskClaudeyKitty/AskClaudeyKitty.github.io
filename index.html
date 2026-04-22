@@ -3,174 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Index</title>
+    <title>Game Collection</title>
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        * {
             margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            background: white;
-            padding: 3rem 4rem;
-            border-radius: 1rem;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .header {
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
         }
-        h1 {
-            margin-top: 0;
-            color: #2d3748;
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
         }
-        .game-links {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        a {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background: #48bb78;
-            color: white;
-            text-decoration: none;
-            border-radius: 0.5rem;
-            font-size: 1.2rem;
-            transition: background 0.2s ease;
-            position: relative;
-        }
-        .play-count {
-            font-size: 0.65rem;
-            opacity: 0.8;
-            display: block;
-            margin-top: 2px;
-        }
-        a:hover {
-            background: #38a169;
-        }
-        a:nth-child(1) {
-            background: #ed8936;
-        }
-        a:nth-child(1):hover {
-            background: #dd6b20;
-        }
-        a:nth-child(2) {
-            background: #48bb78;
-        }
-        a:nth-child(2):hover {
-            background: #38a169;
-        }
-        a:nth-child(3) {
-            background: #e53e3e;
-        }
-        a:nth-child(3):hover {
-            background: #c53030;
-        }
-        a:nth-child(4) {
-            background: #805ad5;
-        }
-        a:nth-child(4):hover {
-            background: #6b46c1;
-        }
-        a:nth-child(5) {
-            background: #38b2ac;
-        }
-        a:nth-child(5):hover {
-            background: #319795;
-        }
-        a:nth-child(6) {
-            background: #9f7aea;
-        }
-        a:nth-child(6):hover {
-            background: #805ad5;
-        }
-        a:nth-child(7) {
-            background: #e53e3e;
-        }
-        a:nth-child(7):hover {
-            background: #c53030;
-        }
-        a:nth-child(8) {
-            background: #3182ce;
-        }
-        a:nth-child(8):hover {
-            background: #2b6cb0;
-        }
-        a:nth-child(9) {
-            background: #d69e2e;
-        }
-        a:nth-child(9):hover {
-            background: #b7791f;
-        }
-        a:nth-child(10) {
-            background: #e94560;
-        }
-        a:nth-child(10):hover {
-            background: #c73a52;
-        }
-        a:nth-child(11) {
-            background: #4af;
-        }
-        a:nth-child(11):hover {
-            background: #38d;
-        }
-        #code-section {
-            margin-top: 2rem;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 1rem;
-        }
-        #code-section p { font-size: 0.85rem; color: #a0aec0; margin-bottom: 0.5rem; }
-        #code-input {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 0.5rem;
+        .header p {
+            color: #666;
             font-size: 1rem;
-            width: 140px;
-            text-align: center;
-            letter-spacing: 4px;
         }
-        #code-input:focus { outline: none; border-color: #667eea; }
-        #source-links { display: none; margin-top: 1.5rem; }
-        #source-links h3 { color: #4a5568; margin-bottom: 1rem; font-size: 1rem; }
-        .src-row { margin-bottom: 8px; text-align: left; }
-        .src-row span { font-size: 0.85rem; color: #4a5568; display: block; margin-bottom: 2px; font-weight: bold; }
-        .src-row a { display: inline !important; padding: 0 !important; background: none !important; color: #667eea !important; font-size: 0.78rem; word-break: break-all; }
-        #wrong-code { color: #e53e3e; font-size: 0.8rem; margin-top: 4px; min-height: 1em; }
+        .player-count {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .game-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            border: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+            border-color: #ccc;
+        }
+        .game-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+        .game-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        .game-plays {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .code-section {
+            max-width: 600px;
+            margin: 60px auto 0;
+            text-align: center;
+            padding: 0 20px;
+        }
+        .code-section p {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+        .code-input {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            width: 160px;
+            text-align: center;
+            letter-spacing: 8px;
+            background: white;
+        }
+        .code-input:focus {
+            outline: none;
+            border-color: #333;
+        }
+        .wrong-code {
+            color: #e53e3e;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            min-height: 1.2em;
+        }
+        .source-links {
+            display: none;
+            margin-top: 24px;
+            text-align: left;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        .source-links h3 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+        .src-row {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .src-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .src-row span {
+            font-size: 0.85rem;
+            color: #666;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .src-row a {
+            color: #333;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .src-row a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 Game Collection</h1>
-        <div id="player-count" style="font-size:0.9rem;color:#718096;margin-bottom:0.5rem;">👥 <span id="unique-players">-</span> unique players</div>
-        <p>Welcome to the game hub!</p>
-        <div class="game-links">
-            <a href="lag_simulator.html">Lag Simulator<span class="play-count" data-game="lag_simulator"></span></a>
-            <a href="guessing_game.html">Play Guessing Game<span class="play-count" data-game="guessing_game"></span></a>
-            <a href="explosion-button.html">Explosion Button<span class="play-count" data-game="explosion_button"></span></a>
-            <a href="explosion-button-webgl.html">Explosion Button (WebGL)<span class="play-count" data-game="explosion_button_webgl"></span></a>
-            <a href="bouncing_ball.html">Ball in a Ring<span class="play-count" data-game="bouncing_ball"></span></a>
-            <a href="tower-defense.html">Tower Defense Game<span class="play-count" data-game="tower_defense"></span></a>
-            <a href="regular-clicker-game.html">Regular Clicker Game<span class="play-count" data-game="regular_clicker"></span></a>
-            <a href="computer_crasher.html">Computer Crasher<span class="play-count" data-game="computer_crasher"></span></a>
-            <a href="tank_game.html">Tank Battle<span class="play-count" data-game="tank_battle"></span></a>
-            <a href="typing_test.html">Typing Speed Test<span class="play-count" data-game="typing_test"></span></a>
-            <a href="platform_runner.html">Platform Runner<span class="play-count" data-game="platform_runner"></span></a>
-            <a href="python%20stuff/index.html">Python Scripts</a>
-        </div>
+    <div class="header">
+        <h1>🎮 Games</h1>
+        <p>A collection of experiments</p>
+        <div class="player-count">👥 <span id="unique-players">-</span> unique players</div>
+    </div>
 
-        <div id="code-section">
-            <p>🔒 Enter code for source links</p>
-            <input id="code-input" type="password" maxlength="6" placeholder="······" oninput="checkCode(this.value)" autocomplete="off">
-            <div id="wrong-code"></div>
-            <div id="source-links">
-                <h3>📋 Source Code Links</h3>
-                <div id="src-list"></div>
-            </div>
+    <div class="games-grid">
+        <a href="lag_simulator.html" class="game-card">
+            <div class="game-icon" style="background: #ffe4cc;">⏱️</div>
+            <div class="game-title">Lag Simulator</div>
+            <div class="game-plays" data-game="lag_simulator">- plays</div>
+        </a>
+        <a href="guessing_game.html" class="game-card">
+            <div class="game-icon" style="background: #d4edda;">🎯</div>
+            <div class="game-title">Guessing Game</div>
+            <div class="game-plays" data-game="guessing_game">- plays</div>
+        </a>
+        <a href="explosion-button.html" class="game-card">
+            <div class="game-icon" style="background: #f8d7da;">💥</div>
+            <div class="game-title">Explosion Button</div>
+            <div class="game-plays" data-game="explosion_button">- plays</div>
+        </a>
+        <a href="explosion-button-webgl.html" class="game-card">
+            <div class="game-icon" style="background: #e2d4f0;">🔥</div>
+            <div class="game-title">Explosion Button (WebGL)</div>
+            <div class="game-plays" data-game="explosion_button_webgl">- plays</div>
+        </a>
+        <a href="bouncing_ball.html" class="game-card">
+            <div class="game-icon" style="background: #cce5ff;">🔵</div>
+            <div class="game-title">Ball in a Ring</div>
+            <div class="game-plays" data-game="bouncing_ball">- plays</div>
+        </a>
+        <a href="tower-defense.html" class="game-card">
+            <div class="game-icon" style="background: #fff3cd;">🏰</div>
+            <div class="game-title">Tower Defense</div>
+            <div class="game-plays" data-game="tower_defense">- plays</div>
+        </a>
+        <a href="regular-clicker-game.html" class="game-card">
+            <div class="game-icon" style="background: #d1ecf1;">👆</div>
+            <div class="game-title">Regular Clicker</div>
+            <div class="game-plays" data-game="regular_clicker">- plays</div>
+        </a>
+        <a href="computer_crasher.html" class="game-card">
+            <div class="game-icon" style="background: #f5c6cb;">💻</div>
+            <div class="game-title">Computer Crasher</div>
+            <div class="game-plays" data-game="computer_crasher">- plays</div>
+        </a>
+        <a href="tank_game.html" class="game-card">
+            <div class="game-icon" style="background: #c3e6cb;">🎮</div>
+            <div class="game-title">Tank Battle</div>
+            <div class="game-plays" data-game="tank_battle">- plays</div>
+        </a>
+        <a href="typing_test.html" class="game-card">
+            <div class="game-icon" style="background: #bee5eb;">⌨️</div>
+            <div class="game-title">Typing Speed Test</div>
+            <div class="game-plays" data-game="typing_test">- plays</div>
+        </a>
+        <a href="platform_runner.html" class="game-card">
+            <div class="game-icon" style="background: #ffeeba;">🏃</div>
+            <div class="game-title">Platform Runner</div>
+            <div class="game-plays" data-game="platform_runner">- plays</div>
+        </a>
+        <a href="python%20stuff/index.html" class="game-card">
+            <div class="game-icon" style="background: #d6d8db;">🐍</div>
+            <div class="game-title">Python Scripts</div>
+            <div class="game-plays">-</div>
+        </a>
+    </div>
+
+    <div class="code-section">
+        <p>🔒 Enter code for source links</p>
+        <input class="code-input" id="code-input" type="password" maxlength="6" placeholder="······" oninput="checkCode(this.value)" autocomplete="off">
+        <div class="wrong-code" id="wrong-code"></div>
+        <div class="source-links" id="source-links">
+            <h3>📋 Source Code Links</h3>
+            <div id="src-list"></div>
         </div>
-        <button id="reset-plays" style="display:none;margin-top:1rem;padding:0.5rem 1rem;background:#e53e3e;color:white;border:none;border-radius:0.5rem;cursor:pointer;font-size:0.9rem;">Reset All Play Counts</button>
     </div>
 
 <script>
