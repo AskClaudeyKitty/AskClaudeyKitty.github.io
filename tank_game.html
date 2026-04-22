@@ -1283,7 +1283,7 @@ function impactDamage(px, py, w, p) {
       }
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
-      if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44'); SFX.hit(); }
+      if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, p.owner === 0 && tanks[p.owner].name === 'Yes' ? 'YES' : '-' + dmg, '#f44'); SFX.hit(); }
       if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300;
       if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
     }
@@ -1881,7 +1881,7 @@ function update() {
           const dmg = Math.round(Math.max(0, (expR + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
           t.hp -= dmg;
           if (dmg > 0) {
-            spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, '-' + dmg, '#f44');
+            spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, p.owner === 0 && tanks[p.owner].name === 'Yes' ? 'YES' : '-' + dmg, '#f44');
             if (w.effect === 'shock') t.shockTimer = 300;
           }
           if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
@@ -3108,7 +3108,8 @@ function drawGame() {
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     const boostLabel = t.boosted ? ' +' : '';
-    ctx.fillText(t.name + boostLabel + ' ' + Math.max(0, Math.round(t.hp)) + '/' + t.maxHp, t.x, ty - 40);
+    const hpText = t.name === 'Yes' ? 'YES' : Math.max(0, Math.round(t.hp)) + '/' + t.maxHp;
+    ctx.fillText(t.name + boostLabel + ' ' + hpText, t.x, ty - 40);
     if (i === 0) {
       ctx.fillStyle = '#333';
       ctx.fillRect(t.x - 22, ty - 50, 44, 4);
