@@ -45,28 +45,52 @@
         .game-card {
             background: white;
             border-radius: 16px;
-            padding: 24px;
             text-decoration: none;
             color: inherit;
             transition: all 0.2s ease;
             border: 1px solid #e0e0e0;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .game-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 24px rgba(0,0,0,0.1);
             border-color: #ccc;
         }
+        .game-preview {
+            width: 100%;
+            height: 140px;
+            border-radius: 16px 16px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-preview::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+        }
         .game-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 16px;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .game-info {
+            padding: 16px 20px 20px;
         }
         .game-title {
             font-size: 1.1rem;
@@ -166,64 +190,112 @@
 
     <div class="games-grid">
         <a href="lag_simulator.html" class="game-card">
-            <div class="game-icon" style="background: #ffe4cc;">⏱️</div>
-            <div class="game-title">Lag Simulator</div>
-            <div class="game-plays" data-game="lag_simulator">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="game-icon">⏱️</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Lag Simulator</div>
+                <div class="game-plays" data-game="lag_simulator">- plays</div>
+            </div>
         </a>
         <a href="guessing_game.html" class="game-card">
-            <div class="game-icon" style="background: #d4edda;">🎯</div>
-            <div class="game-title">Guessing Game</div>
-            <div class="game-plays" data-game="guessing_game">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="game-icon">🎯</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Guessing Game</div>
+                <div class="game-plays" data-game="guessing_game">- plays</div>
+            </div>
         </a>
         <a href="explosion-button.html" class="game-card">
-            <div class="game-icon" style="background: #f8d7da;">💥</div>
-            <div class="game-title">Explosion Button</div>
-            <div class="game-plays" data-game="explosion_button">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);">
+                <div class="game-icon">💥</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Explosion Button</div>
+                <div class="game-plays" data-game="explosion_button">- plays</div>
+            </div>
         </a>
         <a href="explosion-button-webgl.html" class="game-card">
-            <div class="game-icon" style="background: #e2d4f0;">🔥</div>
-            <div class="game-title">Explosion Button (WebGL)</div>
-            <div class="game-plays" data-game="explosion_button_webgl">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);">
+                <div class="game-icon">🔥</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Explosion Button (WebGL)</div>
+                <div class="game-plays" data-game="explosion_button_webgl">- plays</div>
+            </div>
         </a>
         <a href="bouncing_ball.html" class="game-card">
-            <div class="game-icon" style="background: #cce5ff;">🔵</div>
-            <div class="game-title">Ball in a Ring</div>
-            <div class="game-plays" data-game="bouncing_ball">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);">
+                <div class="game-icon">🔵</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Ball in a Ring</div>
+                <div class="game-plays" data-game="bouncing_ball">- plays</div>
+            </div>
         </a>
         <a href="tower-defense.html" class="game-card">
-            <div class="game-icon" style="background: #fff3cd;">🏰</div>
-            <div class="game-title">Tower Defense</div>
-            <div class="game-plays" data-game="tower_defense">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
+                <div class="game-icon">🏰</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Tower Defense</div>
+                <div class="game-plays" data-game="tower_defense">- plays</div>
+            </div>
         </a>
         <a href="regular-clicker-game.html" class="game-card">
-            <div class="game-icon" style="background: #d1ecf1;">👆</div>
-            <div class="game-title">Regular Clicker</div>
-            <div class="game-plays" data-game="regular_clicker">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);">
+                <div class="game-icon">👆</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Regular Clicker</div>
+                <div class="game-plays" data-game="regular_clicker">- plays</div>
+            </div>
         </a>
         <a href="computer_crasher.html" class="game-card">
-            <div class="game-icon" style="background: #f5c6cb;">💻</div>
-            <div class="game-title">Computer Crasher</div>
-            <div class="game-plays" data-game="computer_crasher">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #000000 0%, #434343 100%);">
+                <div class="game-icon">💻</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Computer Crasher</div>
+                <div class="game-plays" data-game="computer_crasher">- plays</div>
+            </div>
         </a>
         <a href="tank_game.html" class="game-card">
-            <div class="game-icon" style="background: #c3e6cb;">🎮</div>
-            <div class="game-title">Tank Battle</div>
-            <div class="game-plays" data-game="tank_battle">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);">
+                <div class="game-icon">🎮</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Tank Battle</div>
+                <div class="game-plays" data-game="tank_battle">- plays</div>
+            </div>
         </a>
         <a href="typing_test.html" class="game-card">
-            <div class="game-icon" style="background: #bee5eb;">⌨️</div>
-            <div class="game-title">Typing Speed Test</div>
-            <div class="game-plays" data-game="typing_test">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);">
+                <div class="game-icon">⌨️</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Typing Speed Test</div>
+                <div class="game-plays" data-game="typing_test">- plays</div>
+            </div>
         </a>
         <a href="platform_runner.html" class="game-card">
-            <div class="game-icon" style="background: #ffeeba;">🏃</div>
-            <div class="game-title">Platform Runner</div>
-            <div class="game-plays" data-game="platform_runner">- plays</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="game-icon">🏃</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Platform Runner</div>
+                <div class="game-plays" data-game="platform_runner">- plays</div>
+            </div>
         </a>
         <a href="python%20stuff/index.html" class="game-card">
-            <div class="game-icon" style="background: #d6d8db;">🐍</div>
-            <div class="game-title">Python Scripts</div>
-            <div class="game-plays">-</div>
+            <div class="game-preview" style="background: linear-gradient(135deg, #3776ab 0%, #ffd43b 100%);">
+                <div class="game-icon">🐍</div>
+            </div>
+            <div class="game-info">
+                <div class="game-title">Python Scripts</div>
+                <div class="game-plays">-</div>
+            </div>
         </a>
     </div>
 
