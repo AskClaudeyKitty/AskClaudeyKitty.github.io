@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shredded Ice - PNG Generator</title>
+    <style>
+        body {
+            background: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .download-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #00bcd4;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background: #00838f;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="signCanvas" width="900" height="700"></canvas>
+    
+    <button class="download-btn" onclick="downloadPNG()">💾 Download PNG</button>
+
+    <script>
+        const canvas = document.getElementById('signCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Load claw image
+        const clawImg = new Image();
+        clawImg.onload = drawSign;
+        clawImg.src = 'claw.png';
+        
+        function drawSign() {
+            // White background with rounded corners
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, 900, 700, 30);
+            ctx.fill();
+            
+            // Border
+            ctx.strokeStyle = '#00bcd4';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+            
+            // Title section
+            const titleY = 100;
+            
+            // Draw claw image (left of title)
+            ctx.drawImage(clawImg, 280, 40, 100, 75);
+            
+            // Title box - "Shredded"
+            ctx.fillStyle = '#00bcd4';
+            ctx.beginPath();
+            ctx.roundRect(400, 40, 220, 80, 40);
+            ctx.fill();
+            
+            // Shadow for title
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.beginPath();
+            ctx.roundRect(405, 45, 220, 80, 40);
+            ctx.fill();
+            
+            // Redraw title box
+            ctx.fillStyle = '#00bcd4';
+            ctx.beginPath();
+            ctx.roundRect(400, 40, 220, 80, 40);
+            ctx.fill();
+            
+            // "Shredded" text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold italic 42px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Shredded', 510, 82);
+            
+            // Ice decoration
+            ctx.font = '36px sans-serif';
+            ctx.fillText('❄️ 🍧 ❄️', 450, 160);
+            
+            // "ICE" subtitle
+            ctx.fillStyle = '#00838f';
+            ctx.font = 'bold 72px "Segoe UI", sans-serif';
+            ctx.letterSpacing = '8px';
+            ctx.fillText('ICE', 450, 240);
+            ctx.letterSpacing = '0';
+            
+            // Flavors box
+            const boxX = 300;
+            const boxY = 300;
+            const boxW = 300;
+            const boxH = 320;
+            
+            // Gradient background
+            const grad = ctx.createLinearGradient(boxX, boxY, boxX + boxW, boxY + boxH);
+            grad.addColorStop(0, '#00bcd4');
+            grad.addColorStop(1, '#00838f');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxW, boxH, 20);
+            ctx.fill();
+            
+            // Flavors title
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.fillText('Flavors', 450, 340);
+            
+            // Title underline
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(boxX + 30, 355);
+            ctx.lineTo(boxX + boxW - 30, 355);
+            ctx.stroke();
+            
+            // Flavor items (no emojis)
+            const flavors = [
+                'Grappling Hook Grape',
+                'Amazing Apple',
+                'Strong Strawberry',
+                'Perfect Pineapple',
+                'Delicious Dragonfruit',
+                'Chunky Chocolate',
+                'Crazy Cranberry',
+                'Barbell Blueberry'
+            ];
+            
+            ctx.font = '500 16px "Segoe UI", sans-serif';
+            let flavorY = 390;
+            
+            flavors.forEach((flavor, i) => {
+                // Flavor item background
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath();
+                ctx.roundRect(boxX + 20, flavorY - 20, boxW - 40, 32, 15);
+                ctx.fill();
+                
+                // Flavor text
+                ctx.fillStyle = '#fff';
+                ctx.fillText(flavor, 450, flavorY);
+                
+                flavorY += 42;
+            });
+            
+            // Order section
+            const orderY = 640;
+            
+            // Dashed line
+            ctx.strokeStyle = '#00bcd4';
+            ctx.setLineDash([10, 10]);
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(50, orderY - 50);
+            ctx.lineTo(850, orderY - 50);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Order text
+            ctx.fillStyle = '#00838f';
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.fillText('Place Your Order Here', 450, orderY - 15);
+            
+            // Order button
+            ctx.fillStyle = '#00bcd4';
+            ctx.beginPath();
+            ctx.roundRect(350, orderY + 5, 200, 45, 25);
+            ctx.fill();
+            
+            // Button shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.beginPath();
+            ctx.roundRect(355, orderY + 10, 200, 45, 25);
+            ctx.fill();
+            
+            // Redraw button
+            ctx.fillStyle = '#00bcd4';
+            ctx.beginPath();
+            ctx.roundRect(350, orderY + 5, 200, 45, 25);
+            ctx.fill();
+            
+            // Button text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.fillText('Order Now', 450, orderY + 32);
+        }
+        
+        function downloadPNG() {
+            const link = document.createElement('a');
+            link.download = 'shredded_ice_sign.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

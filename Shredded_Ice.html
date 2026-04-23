@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shredded Ice - Popup Stand</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .sign {
+            background: #fff;
+            border: 5px solid #00bcd4;
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 188, 212, 0.3);
+        }
+        /* Title */
+        .title-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title-box {
+            background: linear-gradient(135deg, #00bcd4 0%, #00838f 100%);
+            border-radius: 50px;
+            padding: 20px 60px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+        }
+        .title-box h1 {
+            color: #fff;
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-style: italic;
+        }
+        .subtitle {
+            color: #00838f;
+            font-size: 4rem;
+            font-weight: bold;
+            margin-top: 10px;
+            letter-spacing: 5px;
+        }
+        /* Main Layout */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        /* Canvas Section */
+        .canvas-section {
+            flex: 1;
+            text-align: center;
+        }
+        #clawCanvas {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            border: 3px dashed #00bcd4;
+            border-radius: 20px;
+            display: block;
+            margin: 0 auto;
+        }
+        .canvas-label {
+            color: #00838f;
+            font-size: 1.5rem;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        /* Flavors Menu */
+        .menu-section {
+            width: 280px;
+        }
+        .menu-box {
+            background: linear-gradient(135deg, #00bcd4 0%, #00838f 100%);
+            border-radius: 20px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+        }
+        .menu-box h3 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+        .flavor {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        .flavor:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.3);
+        }
+        /* Order Section */
+        .order-section {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 3px dashed #00bcd4;
+        }
+        .order-section h3 {
+            color: #00838f;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .order-btn {
+            background: linear-gradient(135deg, #00bcd4 0%, #00838f 100%);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.3rem;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+            transition: transform 0.2s;
+        }
+        .order-btn:hover {
+            transform: scale(1.05);
+        }
+        /* Ice decoration */
+        .ice-decoration {
+            text-align: center;
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+        /* Save button */
+        .save-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .save-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .save-btn:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="sign">
+        <!-- Title -->
+        <div class="title-section">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                <img src="claw.png" alt="Claw" style="width: 80px; height: auto;">
+                <div class="title-box">
+                    <h1>Shredded</h1>
+                </div>
+            </div>
+            <div class="ice-decoration">❄️ 🍧 ❄️</div>
+            <div class="subtitle">ICE</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Flavors Menu -->
+            <div class="menu-section" style="margin: 0 auto;">
+                <div class="menu-box">
+                    <h3>🍧 Flavors 🍧</h3>
+                    <div class="flavor">🪝 Grappling Hook Grape</div>
+                    <div class="flavor">🍎 Amazing Apple</div>
+                    <div class="flavor">🍓 Strong Strawberry</div>
+                    <div class="flavor">🍍 Perfect Pineapple</div>
+                    <div class="flavor">🐉 Delicious Dragonfruit</div>
+                    <div class="flavor">🍫 Chunky Chocolate</div>
+                    <div class="flavor">🫐 Crazy Cranberry</div>
+                    <div class="flavor">🏋️ Barbell Blueberry</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Section -->
+        <div class="order-section">
+            <h3>📝 Place Your Order Here 📝</h3>
+            <button class="order-btn">🍧 Order Now 🍧</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('clawCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawHandShreddingIce() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2 + 40;
+            
+            // Draw ice block at bottom
+            ctx.fillStyle = 'rgba(200, 230, 255, 0.8)';
+            ctx.strokeStyle = '#00bcd4';
+            ctx.lineWidth = 3;
+            
+            // Ice cube
+            ctx.beginPath();
+            ctx.moveTo(centerX - 50, centerY + 60);
+            ctx.lineTo(centerX + 50, centerY + 60);
+            ctx.lineTo(centerX + 60, centerY + 30);
+            ctx.lineTo(centerX - 40, centerY + 30);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Ice cube top
+            ctx.fillStyle = 'rgba(220, 240, 255, 0.9)';
+            ctx.beginPath();
+            ctx.moveTo(centerX - 40, centerY + 30);
+            ctx.lineTo(centerX + 60, centerY + 30);
+            ctx.lineTo(centerX + 50, centerY);
+            ctx.lineTo(centerX - 50, centerY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Draw shredded ice pieces
+            ctx.fillStyle = 'rgba(200, 230, 255, 0.9)';
+            for (let i = 0; i < 20; i++) {
+                const pieceX = centerX + (Math.random() - 0.5) * 80;
+                const pieceY = centerY + 40 + Math.random() * 50;
+                const size = 5 + Math.random() * 8;
+                ctx.beginPath();
+                ctx.arc(pieceX, pieceY, size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#00bcd4';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw monster claws like the reference image
+            const clawY = centerY - 20;
+            
+            // Draw 4 curved claws with detailed shading
+            const clawPositions = [-50, -15, 20, 55];
+            
+            clawPositions.forEach((offset, i) => {
+                const clawX = centerX + offset;
+                const length = 70 + Math.random() * 10;
+                const curve = 15 + i * 5;
+                
+                // Shadow/depth layer
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.moveTo(clawX - 8, clawY);
+                ctx.quadraticCurveTo(clawX - 15 - curve, clawY + length * 0.6, clawX - 5, clawY + length);
+                ctx.lineTo(clawX + 5, clawY + length);
+                ctx.quadraticCurveTo(clawX + 15 + curve, clawY + length * 0.6, clawX + 8, clawY);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Main claw body - gradient from dark to light
+                const grad = ctx.createLinearGradient(clawX - 10, clawY, clawX + 10, clawY + length);
+                grad.addColorStop(0, '#2a2a2a');
+                grad.addColorStop(0.3, '#4a4a4a');
+                grad.addColorStop(0.6, '#888');
+                grad.addColorStop(1, '#ddd');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(clawX - 6, clawY);
+                ctx.quadraticCurveTo(clawX - 12 - curve, clawY + length * 0.6, clawX - 2, clawY + length);
+                ctx.lineTo(clawX + 2, clawY + length);
+                ctx.quadraticCurveTo(clawX + 12 + curve, clawY + length * 0.6, clawX + 6, clawY);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Highlight/shine on claw
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.moveTo(clawX - 2, clawY + 10);
+                ctx.quadraticCurveTo(clawX - 5 - curve * 0.3, clawY + length * 0.5, clawX, clawY + length - 10);
+                ctx.lineTo(clawX + 2, clawY + length - 15);
+                ctx.quadraticCurveTo(clawX + 3 - curve * 0.3, clawY + length * 0.4, clawX + 2, clawY + 15);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Sharp tip highlight
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(clawX - 1, clawY + length - 8);
+                ctx.lineTo(clawX, clawY + length);
+                ctx.lineTo(clawX + 1, clawY + length - 8);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Texture lines on claw
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                for (let j = 1; j < 4; j++) {
+                    const lineY = clawY + (length * 0.3) + (j * length * 0.15);
+                    ctx.beginPath();
+                    ctx.moveTo(clawX - 4, lineY);
+                    ctx.lineTo(clawX + 4, lineY);
+                    ctx.stroke();
+                }
+            });
+            
+            // Claw base/knuckles
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.ellipse(centerX, clawY - 10, 70, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Knuckle highlights
+            ctx.fillStyle = '#555';
+            clawPositions.forEach(offset => {
+                ctx.beginPath();
+                ctx.arc(centerX + offset, clawY - 10, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        // Draw once (no animation)
+        drawHandShreddingIce();
+        
+        // Save as PNG function
+        function saveAsPNG() {
+            const link = document.createElement('a');
+            link.download = 'shredded_ice_claw.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
