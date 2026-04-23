@@ -719,7 +719,7 @@ canvas.addEventListener('mousedown', e => {
   const m = getMousePos(e);
   if (state === 'menu') {
     // BATTLE button
-    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; }
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; updateFireButtonVisibility(); }
     // Toggle buttons (match drawing layout)
     const btnW2 = 95, btnGap2 = 6, totalBtnW2 = btnW2 * 3 + btnGap2 * 2;
     const btnX2 = W / 2 - totalBtnW2 / 2;
@@ -779,7 +779,7 @@ canvas.addEventListener('mousedown', e => {
       }
     }
     // Back button
-    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; return; }
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateFireButtonVisibility(); return; }
     return;
   }
   if (state === 'mapSelect') {
@@ -792,7 +792,7 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= bx && m.x <= bx + 75 && m.y >= by && m.y <= by + 180) { startGame(i); return; }
     }
     // Back button
-    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; return; }
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; updateFireButtonVisibility(); return; }
     return;
   }
   if (state !== 'game' || gameOver) return;
@@ -946,24 +946,24 @@ canvas.addEventListener('wheel', e => {
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (state === 'menu') {
-    if (e.key === 'Enter') { state = 'select'; selectScroll = 0; }
+    if (e.key === 'Enter') { state = 'select'; selectScroll = 0; updateFireButtonVisibility(); }
     return;
   }
   if (state === 'select') {
-    if (e.key === 'Escape') { state = 'menu'; return; }
+    if (e.key === 'Escape') { state = 'menu'; updateFireButtonVisibility(); return; }
     if (e.key === 'ArrowLeft') menuSelection = Math.max(0, menuSelection - 1);
     if (e.key === 'ArrowRight') menuSelection = Math.min(tankTypes.length - 1, menuSelection + 1);
     if (e.key === 'Enter') startMapSelect();
     return;
   }
   if (state === 'mapSelect') {
-    if (e.key === 'Escape') { state = 'select'; selectScroll = 0; return; }
+    if (e.key === 'Escape') { state = 'select'; selectScroll = 0; updateFireButtonVisibility(); return; }
     if (e.key >= '1' && e.key <= String(maps.length)) { startGame(parseInt(e.key) - 1); return; }
     if (e.key === 'Enter') { startGame(); return; } // random
     return;
   }
   if (gameOver && e.key === 'r') return resetGame();
-  if (e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; return; }
+  if (e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; updateFireButtonVisibility(); return; }
   if (!testBotMode && (turn !== 0 || projectiles.length || gameOver)) return;
   if (gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
@@ -1003,6 +1003,7 @@ function startGame(mapIdx) {
   generateTerrain();
   applyMapBoosts();
   applyMapEffects();
+  updateFireButtonVisibility();
 }
 
 function resetGame() {
@@ -2161,6 +2162,7 @@ function checkWin() {
   if (dead0) tanks[0].hp = 0;
   if (dead1) tanks[1].hp = 0;
   gameOver = true;
+  updateFireButtonVisibility();
   stopMusic();
   if (dead0 && dead1) {
     // Both dead — attacker wins, or draw if hazard kill
@@ -3696,9 +3698,21 @@ function applyDeviceMode() {
     mobileControls.style.display = 'flex';
     desktopFireBtn.style.display = 'none';
   } else {
-    // Desktop mode: show desktop fire button, hide mobile controls
+    // Desktop mode: hide mobile controls, fire button shown only in game
     mobileControls.style.display = 'none';
+    desktopFireBtn.style.display = 'none'; // Hidden by default, shown in game
+  }
+}
+
+// Show/hide fire button based on game state
+function updateFireButtonVisibility() {
+  const mode = getDeviceMode();
+  const desktopFireBtn = document.getElementById('desktop-fire-btn');
+  
+  if (mode === 'desktop' && state === 'game' && !gameOver) {
     desktopFireBtn.style.display = 'block';
+  } else {
+    desktopFireBtn.style.display = 'none';
   }
 }
 
