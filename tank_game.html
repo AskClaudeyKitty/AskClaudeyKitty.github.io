@@ -3623,6 +3623,56 @@ document.getElementById('btn-fire').addEventListener('touchstart', (e) => {
   triggerFire();
 });
 
+// Canvas touch events for mobile drag-to-aim
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (state !== 'game' || gameOver) return;
+  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
+  
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const m = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  
+  // Check ammo for drag
+  if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) { 
+    if (!tanks[0].bonusAmmo) return; 
+  }
+  else if (tanks[0].ammo[tanks[0].weapon] === 0) return;
+  
+  // Start drag aiming
+  dragging = true;
+  dragStartX = m.x; dragStartY = m.y;
+  dragX = m.x; dragY = m.y;
+  dragPower = 0;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!dragging) return;
+  
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const m = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  
+  dragX = m.x; dragY = m.y;
+  // Direct aim: drag from tank toward where you want to shoot
+  const tank = tanks[0];
+  const tankY = terrainAt(tank.x) - 20;
+  const dx = dragX - tank.x;
+  const dy = tankY - dragY;
+  const dist = Math.hypot(dx, dy);
+  dragPower = Math.min(dist / MAX_DRAG, 1) * MAX_POWER;
+  dragAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+  dragAngle = Math.max(0, Math.min(180, dragAngle));
+  tanks[0].angle = dragAngle;
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  // Don't fire on touchend - let the fire button handle it
+  // Just stop the drag visual
+  // dragging = false; // Keep dragging true so aim stays visible
+});
+
 // Desktop fire button
 document.getElementById('btn-fire-desktop').addEventListener('mousedown', (e) => {
   e.preventDefault();
