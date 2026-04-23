@@ -253,11 +253,7 @@ const canvas = document.getElementById('canvas');
 
         // ── Canvas click ─────────────────────────────────────────────────────────
 
-        canvas.addEventListener('click', e => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
+        function handleCanvasInput(x, y) {
             // Cheat: free towers
             if (x < 50 && y > canvas.height - 50) {
                 freeTowers = !freeTowers;
@@ -278,6 +274,46 @@ const canvas = document.getElementById('canvas');
             // Select existing tower
             for (let i = 0; i < towers.length; i++) {
                 if (Math.sqrt((x - towers[i].x) ** 2 + (y - towers[i].y) ** 2) < 20) {
+                    selectedTower = i;
+                    selectedTowerForUpgrade = towers[i];
+                    showTowerPopup(towers[i]);
+                    return;
+                }
+            }
+
+            // Place new tower
+            if (selectedTowerType && gold >= towerCosts[selectedTowerType]) {
+                // Check valid placement (not on path)
+                const gridX = Math.floor(x / TILE_SIZE);
+                const gridY = Math.floor(y / TILE_SIZE);
+                if (gridX >= 0 && gridX < COLS && gridY >= 0 && gridY < ROWS && !pathGrid[gridY][gridX]) {
+                    towers.push({ x, y, type: selectedTowerType, kills: 0, targetPriority: 'first' });
+                    if (!freeTowers) gold -= towerCosts[selectedTowerType];
+                    updateStats();
+                }
+            }
+
+            selectedTower = -1;
+            selectedTowerForUpgrade = null;
+            popupRegions = [];
+        }
+
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            handleCanvasInput(x, y);
+        });
+
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            handleCanvasInput(x, y);
+        }, { passive: false });
                     selectedPlacedTower = i;
                     if (!gameRunning) draw();
                     return;
