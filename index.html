@@ -175,6 +175,54 @@
         .game-card[style*="span 2"] {
             grid-column: span 2;
         }
+        /* Device selection modal */
+        #device-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        #device-modal.show {
+            display: flex;
+        }
+        .device-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .device-modal-content h2 {
+            margin-bottom: 30px;
+            color: #1a1a1a;
+        }
+        .device-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .device-btn {
+            padding: 20px 40px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+        .device-btn:hover {
+            border-color: #333;
+            transform: translateY(-2px);
+        }
+        .device-btn.selected {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
         @media (max-width: 600px) {
             .games-grid {
                 grid-template-columns: 1fr;
@@ -193,6 +241,37 @@
         <h1>🎮 Games</h1>
         <p>A collection of experiments</p>
     </div>
+
+    <!-- Device Selection Modal -->
+    <div id="device-modal">
+        <div class="device-modal-content">
+            <h2>Choose your device</h2>
+            <div class="device-buttons">
+                <button class="device-btn" onclick="setDeviceMode('mobile')">📱 Mobile</button>
+                <button class="device-btn" onclick="setDeviceMode('desktop')">💻 Computer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if device mode is already set
+        function getDeviceMode() {
+            const match = document.cookie.match(/deviceMode=(mobile|desktop)/);
+            return match ? match[1] : null;
+        }
+
+        // Set device mode cookie (expires in 30 days)
+        function setDeviceMode(mode) {
+            const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `deviceMode=${mode}; expires=${expires}; path=/`;
+            document.getElementById('device-modal').classList.remove('show');
+        }
+
+        // Show modal if no device mode set
+        if (!getDeviceMode()) {
+            document.getElementById('device-modal').classList.add('show');
+        }
+    </script>
 
     <div class="games-grid">
         <a href="pinbark/index.html" class="game-card" style="grid-column: 1 / -1;">

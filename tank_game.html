@@ -30,9 +30,10 @@
 </head>
 <body>
 <div id="info">
-  Drag from tank to aim & fire |
+  Drag from tank to aim, then press FIRE |
   <span class="key">Q</span><span class="key">E</span> move |
-  <span class="key">1</span>-<span class="key">5</span> weapons
+  <span class="key">1</span>-<span class="key">5</span> weapons |
+  <span class="key">SPACE</span> fire
 </div>
 <div id="game-container">
   <canvas id="c" width="900" height="500"></canvas>
@@ -42,6 +43,9 @@
       <div class="mobile-btn" id="btn-right">→</div>
     </div>
     <div class="mobile-btn mobile-fire" id="btn-fire">🔥</div>
+  </div>
+  <div id="desktop-fire-btn" style="display: none; position: absolute; bottom: 10px; right: 20px; pointer-events: auto;">
+    <div class="mobile-btn mobile-fire" id="btn-fire-desktop" style="width: 80px; height: 80px; font-size: 20px;">FIRE</div>
   </div>
 </div>
 <script>
@@ -908,15 +912,25 @@ canvas.addEventListener('mousedown', e => {
   dragPower = 0;
 });
 
-canvas.addEventListener('mouseup', e => {
-  moveLeft = false; moveRight = false;
+// Fire button state
+let fireQueued = false;
+
+function triggerFire() {
   if (state !== 'game') return;
-  if (dragging && (turn === 0 || testBotMode) && (!projectiles.length || testBotMode) && !gameOver) {
-    dragging = false;
+  if ((turn === 0 || testBotMode) && (!projectiles.length || testBotMode) && !gameOver) {
     if (dragPower > 1) {
       fireWeapon(tanks[0], null, dragPower);
+      dragging = false;
+      dragPower = 0;
     }
   }
+}
+
+canvas.addEventListener('mouseup', e => {
+  moveLeft = false; moveRight = false;
+  // Only stop dragging, don't fire automatically
+  if (state !== 'game') return;
+  // Dragging continues until fire button is pressed
 });
 
 canvas.addEventListener('mouseleave', () => { dragging = false; moveLeft = false; moveRight = false; });
@@ -3606,8 +3620,46 @@ document.getElementById('btn-right').addEventListener('touchstart', (e) => { e.p
 document.getElementById('btn-right').addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
 document.getElementById('btn-fire').addEventListener('touchstart', (e) => {
   e.preventDefault();
-  if (state === 'game' && turn === 0 && !gameOver && !projectiles.length) {
-    fireWeapon(tanks[0], null, 12);
+  triggerFire();
+});
+
+// Desktop fire button
+document.getElementById('btn-fire-desktop').addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  triggerFire();
+});
+
+// Device mode detection from cookie
+function getDeviceMode() {
+  const match = document.cookie.match(/deviceMode=(mobile|desktop)/);
+  return match ? match[1] : 'desktop';
+}
+
+// Apply device-specific settings
+function applyDeviceMode() {
+  const mode = getDeviceMode();
+  const desktopFireBtn = document.getElementById('desktop-fire-btn');
+  const mobileControls = document.getElementById('mobile-controls');
+  
+  if (mode === 'mobile') {
+    // Mobile mode: show mobile controls, hide desktop fire
+    mobileControls.style.display = 'flex';
+    desktopFireBtn.style.display = 'none';
+  } else {
+    // Desktop mode: show desktop fire button, hide mobile controls
+    mobileControls.style.display = 'none';
+    desktopFireBtn.style.display = 'block';
+  }
+}
+
+// Initialize device mode
+applyDeviceMode();
+
+// Spacebar to fire
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && state === 'game') {
+    e.preventDefault();
+    triggerFire();
   }
 });
 </script>
