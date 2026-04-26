@@ -523,6 +523,277 @@ function initAllWeaponsPool() {
   }
 }
 
+// ========== CAMPAIGN MODE ==========
+let campaignMode = false;
+let campaignLevel = 1;
+let campaignMaxLevel = parseInt(localStorage.getItem('tankCampaignMax') || '1');
+let campaignHover = -1;
+let campaignScroll = 0;
+
+// Generate campaign level config (1-100)
+function getCampaignConfig(level) {
+  const mapPool = ['Plains', 'Desert', 'Snow', 'Moon', 'Volcano'];
+  const mapIdx = (level - 1) % 5;
+  const difficulty = Math.min(1, 0.3 + (level / 100) * 0.7); // 0.3 to 1.0
+  
+  // Enemy tank selection based on level
+  let enemyPool;
+  if (level <= 10) enemyPool = ['Abrams', 'Frost'];
+  else if (level <= 20) enemyPool = ['Blaze', 'Toxic', 'Abrams', 'Frost'];
+  else if (level <= 30) enemyPool = ['Electro', 'Shadow', 'Blaze', 'Toxic'];
+  else if (level <= 40) enemyPool = ['Solar', 'Hades', 'Electro', 'Shadow'];
+  else if (level <= 50) enemyPool = ['Atomic', 'Terra', 'Solar', 'Hades'];
+  else if (level <= 60) enemyPool = ['Thermonuclear', 'Anubis', 'Atomic', 'Terra'];
+  else if (level <= 70) enemyPool = ['Omega', 'Void', 'Thermonuclear', 'Anubis'];
+  else if (level <= 80) enemyPool = ['Celestial', 'Abyss', 'Omega', 'Void'];
+  else if (level <= 90) enemyPool = ['Eternal', 'Nebula', 'Celestial', 'Abyss'];
+  else enemyPool = ['Invincible', 'Eternal', 'Nebula', 'Celestial'];
+  
+  // Boss levels: every 10th
+  const isBoss = level % 10 === 0;
+  if (isBoss) {
+    const bosses = ['Hades', 'Atomic', 'Omega', 'Celestial', 'Eternal', 'Invincible', 'Nebula', 'Abyss', 'Void', 'Invincible'];
+    enemyPool = [bosses[Math.min((level / 10) - 1, 9)]];
+  }
+  
+  const enemyName = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+  const enemyType = tankTypes.find(t => t.name === enemyName);
+  
+  // HP scaling
+  const playerHp = Math.round(1000 * (1 + (level / 200)));
+  const enemyHp = Math.round((enemyType ? enemyType.hp : 1000) * (0.8 + difficulty * 0.5));
+  
+  // Fuel scaling
+  const playerFuel = Math.round(100 * (1 - (level / 300)));
+  
+  return {
+    level,
+    map: mapPool[mapIdx],
+    enemyName,
+    playerHp,
+    enemyHp,
+    playerFuel: Math.max(30, playerFuel),
+    isBoss,
+    wind: level > 20 ? (Math.random() - 0.5) * 0.3 * difficulty : 0,
+  };
+}
+
+// Start campaign level
+function startCampaignLevel(level) {
+  campaignMode = true;
+  campaignLevel = level;
+  const config = getCampaignConfig(level);
+  
+  // Find map index
+  currentMap = maps.findIndex(m => m.name === config.map);
+  if (currentMap < 0) currentMap = 0;
+  
+  state = 'game';
+  document.getElementById('info').style.display = 'block';
+  startMusic();
+  
+  // Init player tank
+  const p = tankTypes[menuSelection];
+  Object.assign(tanks[0], {
+    x: 80 + Math.random() * 80,
+    angle: 45,
+    hp: config.playerHp,
+    maxHp: config.playerHp,
+    weapon: 0,
+    fuel: config.playerFuel,
+    maxFuel: config.playerFuel,
+    ammo: p.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 50)))),
+    bonusWeapon: null,
+    bonusAmmo: 0,
+    shockTimer: 0,
+    inWater: false,
+    shield: false,
+    infiniteShield: false,
+    type: p,
+    color: p.color,
+    name: 'PLAYER',
+    boosted: false,
+  });
+  
+  // Init enemy tank
+  const b = tankTypes.find(t => t.name === config.enemyName) || tankTypes[0];
+  const botHp = config.enemyHp;
+  Object.assign(tanks[1], {
+    x: W - 160 + Math.random() * 80,
+    angle: 135,
+    hp: botHp,
+    maxHp: botHp,
+    color: '#e55',
+    name: config.isBoss ? 'BOSS ' + b.name : b.name,
+    weapon: 0,
+    fuel: b.fuel,
+    maxFuel: b.fuel,
+    type: b,
+    ammo: b.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 100)))),
+    bonusWeapon: null,
+    bonusAmmo: 0,
+    shockTimer: 0,
+    inWater: false,
+    shield: false,
+    testBot: false,
+    boosted: false,
+  });
+  
+  turn = 0;
+  projectiles = [];
+  explosions = [];
+  floatingTexts = [];
+  crates = [];
+  hazards = [];
+  gameOver = false;
+  winner = '';
+  lastProjCount = 0;
+  turnCount = 0;
+  generateTerrain();
+  applyMapBoosts();
+  applyMapEffects();
+  
+  // Apply campaign wind
+  if (config.wind !== 0) {
+    windEnabled = true;
+    windStrength = config.wind;
+  }
+  
+  updateControlsVisibility();
+}
+
+// Handle campaign victory
+function handleCampaignWin() {
+  if (!campaignMode) return;
+  
+  // Unlock next level
+  if (campaignLevel >= campaignMaxLevel) {
+    campaignMaxLevel = Math.min(100, campaignLevel + 1);
+    localStorage.setItem('tankCampaignMax', campaignMaxLevel.toString());
+  }
+  
+  // Bonus rewards every 10 levels
+  if (campaignLevel % 10 === 0) {
+    totalWins += 5;
+    localStorage.setItem('tankBattleWins', totalWins);
+  }
+}
+
+// Draw campaign level select screen
+function drawCampaignSelect() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0a2a');
+  grad.addColorStop(1, '#1a1a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Back button
+  ctx.fillStyle = '#333';
+  ctx.fillRect(20, 15, 80, 30);
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(20, 15, 80, 30);
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('< BACK', 60, 35);
+
+  // Title
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 28px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('CAMPAIGN', W / 2, 45);
+  ctx.fillStyle = '#666'; ctx.font = '11px monospace';
+  ctx.fillText('Level ' + campaignLevel + ' / 100', W / 2, 68);
+
+  // Level grid: 10 columns x 10 rows
+  const cols = 10;
+  const rows = 10;
+  const cellW = 70;
+  const cellH = 32;
+  const gap = 4;
+  const startX = W / 2 - (cols * (cellW + gap)) / 2;
+  const startY = 90;
+
+  for (let i = 0; i < 100; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const bx = startX + col * (cellW + gap);
+    const by = startY + row * (cellH + gap) - campaignScroll;
+    
+    // Skip if off screen
+    if (by < 70 || by > H - 20) continue;
+    
+    const level = i + 1;
+    const unlocked = level <= campaignMaxLevel;
+    const isBoss = level % 10 === 0;
+    const hovered = campaignHover === i;
+    
+    // Cell background
+    if (unlocked) {
+      if (isBoss) {
+        ctx.fillStyle = hovered ? '#a44' : '#733';
+      } else {
+        ctx.fillStyle = hovered ? '#484' : '#333';
+      }
+    } else {
+      ctx.fillStyle = '#222';
+    }
+    ctx.fillRect(bx, by, cellW, cellH);
+    
+    // Border
+    if (unlocked) {
+      ctx.strokeStyle = isBoss ? '#f44' : (hovered ? '#6a6' : '#555');
+      ctx.lineWidth = hovered ? 2 : 1;
+    } else {
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+    }
+    ctx.strokeRect(bx, by, cellW, cellH);
+    
+    // Level number
+    ctx.fillStyle = unlocked ? (isBoss ? '#f88' : '#ccc') : '#444';
+    ctx.font = isBoss ? 'bold 11px monospace' : '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(level.toString(), bx + cellW / 2, by + cellH / 2 + 4);
+    
+    // Boss indicator
+    if (isBoss && unlocked) {
+      ctx.fillStyle = '#f44';
+      ctx.font = '8px monospace';
+      ctx.fillText('BOSS', bx + cellW / 2, by + cellH - 2);
+    }
+  }
+
+  // Scroll indicator
+  const maxScroll = Math.max(0, rows * (cellH + gap) - (H - 110));
+  if (maxScroll > 0) {
+    ctx.fillStyle = '#333';
+    ctx.fillRect(W - 15, 90, 8, H - 110);
+    const thumbH = Math.max(20, (H - 110) * (H - 110) / (maxScroll + H - 110));
+    const thumbY = 90 + (campaignScroll / maxScroll) * (H - 110 - thumbH);
+    ctx.fillStyle = '#666';
+    ctx.fillRect(W - 15, thumbY, 8, thumbH);
+  }
+
+  // Level info panel
+  if (campaignHover >= 0) {
+    const level = campaignHover + 1;
+    const config = getCampaignConfig(level);
+    const unlocked = level <= campaignMaxLevel;
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(W / 2 - 120, H - 70, 240, 60);
+    ctx.strokeStyle = unlocked ? '#666' : '#333';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(W / 2 - 120, H - 70, 240, 60);
+    
+    ctx.fillStyle = unlocked ? '#fff' : '#666';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Level ' + level + (config.isBoss ? ' - BOSS!' : ''), W / 2, H - 52);
+    ctx.fillStyle = unlocked ? '#888' : '#444';
+    ctx.font = '10px monospace';
+    ctx.fillText(config.map + ' vs ' + config.enemyName, W / 2, H - 36);
+    ctx.fillText('HP: ' + config.playerHp + ' | Fuel: ' + config.playerFuel, W / 2, H - 22);
+  }
+}
+
 // ========== TERRAIN ==========
 function generateTerrain() {
   terrain.length = 0;
@@ -698,6 +969,30 @@ canvas.addEventListener('mousemove', e => {
     }
     return;
   }
+  if (state === 'campaign') {
+    campaignHover = -1;
+    const cols = 10;
+    const cellW = 70;
+    const cellH = 32;
+    const gap = 4;
+    const startX = W / 2 - (cols * (cellW + gap)) / 2;
+    const startY = 90;
+    
+    for (let i = 0; i < 100; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const bx = startX + col * (cellW + gap);
+      const by = startY + row * (cellH + gap) - campaignScroll;
+      
+      if (by < 70 || by > H - 20) continue;
+      
+      if (m.x >= bx && m.x <= bx + cellW && m.y >= by && m.y <= by + cellH) {
+        campaignHover = i;
+        break;
+      }
+    }
+    return;
+  }
   if (dragging) {
     dragX = m.x; dragY = m.y;
     // Direct aim: drag from tank toward where you want to shoot
@@ -718,12 +1013,14 @@ let moveLeft = false, moveRight = false;
 canvas.addEventListener('mousedown', e => {
   const m = getMousePos(e);
   if (state === 'menu') {
-    // BATTLE button
-    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 340) { state = 'select'; selectScroll = 0; updateControlsVisibility(); }
+    // QUICK BATTLE button
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 260 && m.y <= 310) { state = 'select'; selectScroll = 0; campaignMode = false; updateControlsVisibility(); }
+    // CAMPAIGN button
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 320 && m.y <= 370) { state = 'campaign'; campaignHover = -1; campaignScroll = 0; updateControlsVisibility(); }
     // Toggle buttons (match drawing layout)
     const btnW2 = 95, btnGap2 = 6, totalBtnW2 = btnW2 * 3 + btnGap2 * 2;
     const btnX2 = W / 2 - totalBtnW2 / 2;
-    if (m.y >= 380 && m.y <= 410) {
+    if (m.y >= 420 && m.y <= 450) {
       if (m.x >= btnX2 && m.x <= btnX2 + btnW2) simpleAiming = !simpleAiming;
       if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
       if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
@@ -793,6 +1090,35 @@ canvas.addEventListener('mousedown', e => {
     }
     // Back button
     if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; updateControlsVisibility(); return; }
+    return;
+  }
+  if (state === 'campaign') {
+    // Back button
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
+    
+    // Level grid clicks
+    const cols = 10;
+    const cellW = 70;
+    const cellH = 32;
+    const gap = 4;
+    const startX = W / 2 - (cols * (cellW + gap)) / 2;
+    const startY = 90;
+    
+    for (let i = 0; i < 100; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const bx = startX + col * (cellW + gap);
+      const by = startY + row * (cellH + gap) - campaignScroll;
+      
+      if (m.x >= bx && m.x <= bx + cellW && m.y >= by && m.y <= by + cellH) {
+        const level = i + 1;
+        if (level <= campaignMaxLevel) {
+          menuSelection = 0; // Use default tank for campaign
+          startCampaignLevel(level);
+        }
+        return;
+      }
+    }
     return;
   }
   if (state !== 'game' || gameOver) return;
@@ -941,12 +1267,17 @@ canvas.addEventListener('wheel', e => {
     selectScroll = Math.max(0, Math.min(maxScroll, selectScroll + e.deltaY * 0.5));
     e.preventDefault();
   }
+  if (state === 'campaign') {
+    const maxScroll = Math.max(0, 10 * 36 - (H - 110));
+    campaignScroll = Math.max(0, Math.min(maxScroll, campaignScroll + e.deltaY * 0.5));
+    e.preventDefault();
+  }
 }, { passive: false });
 
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (state === 'menu') {
-    if (e.key === 'Enter') { state = 'select'; selectScroll = 0; updateControlsVisibility(); }
+    if (e.key === 'Enter') { state = 'select'; selectScroll = 0; campaignMode = false; updateControlsVisibility(); }
     return;
   }
   if (state === 'select') {
@@ -962,8 +1293,25 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Enter') { startGame(); return; } // random
     return;
   }
+  if (state === 'campaign') {
+    if (e.key === 'Escape') { state = 'menu'; updateControlsVisibility(); return; }
+    if (e.key === 'ArrowUp') campaignScroll = Math.max(0, campaignScroll - 50);
+    if (e.key === 'ArrowDown') campaignScroll = Math.min(200, campaignScroll + 50);
+    return;
+  }
   if (gameOver && e.key === 'r') return resetGame();
-  if (e.key === 'm') { state = 'select'; selectScroll = 0; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; updateControlsVisibility(); return; }
+  if (gameOver && e.key === 'n' && campaignMode && tanks[0].hp > 0) {
+    // Next campaign level
+    if (campaignLevel < 100) {
+      startCampaignLevel(campaignLevel + 1);
+    } else {
+      state = 'campaign';
+      campaignHover = -1;
+      updateControlsVisibility();
+    }
+    return;
+  }
+  if (e.key === 'm') { state = 'select'; selectScroll = 0; campaignMode = false; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; updateControlsVisibility(); return; }
   if (!testBotMode && (turn !== 0 || projectiles.length || gameOver)) return;
   if (gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
@@ -2167,13 +2515,14 @@ function checkWin() {
   if (dead0 && dead1) {
     // Both dead — attacker wins, or draw if hazard kill
     winner = tanks[turn].name;
-    if (turn === 0) { SFX.win(); }
+    if (turn === 0) { SFX.win(); handleCampaignWin(); }
     else { SFX.lose(); }
   } else if (dead1) {
     winner = tanks[0].name;
     totalWins++;
     localStorage.setItem('tankBattleWins', totalWins);
     SFX.win();
+    handleCampaignWin();
   } else {
     winner = tanks[1].name;
     SFX.lose();
@@ -2449,17 +2798,27 @@ function drawMenu() {
 
   // BATTLE button
   ctx.fillStyle = '#d44';
-  ctx.fillRect(W / 2 - 100, 280, 200, 60);
+  ctx.fillRect(W / 2 - 100, 260, 200, 50);
   ctx.strokeStyle = '#f66';
   ctx.lineWidth = 2;
-  ctx.strokeRect(W / 2 - 100, 280, 200, 60);
+  ctx.strokeRect(W / 2 - 100, 260, 200, 50);
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 26px monospace';
-  ctx.fillText('BATTLE', W / 2, 318);
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('QUICK BATTLE', W / 2, 292);
+
+  // CAMPAIGN button
+  ctx.fillStyle = '#44d';
+  ctx.fillRect(W / 2 - 100, 320, 200, 50);
+  ctx.strokeStyle = '#66f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W / 2 - 100, 320, 200, 50);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('CAMPAIGN', W / 2, 352);
 
   ctx.fillStyle = '#555';
   ctx.font = '10px monospace';
-  ctx.fillText('or press ENTER', W / 2, 360);
+  ctx.fillText('or press ENTER', W / 2, 400);
 
   // Options (3 buttons)
   const btnW = 95, btnGap = 6, totalBtnW = btnW * 3 + btnGap * 2;
@@ -3565,6 +3924,11 @@ ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
     ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'right';
     ctx.fillText('Fuel: ' + Math.round(tanks[0].fuel), W - 15, H - 25);
   }
+  // Campaign level display
+  if (campaignMode && !gameOver) {
+    ctx.fillStyle = '#ff8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('Level ' + campaignLevel + '/100', 15, H - 10);
+  }
 
   // Game over
   if (gameOver) {
@@ -3573,7 +3937,15 @@ ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
     ctx.fillStyle = '#fff'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center';
     ctx.fillText(winner + ' wins!', W / 2, H / 2);
     ctx.font = '14px monospace'; ctx.fillStyle = '#aaa';
-    ctx.fillText('R = rematch  |  M = menu', W / 2, H / 2 + 30);
+    if (campaignMode) {
+      if (tanks[0].hp > 0) {
+        ctx.fillText('Campaign Level ' + campaignLevel + ' complete! | N = next | M = menu', W / 2, H / 2 + 30);
+      } else {
+        ctx.fillText('Campaign Level ' + campaignLevel + ' failed | R = retry | M = menu', W / 2, H / 2 + 30);
+      }
+    } else {
+      ctx.fillText('R = rematch  |  M = menu', W / 2, H / 2 + 30);
+    }
   }
 
   ctx.restore();
@@ -3583,6 +3955,7 @@ function draw() {
   if (state === 'menu') drawMenu();
   else if (state === 'select') drawSelect();
   else if (state === 'mapSelect') drawMapSelect();
+  else if (state === 'campaign') drawCampaignSelect();
   else drawGame();
 }
 
