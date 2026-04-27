@@ -4043,6 +4043,12 @@ document.getElementById('btn-fire').addEventListener('touchstart', (e) => {
   triggerFire();
 });
 
+// Desktop click on fire button
+document.getElementById('btn-fire').addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  triggerFire();
+});
+
 // Canvas touch events for mobile drag-to-aim
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -4093,12 +4099,6 @@ canvas.addEventListener('touchend', e => {
   // dragging = false; // Keep dragging true so aim stays visible
 });
 
-// Desktop fire button
-document.getElementById('btn-fire-desktop').addEventListener('mousedown', (e) => {
-  e.preventDefault();
-  triggerFire();
-});
-
 // Device mode detection from cookie
 function getDeviceMode() {
   const match = document.cookie.match(/deviceMode=(mobile|desktop)/);
@@ -4116,17 +4116,11 @@ function applyDeviceMode() {
   desktopFireBtn.style.display = 'none';
 }
 
-// Show/hide controls based on game state and device mode
+// Show/hide controls based on game state
 function updateControlsVisibility() {
-  const mode = getDeviceMode();
   const mobileControls = document.getElementById('mobile-controls');
   const inGame = state === 'game' && !gameOver;
-  
-  if (mode === 'mobile') {
-    mobileControls.style.display = inGame ? 'flex' : 'none';
-  } else {
-    mobileControls.style.display = 'none';
-  }
+  mobileControls.style.display = inGame ? 'flex' : 'none';
 }
 
 // Initialize device mode
