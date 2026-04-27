@@ -536,23 +536,23 @@ function getCampaignConfig(level) {
   const mapIdx = (level - 1) % 5;
   const difficulty = Math.min(1, 0.3 + (level / 100) * 0.7); // 0.3 to 1.0
   
-  // Enemy tank selection based on level
+  // Enemy tank selection based on level (only use tanks that exist in tankTypes)
   let enemyPool;
   if (level <= 10) enemyPool = ['Abrams', 'Frost'];
   else if (level <= 20) enemyPool = ['Blaze', 'Toxic', 'Abrams', 'Frost'];
-  else if (level <= 30) enemyPool = ['Electro', 'Shadow', 'Blaze', 'Toxic'];
-  else if (level <= 40) enemyPool = ['Solar', 'Hades', 'Electro', 'Shadow'];
+  else if (level <= 30) enemyPool = ['Electro', 'Blaze', 'Toxic', 'Frost'];
+  else if (level <= 40) enemyPool = ['Solar', 'Hades', 'Electro', 'Blaze'];
   else if (level <= 50) enemyPool = ['Atomic', 'Terra', 'Solar', 'Hades'];
-  else if (level <= 60) enemyPool = ['Thermonuclear', 'Anubis', 'Atomic', 'Terra'];
-  else if (level <= 70) enemyPool = ['Omega', 'Void', 'Thermonuclear', 'Anubis'];
-  else if (level <= 80) enemyPool = ['Celestial', 'Abyss', 'Omega', 'Void'];
-  else if (level <= 90) enemyPool = ['Eternal', 'Nebula', 'Celestial', 'Abyss'];
-  else enemyPool = ['Invincible', 'Eternal', 'Nebula', 'Celestial'];
+  else if (level <= 60) enemyPool = ['Anubis', 'Atomic', 'Terra', 'Solar'];
+  else if (level <= 70) enemyPool = ['Thermonuclear', 'Anubis', 'Atomic', 'Hades'];
+  else if (level <= 80) enemyPool = ['Thermonuclear', 'Anubis', 'Atomic', 'Terra'];
+  else if (level <= 90) enemyPool = ['Invincible', 'Thermonuclear', 'Anubis', 'Atomic'];
+  else enemyPool = ['Invincible', 'Thermonuclear', 'Anubis', 'Zero'];
   
   // Boss levels: every 10th
   const isBoss = level % 10 === 0;
   if (isBoss) {
-    const bosses = ['Hades', 'Atomic', 'Omega', 'Celestial', 'Eternal', 'Invincible', 'Nebula', 'Abyss', 'Void', 'Invincible'];
+    const bosses = ['Hades', 'Atomic', 'Thermonuclear', 'Invincible', 'Anubis', 'Solar', 'Terra', 'Electro', 'Blaze', 'Invincible'];
     enemyPool = [bosses[Math.min((level / 10) - 1, 9)]];
   }
   
@@ -613,6 +613,7 @@ function startCampaignLevel(level) {
     color: p.color,
     name: 'PLAYER',
     boosted: false,
+    isBot: false,
   });
   
   // Init enemy tank
@@ -637,6 +638,7 @@ function startCampaignLevel(level) {
     shield: false,
     testBot: false,
     boosted: false,
+    isBot: true,
   });
   
   turn = 0;
@@ -649,6 +651,10 @@ function startCampaignLevel(level) {
   winner = '';
   lastProjCount = 0;
   turnCount = 0;
+  botDelay = 0;
+  botMoveDone = false;
+  botMoveFrames = 0;
+  botAimFrame = 0;
   generateTerrain();
   applyMapBoosts();
   applyMapEffects();
@@ -1299,7 +1305,13 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') campaignScroll = Math.min(200, campaignScroll + 50);
     return;
   }
-  if (gameOver && e.key === 'r') return resetGame();
+  if (gameOver && e.key === 'r') {
+    if (campaignMode) {
+      startCampaignLevel(campaignLevel);
+      return;
+    }
+    return resetGame();
+  }
   if (gameOver && e.key === 'n' && campaignMode && tanks[0].hp > 0) {
     // Next campaign level
     if (campaignLevel < 100) {
