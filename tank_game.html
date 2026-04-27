@@ -37,14 +37,11 @@
 <div id="game-container">
   <canvas id="c" width="900" height="500"></canvas>
   <div id="mobile-controls">
-    <div style="display: flex; gap: 15px;">
+    <div style="display: flex; gap: 15px;" id="mobile-move-btns">
       <div class="mobile-btn" id="btn-left">←</div>
       <div class="mobile-btn" id="btn-right">→</div>
     </div>
     <div class="mobile-btn mobile-fire" id="btn-fire">🔥</div>
-  </div>
-  <div id="desktop-fire-btn" style="display: none; position: absolute; bottom: 55px; right: 20px; pointer-events: auto;">
-    <div class="mobile-btn mobile-fire" id="btn-fire-desktop" style="width: 80px; height: 80px; font-size: 20px;">FIRE</div>
   </div>
 </div>
 <script>
@@ -4122,15 +4119,12 @@ function applyDeviceMode() {
 // Show/hide controls based on game state and device mode
 function updateControlsVisibility() {
   const mode = getDeviceMode();
-  const desktopFireBtn = document.getElementById('desktop-fire-btn');
   const mobileControls = document.getElementById('mobile-controls');
   const inGame = state === 'game' && !gameOver;
   
   if (mode === 'mobile') {
     mobileControls.style.display = inGame ? 'flex' : 'none';
-    desktopFireBtn.style.display = 'none';
   } else {
-    desktopFireBtn.style.display = inGame ? 'block' : 'none';
     mobileControls.style.display = 'none';
   }
 }
