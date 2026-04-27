@@ -707,6 +707,19 @@ function drawCampaignSelect() {
   ctx.fillStyle = '#666'; ctx.font = '11px monospace';
   ctx.fillText('Level ' + campaignLevel + ' / 100', W / 2, 68);
 
+  // SELECT TANK button
+  ctx.fillStyle = '#484';
+  ctx.fillRect(W - 120, 15, 100, 30);
+  ctx.strokeStyle = '#6a6'; ctx.lineWidth = 1;
+  ctx.strokeRect(W - 120, 15, 100, 30);
+  ctx.fillStyle = '#ccc'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('SELECT TANK', W - 70, 35);
+
+  // Show selected tank
+  const selTank = tankTypes[menuSelection];
+  ctx.fillStyle = selTank.color; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right';
+  ctx.fillText(selTank.name, W - 130, 35);
+
   // Level grid: 10 columns x 10 rows
   const cols = 10;
   const rows = 10;
@@ -1026,7 +1039,7 @@ canvas.addEventListener('mousedown', e => {
     // Toggle buttons (match drawing layout)
     const btnW2 = 95, btnGap2 = 6, totalBtnW2 = btnW2 * 3 + btnGap2 * 2;
     const btnX2 = W / 2 - totalBtnW2 / 2;
-    if (m.y >= 420 && m.y <= 450) {
+    if (m.y >= 380 && m.y <= 410) {
       if (m.x >= btnX2 && m.x <= btnX2 + btnW2) simpleAiming = !simpleAiming;
       if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
       if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
@@ -1077,12 +1090,28 @@ canvas.addEventListener('mousedown', e => {
           return;
         }
         menuSelection = i;
-        startMapSelect();
+        if (campaignMode) {
+          state = 'campaign';
+          campaignHover = -1;
+          updateControlsVisibility();
+        } else {
+          startMapSelect();
+        }
         return;
       }
     }
     // Back button
-    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) {
+      if (campaignMode) {
+        state = 'campaign';
+        campaignHover = -1;
+        updateControlsVisibility();
+      } else {
+        state = 'menu';
+        updateControlsVisibility();
+      }
+      return;
+    }
     return;
   }
   if (state === 'mapSelect') {
@@ -1102,6 +1131,15 @@ canvas.addEventListener('mousedown', e => {
     // Back button
     if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
     
+    // SELECT TANK button
+    if (m.x >= W - 120 && m.x <= W - 20 && m.y >= 15 && m.y <= 45) {
+      state = 'select';
+      selectScroll = 0;
+      campaignMode = true; // Remember we came from campaign
+      updateControlsVisibility();
+      return;
+    }
+    
     // Level grid clicks
     const cols = 10;
     const cellW = 70;
@@ -1119,7 +1157,6 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= bx && m.x <= bx + cellW && m.y >= by && m.y <= by + cellH) {
         const level = i + 1;
         if (level <= campaignMaxLevel) {
-          menuSelection = 0; // Use default tank for campaign
           startCampaignLevel(level);
         }
         return;
