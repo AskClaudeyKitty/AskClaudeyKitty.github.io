@@ -1365,6 +1365,10 @@ document.addEventListener('keydown', e => {
     if (idx < maxWeaponIdx) { tanks[0].weapon = idx; SFX.weaponSwitch(); }
     else if (idx === maxWeaponIdx && tanks[0].bonusWeapon) { tanks[0].weapon = maxWeaponIdx; SFX.weaponSwitch(); }
   }
+  if (e.key === ' ' || e.key === 'Space') {
+    e.preventDefault();
+    triggerFire();
+  }
 });
 
 document.addEventListener('keyup', e => { keys[e.key] = false; });
