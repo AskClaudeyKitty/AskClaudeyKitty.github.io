@@ -468,10 +468,11 @@ const crateWeapons = [
 ];
 
 // ========== GAME STATE ==========
-let state = 'menu'; // 'menu', 'select', 'game'
+let state = 'menu'; // 'menu', 'select', 'game', 'tutorial'
 let menuSelection = 0;
 let menuHover = -1;
 let selectScroll = 0;
+let tutorialScroll = 0;
 
 const terrain = [];
 const terrainType = []; // 'normal', 'sand', 'rock'
@@ -499,7 +500,7 @@ let windEnabled = false;
 let windStrength = 0;
 
 // Locked mechanics (code 146)
-let shieldBoxEnabled = false; // Crates always give shields
+let shieldBoxEnabled = false; // Crates always give shields (if not already shielded)
 let clusterLuckEnabled = false; // All weapons have cluster effect
 let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
 let lowGravityEnabled = false; // All maps use Moon gravity
@@ -617,12 +618,12 @@ function startCampaignLevel(level) {
   const b = tankTypes.find(t => t.name === config.enemyName) || tankTypes[0];
   const botHp = config.enemyHp;
   Object.assign(tanks[1], {
-    x: W - 160 + Math.random() * 80,
+    x: testBotMode ? W / 2 : W - 160 + Math.random() * 80,
     angle: 135,
     hp: botHp,
     maxHp: botHp,
     color: '#e55',
-    name: config.isBoss ? 'BOSS ' + b.name : b.name,
+    name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')',
     weapon: 0,
     fuel: b.fuel,
     maxFuel: b.fuel,
@@ -633,9 +634,7 @@ function startCampaignLevel(level) {
     shockTimer: 0,
     inWater: false,
     shield: false,
-    testBot: false,
-    boosted: false,
-    isBot: true,
+    testBot: testBotMode
   });
   
   turn = 0;
@@ -905,23 +904,22 @@ function initTanks() {
   const p = tankTypes[menuSelection];
   const botPool = tankTypes.filter(t => !t.locked);
   const b = botPool[Math.floor(Math.random() * botPool.length)];
-  const playerHp = testBotMode ? 999999 : p.hp;
-  const playerFuel = testBotMode ? 999999 : p.fuel;
-  // Invincible tank starts with infinite shield and 1 HP (but max 1M)
-  const startShield = p.infiniteShield ? true : false;
-  const startHp = p.name === 'Invincible' ? 1 : playerHp;
+  const playerHp2 = testBotMode ? 999999 : p.hp;
+  const playerFuel2 = testBotMode ? 999999 : p.fuel;
+  // Invincible tank keeps infinite shield on reset
+  const startShield2 = p.infiniteShield ? true : false;
+  const startHp2 = p.name === 'Invincible' ? 1 : playerHp2;
   Object.assign(tanks[0], {
-    x: 80 + Math.random() * 80, angle: 45, hp: startHp, maxHp: playerHp, color: p.color,
-    name: p.name, weapon: 0, fuel: playerFuel, maxFuel: playerFuel, isBot: false, type: p,
+    x: 80 + Math.random() * 80, angle: 45, hp: startHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
     ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: startShield, infiniteShield: p.infiniteShield || false
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: startShield2, infiniteShield: p.infiniteShield || false
   });
-  const botHp = testBotMode ? 100000 : b.hp;
+  const botHp2 = testBotMode ? 100000 : b.hp;
   Object.assign(tanks[1], {
-    x: testBotMode ? W / 2 : W - 160 + Math.random() * 80, angle: 135, hp: botHp, maxHp: botHp, color: '#e55',
-    name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, isBot: true, type: b,
+    x: testBotMode ? W / 2 : W - 160 + Math.random() * 80, angle: 135, hp: botHp2, maxHp: botHp2, color: '#e55',
+    name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, shield: false, testBot: testBotMode
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false, testBot: testBotMode
   });
 }
 
@@ -1033,16 +1031,18 @@ canvas.addEventListener('mousedown', e => {
     if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 260 && m.y <= 310) { state = 'select'; selectScroll = 0; campaignMode = false; updateControlsVisibility(); }
     // CAMPAIGN button
     if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 320 && m.y <= 370) { state = 'campaign'; campaignHover = -1; campaignScroll = 0; updateControlsVisibility(); }
+    // TUTORIAL button
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 380 && m.y <= 420) { state = 'tutorial'; tutorialScroll = 0; updateControlsVisibility(); }
     // Toggle buttons (match drawing layout)
     const btnW2 = 95, btnGap2 = 6, totalBtnW2 = btnW2 * 3 + btnGap2 * 2;
     const btnX2 = W / 2 - totalBtnW2 / 2;
-    if (m.y >= 380 && m.y <= 410) {
+    if (m.y >= 430 && m.y <= 460) {
       if (m.x >= btnX2 && m.x <= btnX2 + btnW2) simpleAiming = !simpleAiming;
       if (m.x >= btnX2 + btnW2 + btnGap2 && m.x <= btnX2 + btnW2 * 2 + btnGap2) chaosMode = !chaosMode;
       if (m.x >= btnX2 + (btnW2 + btnGap2) * 2 && m.x <= btnX2 + (btnW2 + btnGap2) * 2 + btnW2) tripleMode = !tripleMode;
     }
     // Row 2: Music, Test Bot, Wind
-    if (m.y >= 420 && m.y <= 445) {
+    if (m.y >= 470 && m.y <= 495) {
       const r2W2 = 95, r2Gap2 = 6, r2Total2 = r2W2 * 3 + r2Gap2 * 2;
       const r2X2 = W / 2 - r2Total2 / 2;
       if (m.x >= r2X2 && m.x <= r2X2 + r2W2) { musicEnabled = !musicEnabled; if (!musicEnabled) stopMusic(); }
@@ -1050,7 +1050,7 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
     }
     // Row 3: Locked Mechanics (code 146) - 5 buttons
-    if (m.y >= 450 && m.y <= 475) {
+    if (m.y >= 500 && m.y <= 525) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
         const r3W2 = 60, r3Gap2 = 4, r3Total2 = r3W2 * 5 + r3Gap2 * 4;
@@ -1159,6 +1159,11 @@ canvas.addEventListener('mousedown', e => {
         return;
       }
     }
+    return;
+  }
+  if (state === 'tutorial') {
+    // Back button
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
     return;
   }
   if (state !== 'game' || gameOver) return;
@@ -1295,8 +1300,6 @@ function triggerFire() {
 canvas.addEventListener('mouseup', e => {
   moveLeft = false; moveRight = false;
   // Only stop dragging, don't fire automatically
-  if (state !== 'game') return;
-  // Dragging continues until fire button is pressed
 });
 
 canvas.addEventListener('mouseleave', () => { dragging = false; moveLeft = false; moveRight = false; });
@@ -1312,12 +1315,22 @@ canvas.addEventListener('wheel', e => {
     campaignScroll = Math.max(0, Math.min(maxScroll, campaignScroll + e.deltaY * 0.5));
     e.preventDefault();
   }
+  if (state === 'tutorial') {
+    tutorialScroll += e.deltaY * 0.5;
+    e.preventDefault();
+  }
 }, { passive: false });
 
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (state === 'menu') {
     if (e.key === 'Enter') { state = 'select'; selectScroll = 0; campaignMode = false; updateControlsVisibility(); }
+    return;
+  }
+  if (state === 'tutorial') {
+    if (e.key === 'Escape') { state = 'menu'; updateControlsVisibility(); return; }
+    if (e.key === 'ArrowUp') tutorialScroll = Math.max(0, tutorialScroll - 50);
+    if (e.key === 'ArrowDown') tutorialScroll += 50;
     return;
   }
   if (state === 'select') {
@@ -1692,8 +1705,8 @@ function botShoot() {
 
   // Frame 50: fire
   botDelay = 0;
-  botMoveDone = false;
-  botAimFrame = 0;
+  botMove_done = false;
+  botAim_frame = 0;
   const bot = tanks[1];
   bot.angle = bot._targetAngle;
   fireWeapon(bot);
@@ -1751,7 +1764,7 @@ function update() {
       if (inWater) {
         tank.inWater = true;
         tank.waterSway = Math.sin(Date.now() / 200) * 3;
-        tank.x += tank.waterSway;
+        tank.x += tank.waterSway * 0.1;
         if (Math.random() < 0.02) SFX.water();
       } else {
         if ((keys['q'] || moveLeft) && tank.fuel > 0) { tank.slideVx = -spd; tank.fuel -= 0.3; }
@@ -2525,9 +2538,8 @@ function update() {
       if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4;
       tanks[turn].fuel = Math.min(tanks[turn].fuel + 20, tanks[turn].maxFuel);
       botDelay = 0;
-      botMoveDone = false;
-      botMoveFrames = 0;
-      botAimFrame = 0;
+      botMove_done = false;
+      botAim_frame = 0;
       turnCount++;
       // Spawn crate every 4 turns
       if (turnCount % 4 === 0) spawnCrate();
@@ -2866,59 +2878,69 @@ function drawMenu() {
   ctx.font = 'bold 22px monospace';
   ctx.fillText('CAMPAIGN', W / 2, 352);
 
+  // TUTORIAL button
+  ctx.fillStyle = '#484';
+  ctx.fillRect(W / 2 - 100, 380, 200, 40);
+  ctx.strokeStyle = '#6a6';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W / 2 - 100, 380, 200, 40);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('HOW TO PLAY', W / 2, 406);
+
   ctx.fillStyle = '#555';
   ctx.font = '10px monospace';
-  ctx.fillText('or press ENTER', W / 2, 400);
+  ctx.fillText('or press ENTER', W / 2, 440);
 
   // Options (3 buttons)
   const btnW = 95, btnGap = 6, totalBtnW = btnW * 3 + btnGap * 2;
   const btnX = W / 2 - totalBtnW / 2;
 
   ctx.fillStyle = simpleAiming ? '#484' : '#333';
-  ctx.fillRect(btnX, 380, btnW, 30);
+  ctx.fillRect(btnX, 430, btnW, 30);
   ctx.strokeStyle = simpleAiming ? '#6a6' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(btnX, 380, btnW, 30);
+  ctx.strokeRect(btnX, 430, btnW, 30);
   ctx.fillStyle = '#ccc'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(simpleAiming ? 'SIMPLE: ON' : 'SIMPLE: OFF', btnX + btnW / 2, 400);
+  ctx.fillText(simpleAiming ? 'SIMPLE: ON' : 'SIMPLE: OFF', btnX + btnW / 2, 450);
 
   ctx.fillStyle = chaosMode ? '#844' : '#333';
-  ctx.fillRect(btnX + btnW + btnGap, 380, btnW, 30);
+  ctx.fillRect(btnX + btnW + btnGap, 430, btnW, 30);
   ctx.strokeStyle = chaosMode ? '#f44' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(btnX + btnW + btnGap, 380, btnW, 30);
+  ctx.strokeRect(btnX + btnW + btnGap, 430, btnW, 30);
   ctx.fillStyle = chaosMode ? '#f88' : '#ccc'; ctx.font = '10px monospace';
-  ctx.fillText(chaosMode ? 'CHAOS: ON' : 'CHAOS: OFF', btnX + btnW + btnGap + btnW / 2, 400);
+  ctx.fillText(chaosMode ? 'CHAOS: ON' : 'CHAOS: OFF', btnX + btnW + btnGap + btnW / 2, 450);
 
   ctx.fillStyle = tripleMode ? '#848' : '#333';
-  ctx.fillRect(btnX + (btnW + btnGap) * 2, 380, btnW, 30);
+  ctx.fillRect(btnX + (btnW + btnGap) * 2, 430, btnW, 30);
   ctx.strokeStyle = tripleMode ? '#a4f' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(btnX + (btnW + btnGap) * 2, 380, btnW, 30);
+  ctx.strokeRect(btnX + (btnW + btnGap) * 2, 430, btnW, 30);
   ctx.fillStyle = tripleMode ? '#c8f' : '#ccc'; ctx.font = '10px monospace';
-  ctx.fillText(tripleMode ? 'TRIPLE: ON' : 'TRIPLE: OFF', btnX + (btnW + btnGap) * 2 + btnW / 2, 400);
+  ctx.fillText(tripleMode ? 'TRIPLE: ON' : 'TRIPLE: OFF', btnX + (btnW + btnGap) * 2 + btnW / 2, 450);
 
   // Row 2: Music, Test Bot, Wind
   const r2W = 95, r2Gap = 6, r2Total = r2W * 3 + r2Gap * 2;
   const r2X = W / 2 - r2Total / 2;
 
   ctx.fillStyle = musicEnabled ? '#446' : '#333';
-  ctx.fillRect(r2X, 420, r2W, 25);
+  ctx.fillRect(r2X, 470, r2W, 25);
   ctx.strokeStyle = musicEnabled ? '#68a' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(r2X, 420, r2W, 25);
+  ctx.strokeRect(r2X, 470, r2W, 25);
   ctx.fillStyle = musicEnabled ? '#8af' : '#888'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', r2X + r2W / 2, 437);
+  ctx.fillText(musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF', r2X + r2W / 2, 487);
 
   ctx.fillStyle = testBotMode ? '#664' : '#333';
-  ctx.fillRect(r2X + r2W + r2Gap, 420, r2W, 25);
+  ctx.fillRect(r2X + r2W + r2Gap, 470, r2W, 25);
   ctx.strokeStyle = testBotMode ? '#aa4' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(r2X + r2W + r2Gap, 420, r2W, 25);
+  ctx.strokeRect(r2X + r2W + r2Gap, 470, r2W, 25);
   ctx.fillStyle = testBotMode ? '#ff4' : '#888'; ctx.font = '10px monospace';
-  ctx.fillText(testBotMode ? 'TEST: ON' : 'TEST BOT', r2X + r2W + r2Gap + r2W / 2, 437);
+  ctx.fillText(testBotMode ? 'TEST: ON' : 'TEST BOT', r2X + r2W + r2Gap + r2W / 2, 487);
 
   ctx.fillStyle = windEnabled ? '#464' : '#333';
-  ctx.fillRect(r2X + (r2W + r2Gap) * 2, 420, r2W, 25);
+  ctx.fillRect(r2X + (r2W + r2Gap) * 2, 470, r2W, 25);
   ctx.strokeStyle = windEnabled ? '#6a6' : '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(r2X + (r2W + r2Gap) * 2, 420, r2W, 25);
+  ctx.strokeRect(r2X + (r2W + r2Gap) * 2, 470, r2W, 25);
   ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
-  ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 437);
+  ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 487);
 
   // Row 3: Locked Mechanics (code 146) - 5 buttons
   const is146Unlocked = unlockedCodes.includes('146');
@@ -2927,43 +2949,48 @@ function drawMenu() {
 
   // Shield Box toggle
   ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#484' : '#333') : '#222';
-  ctx.fillRect(r3X, 450, r3W, 25);
+  ctx.fillRect(r3X, 500, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X, 450, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '8px monospace';
-  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD' : 'SHIELD') : 'LOCKED', r3X + r3W / 2, 467);
+  ctx.strokeRect(r3X, 500, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (shieldBoxEnabled ? 'SHIELD' : 'SHIELD') : 'LOCKED';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (shieldBoxEnabled ? 'SHIELD' : 'SHIELD') : 'LOCKED', r3X + r3W / 2, 517);
 
   // Cluster Luck toggle
   ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#848' : '#333') : '#222';
-  ctx.fillRect(r3X + r3W + r3Gap, 450, r3W, 25);
+  ctx.fillRect(r3X + r3W + r3Gap, 500, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (clusterLuckEnabled ? '#a4f' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + r3W + r3Gap, 450, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? '#c8f' : '#888') : '#444'; ctx.font = '8px monospace';
-  ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER' : 'CLUSTER') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 467);
+  ctx.strokeRect(r3X + r3W + r3Gap, 500, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER' : 'CLUSTER') : 'LOCKED';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (clusterLuckEnabled ? 'CLUSTER' : 'CLUSTER') : 'LOCKED', r3X + r3W + r3Gap + r3W / 2, 517);
 
   // Vampire Shield toggle
   ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#484' : '#333') : '#222';
-  ctx.fillRect(r3X + (r3W + r3Gap) * 2, 450, r3W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 2, 500, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 450, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? '#4f4' : '#888') : '#444'; ctx.font = '8px monospace';
-  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP' : 'VAMP') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 467);
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 2, 500, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (vampireShieldEnabled ? 'VAMP' : 'VAMP') : 'LOCKED';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (vampireShieldEnabled ? 'VAMP' : 'VAMP') : 'LOCKED', r3X + (r3W + r3Gap) * 2 + r3W / 2, 517);
 
   // Low Gravity toggle
   ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#448' : '#333') : '#222';
-  ctx.fillRect(r3X + (r3W + r3Gap) * 3, 450, r3W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 3, 500, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (lowGravityEnabled ? '#88f' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + (r3W + r3Gap) * 3, 450, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? '#aaf' : '#888') : '#444'; ctx.font = '8px monospace';
-  ctx.fillText(is146Unlocked ? (lowGravityEnabled ? 'LOW G' : 'LOW G') : 'LOCKED', r3X + (r3W + r3Gap) * 3 + r3W / 2, 467);
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 3, 500, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (lowGravityEnabled ? 'LOW G' : 'LOW G') : 'LOCKED';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (lowGravityEnabled ? 'LOW G' : 'LOW G') : 'LOCKED', r3X + (r3W + r3Gap) * 3 + r3W / 2, 517);
 
   // No Terrain toggle
   ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#844' : '#333') : '#222';
-  ctx.fillRect(r3X + (r3W + r3Gap) * 4, 450, r3W, 25);
+  ctx.fillRect(r3X + (r3W + r3Gap) * 4, 500, r3W, 25);
   ctx.strokeStyle = is146Unlocked ? (noTerrainEnabled ? '#f88' : '#555') : '#333'; ctx.lineWidth = 1;
-  ctx.strokeRect(r3X + (r3W + r3Gap) * 4, 450, r3W, 25);
-  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? '#faa' : '#888') : '#444'; ctx.font = '8px monospace';
-  ctx.fillText(is146Unlocked ? (noTerrainEnabled ? 'FLAT' : 'FLAT') : 'LOCKED', r3X + (r3W + r3Gap) * 4 + r3W / 2, 467);
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 4, 500, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (noTerrainEnabled ? 'FLAT' : 'FLAT') : 'LOCKED';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? (noTerrainEnabled ? 'FLAT' : 'FLAT') : 'LOCKED', r3X + (r3W + r3Gap) * 4 + r3W / 2, 517);
 
   // Wins + version
   ctx.fillStyle = '#555';
@@ -3007,7 +3034,7 @@ function drawSelect() {
     const row = Math.floor(i / 3);
     const bx = W / 2 - 210 + col * 145;
     const by = 120 + row * 170 - selectScroll;
-    if (by + 150 < 50 || by > H) continue; // skip off-screen cards
+    if (by + 150 < 50 || by > H - 20) continue; // skip off-screen cards
     const hovered = menuHover === i;
     const selected = menuSelection === i;
 
@@ -3120,21 +3147,31 @@ function drawMapSelect() {
   // Back button
   ctx.fillStyle = '#333';
   ctx.fillRect(20, 15, 80, 30);
-  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
   ctx.strokeRect(20, 15, 80, 30);
-  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
   ctx.fillText('< BACK', 60, 35);
 
   // Title
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 28px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
   ctx.fillText('SELECT MAP', W / 2, 45);
-  ctx.fillStyle = '#666'; ctx.font = '11px monospace';
+  ctx.fillStyle = '#666';
+  ctx.font = '11px monospace';
   ctx.fillText('Playing as ' + tankTypes[menuSelection].name, W / 2, 68);
 
   // Random button
-  ctx.fillStyle = '#555'; ctx.fillRect(W / 2 - 60, 80, 120, 30);
-  ctx.strokeStyle = '#777'; ctx.lineWidth = 1; ctx.strokeRect(W / 2 - 60, 80, 120, 30);
-  ctx.fillStyle = '#ddd'; ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#555';
+  ctx.fillRect(W / 2 - 60, 80, 120, 30);
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 - 60, 80, 120, 30);
+  ctx.fillStyle = '#ddd';
+  ctx.font = 'bold 12px monospace';
   ctx.fillText('RANDOM', W / 2, 100);
 
   // Map cards
@@ -3158,28 +3195,32 @@ function drawMapSelect() {
 
     // Map name
     ctx.fillStyle = hovered ? '#fff' : '#ccc';
-    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
     ctx.fillText(mp.name, bx + 37, by + 20);
 
     // Terrain type
-    const ttLabel = mp.terrainType === 'sand' ? 'Sand' : mp.terrainType === 'rock' ? 'Rock' : 'Dirt';
+    const ttLabel = mp.terrainType === 'sand' ? 'Sand' : mp.terrainType === 'rock' ? 'Rock' : '';
     ctx.fillStyle = mp.terrainType === 'sand' ? '#da0' : mp.terrainType === 'rock' ? '#888' : '#6a6';
     ctx.font = '9px monospace';
     ctx.fillText(ttLabel, bx + 37, by + 35);
 
     // Gravity
-    ctx.fillStyle = '#999'; ctx.font = '8px monospace';
+    ctx.fillStyle = '#999';
+    ctx.font = '8px monospace';
     ctx.fillText('Grav: ' + mp.gravity, bx + 37, by + 50);
 
     // Boosts
     if (mp.boosts) {
-      ctx.fillStyle = '#aa8'; ctx.font = '7px monospace';
+      ctx.fillStyle = '#aa8';
+      ctx.font = '7px monospace';
       const boostStr = mp.boosts.join(', ');
       ctx.fillText(boostStr.length > 12 ? boostStr.substring(0, 12) + '..' : boostStr, bx + 37, by + 170);
     }
 
     // Mini terrain preview
-    ctx.strokeStyle = mp.groundLine; ctx.lineWidth = 1;
+    ctx.strokeStyle = mp.groundLine;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     for (let px = 0; px < 65; px++) {
       const py = by + 80 + Math.sin(px * 0.15 + i * 2) * 10 * (mp.roughness / 3);
@@ -3354,7 +3395,7 @@ function drawGame() {
         const sx = h.x + Math.sin(t * 0.8 + s * 2.5) * h.radius * 0.6;
         const sparkle = Math.sin(t * 3 + s * 4);
         if (sparkle > 0.5) {
-          ctx.fillStyle = `rgba(255,255,255,${alpha * sparkle * 0.5})`;
+          ctx.fillStyle = `rgba(255,255,255,${sparkle * alpha * 0.5})`;
           ctx.fillRect(sx - 1, gy - 2, 2, 2);
         }
       }
@@ -3808,7 +3849,9 @@ function drawGame() {
   }
 
   // Map name
-  ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
   const ttName = m.terrainType === 'sand' ? ' [Sand]' : m.terrainType === 'rock' ? ' [Rock]' : '';
   ctx.fillText(m.name + ttName + (m.boosts ? ' (boost: ' + m.boosts.join(', ') + ')' : ''), W - 15, 15);
 
@@ -3851,11 +3894,10 @@ function drawGame() {
       ctx.fillStyle = '#335';
       ctx.fillRect(panelX + 10, btnY1, panelW - 20, 28);
       ctx.strokeStyle = '#66f';
-      ctx.lineWidth = 1;
       ctx.strokeRect(panelX + 10, btnY1, panelW - 20, 28);
       ctx.fillStyle = '#aaf';
       ctx.font = '10px monospace';
-ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
+      ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
       
       // Spawn Weapon Crate button
       const btnY2 = panelY + 70;
@@ -4003,6 +4045,7 @@ ctx.fillText('SPAWN SHIELD', panelX + panelW / 2, btnY1 + 18);
 
 function draw() {
   if (state === 'menu') drawMenu();
+  else if (state === 'tutorial') drawTutorial();
   else if (state === 'select') drawSelect();
   else if (state === 'mapSelect') drawMapSelect();
   else if (state === 'campaign') drawCampaignSelect();
@@ -4146,7 +4189,7 @@ document.addEventListener('keydown', e => {
   if(sessionStorage.getItem(k))return;
   sessionStorage.setItem(k,'1');
   var u='https://khsdgbglmzyuiqsfalcv.supabase.co/rest/v1/rpc/increment_play';
-  var h={'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k'};
+  var h={'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k'};
   fetch(u,{method:'POST',headers:h,body:JSON.stringify({game_name:'tank_battle'})}).catch(function(){});
 })();
 </script>
