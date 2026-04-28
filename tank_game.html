@@ -1557,7 +1557,7 @@ function botShoot() {
   botDelay++;
 
   // Move phase
-  if (!botMoveDone) {
+  if (!botMove_done) {
     const bot = tanks[1];
 
     // Check if standing in hazard
@@ -1608,10 +1608,10 @@ function botShoot() {
 
     // If fleeing hazard, stop once clear
     if (botMoveFrames === 999 && !inHazard) {
-      botMoveFrames = 0;
+      botMove_frames = 0;
     }
 
-    if (botMoveFrames > 0 && bot.fuel > 0 && !botInWater) {
+    if (botMove_frames > 0 && bot.fuel > 0 && !botInWater) {
       let spd = bot.type.speed * 0.4;
       let botOnIce = false;
       for (const h of hazards) {
@@ -1627,7 +1627,7 @@ function botShoot() {
         bot.x = Math.max(15, Math.min(W - 15, bot.x + botMoveDir * spd));
       }
       bot.fuel -= 0.3;
-      if (botMoveFrames !== 999) botMoveFrames--;
+      if (botMove_frames !== 999) botMove_frames--;
       checkCratePickup(bot, 1);
       return;
     }
@@ -1637,15 +1637,15 @@ function botShoot() {
       bot.waterSway = Math.sin(Date.now() / 200) * 3;
       bot.x += bot.waterSway * 0.1;
     }
-    botMoveDone = true;
-    botAimFrame = 0;
+    botMove_done = true;
+    botAim_frame = 0;
   }
 
   // Aim phase
-  botAimFrame++;
+  botAim_frame++;
 
   // Frame 1: calculate best shot
-  if (botAimFrame === 1) {
+  if (botAim_frame === 1) {
     const bot = tanks[1];
     const target = tanks[0];
     const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
@@ -1696,7 +1696,7 @@ function botShoot() {
   }
 
   // Frames 2-50: slowly rotate barrel
-  if (botAimFrame < 50) {
+  if (botAim_frame < 50) {
     const bot = tanks[1];
     const diff = bot._targetAngle - bot.angle;
     bot.angle += diff * 0.08;
@@ -1721,7 +1721,7 @@ function impactDamage(px, py, w, p) {
         // Vampire Shield: heal 200% of blocked damage (if enabled or infiniteShield)
         if (vampireShieldEnabled || t.infiniteShield) {
           // Heal based on weapon's max potential damage (point blank hit)
-          const maxDmg = Math.round((w.radius + 20) * w.dmgMult * (p.dmgBonus || 1));
+          const maxDmg = Math.round((w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1);
           const heal = Math.round(maxDmg * 2.0);
           t.hp = Math.min(t.maxHp, t.hp + heal);
           if (heal > 0) spawnFloatingText(t.x, terrainAt(t.x) - 70, '+' + heal, '#4f4');
