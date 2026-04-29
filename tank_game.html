@@ -2831,6 +2831,110 @@ function drawAimUI() {
   ctx.fillText('POWER', W / 2, 22);
 }
 
+// ========== TUTORIAL ==========
+function drawTutorial() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a0a2a');
+  grad.addColorStop(1, '#1a1a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Back button
+  ctx.fillStyle = '#333';
+  ctx.fillRect(20, 15, 80, 30);
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(20, 15, 80, 30);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('< BACK', 60, 35);
+
+  // Title
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('HOW TO PLAY', W / 2, 55);
+
+  ctx.strokeStyle = '#4a9';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 100, 65);
+  ctx.lineTo(W / 2 + 100, 65);
+  ctx.stroke();
+
+  const sections = [
+    { title: 'AIMING', color: '#4af', lines: [
+      'Drag on the canvas to aim your tank barrel.',
+      'Pull back / drag direction sets angle and power.',
+      'The dotted line shows your predicted trajectory.',
+      'Release drag does NOT fire -- you must press FIRE.'
+    ]},
+    { title: 'FIRING', color: '#f44', lines: [
+      'Click the FIRE button (bottom right) to shoot.',
+      'On desktop: press SPACEBAR to fire.',
+      'On mobile: tap the fire button after aiming.',
+      'Each weapon has limited ammo -- use it wisely!'
+    ]},
+    { title: 'MOVING', color: '#4f4', lines: [
+      'Use A / D or LEFT / RIGHT arrow keys to drive.',
+      'On mobile: tap left / right buttons at bottom left.',
+      'Moving uses fuel -- watch the blue bar!',
+      'You can only move on YOUR turn.'
+    ]},
+    { title: 'WEAPONS', color: '#fa4', lines: [
+      'Press 1-5 to switch weapons (or tap the bar).',
+      'Each tank has unique weapons with special effects.',
+      'Weapon crates (W) give bonus weapons -- drive over them.',
+      'Some weapons bounce, split, drill, or rain down!'
+    ]},
+    { title: 'TIPS', color: '#a8f', lines: [
+      'Destroy the enemy tank to win.',
+      'Terrain can be destroyed -- use it for cover.',
+      'Wind affects shots when enabled.',
+      'Campaign mode has 100 levels with bosses every 10!'
+    ]}
+  ];
+
+  const lineH = 22;
+  const secGap = 18;
+  const startY = 90 - tutorialScroll;
+  let y = startY;
+
+  for (const sec of sections) {
+    ctx.fillStyle = sec.color;
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(sec.title, 40, y);
+    y += 22;
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px monospace';
+    for (const line of sec.lines) {
+      ctx.fillText(line, 55, y);
+      y += lineH;
+    }
+    y += secGap;
+  }
+
+  const contentH = y - startY;
+  const maxScroll = Math.max(0, contentH - (H - 120));
+  tutorialScroll = Math.max(0, Math.min(maxScroll, tutorialScroll));
+
+  if (maxScroll > 0) {
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Scroll to see more', W / 2, H - 15);
+  }
+
+  const fadeGrad = ctx.createLinearGradient(0, H - 60, 0, H);
+  fadeGrad.addColorStop(0, 'rgba(10,10,30,0)');
+  fadeGrad.addColorStop(1, 'rgba(10,10,30,0.95)');
+  ctx.fillStyle = fadeGrad;
+  ctx.fillRect(0, H - 60, W, 60);
+}
+
 // ========== MENU ==========
 function drawMenu() {
   const grad = ctx.createLinearGradient(0, 0, 0, H);
@@ -4155,13 +4259,10 @@ function getDeviceMode() {
 
 // Apply device-specific settings
 function applyDeviceMode() {
-  const mode = getDeviceMode();
-  const desktopFireBtn = document.getElementById('desktop-fire-btn');
   const mobileControls = document.getElementById('mobile-controls');
   
   // Hide all controls by default — shown only during gameplay
-  mobileControls.style.display = 'none';
-  desktopFireBtn.style.display = 'none';
+  if (mobileControls) mobileControls.style.display = 'none';
 }
 
 // Show/hide controls based on game state
