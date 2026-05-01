@@ -1406,7 +1406,7 @@ function newWorld() {
   entities.length = 0;
   particles.length = 0;
   time = 0;
-  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+  player.vx = 0; player.vy = 0;
   player.armor = { helm: null, chest: null, leg: null };
   player.hotbar = player.hotbar.map(() => null);
   player.inv = [];
@@ -1549,7 +1549,7 @@ function hostMultiplayerRoom() {
   entities.length = 0;
   particles.length = 0;
   time = 0;
-  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+  player.vx = 0; player.vy = 0;
   player.armor = { helm: null, chest: null, leg: null };
   player.hotbar = player.hotbar.map(() => null);
   player.inv = [];
@@ -1579,6 +1579,13 @@ function joinMultiplayerRoom() {
       gameMode = 'coop';
       const arr = base64ToWorld(room.world_data);
       world.set(arr);
+      // Set spawn position after loading world
+      const px = Math.floor(WORLD_W / 2);
+      player.x = px * TILE;
+      let spawnY = 0;
+      while (spawnY < WORLD_H && getBlock(px, spawnY) === 0) spawnY++;
+      while (spawnY > 0 && getBlock(px, spawnY) !== 0) spawnY--;
+      player.y = spawnY * TILE;
       mpRoomCode = code;
       mpIsHost = false;
       supaFetch('multiplayer_rooms', { method: 'PATCH', query: `?code=eq.${code}`, body: { player_count: (room.player_count || 1) + 1, last_active: new Date().toISOString() } });
