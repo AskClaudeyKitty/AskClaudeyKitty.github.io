@@ -157,10 +157,10 @@ function generate() {
     for (let y = 0; y < WORLD_H; y++) {
       const i = y * WORLD_W + x;
       const s = surface[x];
-      if (y < s - 4) world[i] = 0;
-      else if (y === s) world[i] = 3;
-      else if (y < s + 3) world[i] = 1;
-      else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1;
+      if (y < s) world[i] = 0;           // air above surface
+      else if (y === s) world[i] = 3;     // grass at surface
+      else if (y < s + 3) world[i] = 1;  // dirt below surface
+      else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1; // sand/dirt deeper
       else if (y < s + 20) {
         world[i] = 2;
         if (Math.random() < 0.03) world[i] = 7;
