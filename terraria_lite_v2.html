@@ -60,6 +60,15 @@
   #tutorial-text { font-size: 10px; color: #ffff44; margin-bottom: 16px; text-align: center; max-width: 500px; line-height: 1.6; }
   .tutorial-btn { background: #2a2a4a; border: 2px solid #555; color: #fff; padding: 8px 16px; font-size: 9px; cursor: pointer; font-family: 'Press Start 2P', monospace; }
   .tutorial-btn:hover { border-color: #ffff44; }
+  #multiplayer-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #0a0a2e, #1a0a3e); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 25; font-family: 'Press Start 2P', monospace; }
+  #multiplayer-menu h2 { color: #ffff44; font-size: 20px; text-shadow: 3px 3px 0 #8844aa; margin-bottom: 16px; }
+  #room-list { margin: 8px 0; max-height: 160px; overflow-y: auto; width: 300px; }
+  .room-slot { background: rgba(0,0,0,0.5); border: 2px solid #444; padding: 6px 10px; margin: 3px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .room-slot:hover { border-color: #ffff44; }
+  .room-code { font-size: 10px; color: #ffff44; }
+  .room-info { font-size: 7px; color: #aaa; }
+  #mp-input { background: #1a1a2e; border: 2px solid #555; color: #fff; padding: 8px; font-family: 'Press Start 2P', monospace; font-size: 10px; width: 140px; text-align: center; text-transform: uppercase; }
+  #mp-status { font-size: 8px; color: #888; margin-top: 8px; min-height: 14px; }
 </style>
 </head>
 <body>
@@ -71,10 +80,12 @@
       <button class="menu-btn" id="btn-new">New World</button>
       <button class="menu-btn" id="btn-load">Play</button>
       <button class="menu-btn" id="btn-delete">Delete</button>
+      <button class="menu-btn" id="btn-multiplayer">Multiplayer</button>
     </div>
     <div class="menu-row">
       <button class="menu-btn mode-btn" data-mode="survival">Survival</button>
       <button class="menu-btn mode-btn" data-mode="creative">Creative</button>
+      <button class="menu-btn mode-btn" data-mode="coop">Co-op</button>
       <button class="menu-btn mode-btn" data-mode="tutorial">Tutorial</button>
     </div>
     <div class="menu-row">
@@ -82,6 +93,17 @@
       <button class="menu-btn diff-btn active" data-diff="normal">Normal</button>
       <button class="menu-btn diff-btn" data-diff="hard">Hard</button>
     </div>
+  </div>
+  <div id="multiplayer-menu">
+    <h2>MULTIPLAYER</h2>
+    <div id="room-list"></div>
+    <div class="menu-row">
+      <button class="menu-btn" id="btn-host">Host World</button>
+      <input id="mp-input" placeholder="CODE" maxlength="6">
+      <button class="menu-btn" id="btn-join">Join</button>
+    </div>
+    <div id="mp-status"></div>
+    <button class="menu-btn" id="btn-mp-back" style="margin-top:12px;">Back</button>
   </div>
   <div id="tutorial-overlay">
     <div id="tutorial-text"></div>
@@ -222,7 +244,28 @@ const player = {
   mining: null,
   swing: 0,
   armor: { helm: null, chest: null, leg: null },
+  color: '#4488aa',
+  skin: '#eeccaa',
 };
+
+const player2 = {
+  x: 0, y: 0, vx: 0, vy: 0,
+  w: 18, h: 34,
+  hp: 100, maxHp: 100,
+  hunger: 100,
+  facing: 1,
+  onGround: false,
+  inv: [],
+  hotbar: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  selected: 0,
+  mining: null,
+  swing: 0,
+  armor: { helm: null, chest: null, leg: null },
+  color: '#aa4444',
+  skin: '#eeccaa',
+};
+
+let activePlayer = player;
 
 let camX = 0, camY = 0;
 let time = 0;
@@ -1419,6 +1462,136 @@ document.getElementById('music-toggle').onclick = toggleMusic;
 document.getElementById('helm-slot').onclick = () => equipArmor('helm');
 document.getElementById('chest-slot').onclick = () => equipArmor('chest');
 document.getElementById('leg-slot').onclick = () => equipArmor('leg');
+
+// Supabase config
+const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
+
+function supaFetch(table, opts = {}) {
+  const url = `${SUPA_URL}/rest/v1/${table}${opts.query || ''}`;
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    ...(opts.headers || {})
+  };
+  return fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined }).then(r => r.json());
+}
+
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function worldToBase64(arr) {
+  let s = '';
+  for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+  return btoa(s);
+}
+function base64ToWorld(str) {
+  const s = atob(str);
+  const arr = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) arr[i] = s.charCodeAt(i);
+  return arr;
+}
+
+function showMultiplayerMenu() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('multiplayer-menu').style.display = 'flex';
+  fetchRooms();
+}
+function hideMultiplayerMenu() {
+  document.getElementById('multiplayer-menu').style.display = 'none';
+  document.getElementById('title-screen').style.display = 'flex';
+}
+function setMpStatus(msg, color) {
+  const el = document.getElementById('mp-status');
+  el.textContent = msg;
+  el.style.color = color || '#888';
+}
+
+function fetchRooms() {
+  const list = document.getElementById('room-list');
+  list.innerHTML = '<div style="color:#666;font-size:8px;text-align:center;">Loading...</div>';
+  supaFetch('multiplayer_rooms', { query: '?select=code,world_name,player_count,created_at&order=created_at.desc&limit=20' })
+    .then(data => {
+      list.innerHTML = '';
+      if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<div style="color:#666;font-size:8px;text-align:center;">No active rooms</div>';
+        return;
+      }
+      data.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'room-slot';
+        div.innerHTML = `<div><span class="room-code">${r.code}</span><div class="room-info">${r.world_name || 'Unknown'} | ${r.player_count || 1} players</div></div>`;
+        div.onclick = () => { document.getElementById('mp-input').value = r.code; };
+        list.appendChild(div);
+      });
+    })
+    .catch(() => {
+      list.innerHTML = '<div style="color:#a44;font-size:8px;text-align:center;">Error loading rooms</div>';
+    });
+}
+
+let mpRoomCode = null;
+let mpIsHost = false;
+
+function hostMultiplayerRoom() {
+  const code = genCode();
+  const worldName = prompt('World name:', 'MP World ' + code);
+  if (!worldName) return;
+  setMpStatus('Creating room...', '#ffff44');
+  gameMode = 'coop';
+  generate();
+  chests.clear();
+  entities.length = 0;
+  particles.length = 0;
+  time = 0;
+  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+  player.armor = { helm: null, chest: null, leg: null };
+  player.hotbar = player.hotbar.map(() => null);
+  player.inv = [];
+  const worldData = worldToBase64(world);
+  supaFetch('multiplayer_rooms', {
+    method: 'POST',
+    body: { code, world_name: worldName, world_data: worldData, player_count: 1, last_active: new Date().toISOString() }
+  }).then(() => {
+    setMpStatus('Room created! Code: ' + code, '#4a8a2a');
+    mpRoomCode = code;
+    mpIsHost = true;
+    setTimeout(() => {
+      document.getElementById('multiplayer-menu').style.display = 'none';
+      startGame();
+    }, 800);
+  }).catch(() => setMpStatus('Failed to create room', '#ff4444'));
+}
+
+function joinMultiplayerRoom() {
+  const code = document.getElementById('mp-input').value.trim().toUpperCase();
+  if (code.length !== 6) { setMpStatus('Enter 6-char code', '#ff4444'); return; }
+  setMpStatus('Joining...', '#ffff44');
+  supaFetch('multiplayer_rooms', { query: `?code=eq.${code}&select=code,world_name,world_data,player_count` })
+    .then(data => {
+      if (!Array.isArray(data) || data.length === 0) { setMpStatus('Room not found', '#ff4444'); return; }
+      const room = data[0];
+      gameMode = 'coop';
+      const arr = base64ToWorld(room.world_data);
+      world.set(arr);
+      mpRoomCode = code;
+      mpIsHost = false;
+      supaFetch('multiplayer_rooms', { method: 'PATCH', query: `?code=eq.${code}`, body: { player_count: (room.player_count || 1) + 1, last_active: new Date().toISOString() } });
+      document.getElementById('multiplayer-menu').style.display = 'none';
+      startGame();
+    })
+    .catch(() => setMpStatus('Failed to join', '#ff4444'));
+}
+
+document.getElementById('btn-multiplayer').onclick = showMultiplayerMenu;
+document.getElementById('btn-host').onclick = hostMultiplayerRoom;
+document.getElementById('btn-join').onclick = joinMultiplayerRoom;
+document.getElementById('btn-mp-back').onclick = hideMultiplayerMenu;
 
 // Init menu
 loadWorlds();
