@@ -203,7 +203,9 @@ function generate() {
   
   const px = Math.floor(WORLD_W / 2);
   player.x = px * TILE;
-  let spawnY = 50;
+  const surfaceY = surface[px];
+  // Spawn above surface, not underground
+  let spawnY = surfaceY - 3;
   while (spawnY > 0 && getBlock(px, spawnY) !== 0) spawnY--;
   player.y = spawnY * TILE;
 }
