@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraria Lite</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Press Start 2P', monospace; overflow: hidden; }
+  #game-container { position: relative; image-rendering: pixelated; }
+  canvas { border: 4px solid #333; cursor: crosshair; image-rendering: pixelated; }
+  #ui { position: absolute; top: 8px; left: 8px; color: #fff; font-size: 10px; text-shadow: 2px 2px 0 #000; pointer-events: none; font-family: 'Press Start 2P', monospace; }
+  #hp-bar { width: 160px; height: 16px; background: #222; border: 2px solid #555; margin-bottom: 6px; position: relative; }
+  #hp-fill { height: 100%; width: 100%; background: linear-gradient(180deg, #ff4444, #aa0000); transition: width 0.2s; }
+  #stats { font-size: 8px; color: #ccc; }
+  #hotbar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; pointer-events: none; }
+  .slot { width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #777; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; position: relative; font-family: 'Press Start 2P', monospace; }
+  .slot.active { border-color: #ffff44; background: rgba(255,255,0,0.2); }
+  .slot .count { position: absolute; bottom: 2px; right: 4px; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 #000; }
+  #inventory { position: absolute; top: 8px; right: 8px; background: rgba(15,15,25,0.95); border: 3px solid #555; width: 280px; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; }
+  #inv-header { background: #2a2a3a; padding: 8px 10px; font-size: 10px; color: #ffff44; border-bottom: 2px solid #444; display: flex; justify-content: space-between; align-items: center; }
+  #inv-close { cursor: pointer; color: #ff4444; font-size: 12px; }
+  #inv-close:hover { color: #ff8888; }
+  #inv-content { display: flex; padding: 8px; gap: 8px; }
+  #inv-grid { display: grid; grid-template-columns: repeat(5, 40px); gap: 3px; }
+  .inv-slot { width: 40px; height: 40px; background: rgba(0,0,0,0.6); border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; position: relative; }
+  .inv-slot .count { position: absolute; bottom: 2px; right: 4px; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 #000; }
+  #inv-crafting { flex: 1; }
+  #inv-crafting h4 { color: #ffff44; font-size: 9px; margin-bottom: 6px; border-bottom: 1px solid #444; padding-bottom: 3px; }
+  .recipe { padding: 4px 0; cursor: pointer; font-size: 8px; color: #aaa; }
+  .recipe:hover { color: #ffff44; }
+  #msg { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); color: #ffff44; font-size: 10px; text-shadow: 2px 2px 0 #000; pointer-events: none; opacity: 0; transition: opacity 0.3s; font-family: 'Press Start 2P', monospace; }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="c" width="960" height="540"></canvas>
+  <div id="ui">
+    <div id="hp-bar"><div id="hp-fill"></div></div>
+    <div id="stats"><span id="time">Day</span> | Depth: <span id="depth">0</span>m</div>
+  </div>
+  <div id="hotbar"></div>
+  <div id="crafting"></div>
+  <div id="inventory">
+    <div id="inv-header">Inventory <span id="inv-close">X</span></div>
+    <div id="inv-content">
+      <div id="inv-grid"></div>
+      <div id="inv-crafting">
+        <h4>Crafting</h4>
+        <div id="inv-recipes"></div>
+      </div>
+    </div>
+  </div>
+  <div id="msg"></div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const TILE = 24;
+const WORLD_W = 400, WORLD_H = 300;
+const DAY_LEN = 24000;
+
+const world = new Uint8Array(WORLD_W * WORLD_H);
+const light = new Uint8Array(WORLD_W * WORLD_H);
+
+const BLOCKS = {
+  0: { name: 'Air', solid: false },
+  1: { name: 'Dirt', color: '#8a5a2a', solid: true, hp: 2 },
+  2: { name: 'Stone', color: '#777777', solid: true, hp: 4 },
+  3: { name: 'Grass', color: '#4a8a2a', solid: true, hp: 2, top: true },
+  4: { name: 'Wood', color: '#aa7744', solid: true, hp: 3, drop: 4 },
+  5: { name: 'Leaves', color: '#2a6a1a', solid: false, hp: 1 },
+  6: { name: 'Sand', color: '#d4c85a', solid: true, hp: 2 },
+  7: { name: 'Coal', color: '#222222', solid: true, hp: 5, drop: 20 },
+  8: { name: 'Iron', color: '#aa6666', solid: true, hp: 6, drop: 21 },
+  9: { name: 'Gold', color: '#ddaa44', solid: true, hp: 8, drop: 22 },
+  10: { name: 'Torch', color: '#ffdd44', solid: false, light: 12, hp: 1 },
+  11: { name: 'Plank', color: '#bb8844', solid: true, hp: 3 },
+  12: { name: 'Crafting Table', color: '#aa7744', solid: true, hp: 4, special: 'craft' },
+  13: { name: 'Furnace', color: '#666666', solid: true, hp: 6, special: 'smelt' },
+  14: { name: 'Glass', color: '#aaddff88', solid: false, hp: 2 },
+  15: { name: 'Brick', color: '#aa5555', solid: true, hp: 5 },
+  16: { name: 'Mossy Stone', color: '#558866', solid: true, hp: 5 },
+};
+
+const ITEMS = {
+  20: { name: 'Coal', icon: 'C', color: '#444444' },
+  21: { name: 'Iron Ore', icon: 'I', color: '#aa6666' },
+  22: { name: 'Gold Ore', icon: 'G', color: '#ddaa44' },
+  23: { name: 'Stick', icon: '/', color: '#aa7744' },
+  24: { name: 'Iron Bar', icon: '=', color: '#bbbbbb' },
+  25: { name: 'Gold Bar', icon: '=', color: '#ffdd44' },
+  26: { name: 'Wood Pick', icon: 'p', color: '#aa7744', tool: 'pick', power: 2 },
+  27: { name: 'Stone Pick', icon: 'p', color: '#888888', tool: 'pick', power: 3 },
+  28: { name: 'Iron Pick', icon: 'p', color: '#bbbbbb', tool: 'pick', power: 5 },
+  29: { name: 'Gold Pick', icon: 'p', color: '#ffdd44', tool: 'pick', power: 7 },
+  30: { name: 'Wood Sword', icon: 's', color: '#aa7744', tool: 'sword', dmg: 12 },
+  31: { name: 'Stone Sword', icon: 's', color: '#888888', tool: 'sword', dmg: 18 },
+  32: { name: 'Iron Sword', icon: 's', color: '#bbbbbb', tool: 'sword', dmg: 25 },
+  33: { name: 'Gold Sword', icon: 's', color: '#ffdd44', tool: 'sword', dmg: 35 },
+  34: { name: 'Apple', icon: 'A', color: '#dd4444', food: 15 },
+  35: { name: 'Meat', icon: 'M', color: '#aa6644', food: 30 },
+};
+
+const RECIPES = [
+  { out: 11, count: 4, need: [[4, 1]], name: 'Plank', anywhere: true },
+  { out: 23, count: 4, need: [[4, 1]], name: 'Stick', anywhere: true },
+  { out: 12, count: 1, need: [[11, 4]], name: 'Crafting Table', anywhere: true },
+  { out: 26, count: 1, need: [[11, 3], [23, 2]], name: 'Wood Pick' },
+  { out: 30, count: 1, need: [[11, 2], [23, 1]], name: 'Wood Sword' },
+  { out: 27, count: 1, need: [[2, 3], [23, 2]], name: 'Stone Pick' },
+  { out: 31, count: 1, need: [[2, 2], [23, 1]], name: 'Stone Sword' },
+  { out: 24, count: 1, need: [[21, 2], [20, 1]], name: 'Iron Bar', station: 'smelt' },
+  { out: 25, count: 1, need: [[22, 2], [20, 1]], name: 'Gold Bar', station: 'smelt' },
+  { out: 28, count: 1, need: [[24, 3], [23, 2]], name: 'Iron Pick' },
+  { out: 32, count: 1, need: [[24, 2], [23, 1]], name: 'Iron Sword' },
+  { out: 29, count: 1, need: [[25, 3], [23, 2]], name: 'Gold Pick' },
+  { out: 33, count: 1, need: [[25, 2], [23, 1]], name: 'Gold Sword' },
+  { out: 14, count: 2, need: [[2, 1], [20, 1]], name: 'Glass', station: 'smelt' },
+  { out: 15, count: 4, need: [[2, 1]], name: 'Brick', station: 'smelt' },
+  { out: 13, count: 1, need: [[2, 8]], name: 'Furnace' },
+];
+
+const player = {
+  x: 0, y: 0, vx: 0, vy: 0,
+  w: 18, h: 34,
+  hp: 100, maxHp: 100,
+  hunger: 100,
+  facing: 1,
+  onGround: false,
+  inv: [],
+  hotbar: [null, null, null, null, null, null, null, null, null],
+  selected: 0,
+  mining: null,
+  swing: 0,
+};
+
+let camX = 0, camY = 0;
+let time = 0;
+const entities = [];
+const particles = [];
+const keys = {};
+let mouseX = 0, mouseY = 0, mouseDown = false;
+let craftingOpen = false;
+
+function generate() {
+  function noise(x) {
+    return Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12;
+  }
+  const surface = [];
+  for (let x = 0; x < WORLD_W; x++) surface[x] = Math.floor(60 + noise(x));
+  
+  for (let x = 0; x < WORLD_W; x++) {
+    for (let y = 0; y < WORLD_H; y++) {
+      const i = y * WORLD_W + x;
+      const s = surface[x];
+      if (y < s - 4) world[i] = 0;
+      else if (y === s) world[i] = 3;
+      else if (y < s + 3) world[i] = 1;
+      else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1;
+      else if (y < s + 20) {
+        world[i] = 2;
+        if (Math.random() < 0.03) world[i] = 7;
+        if (Math.random() < 0.015) world[i] = 8;
+        if (y > s + 15 && Math.random() < 0.008) world[i] = 9;
+      } else {
+        world[i] = 2;
+        if (Math.random() < 0.05) world[i] = 7;
+        if (Math.random() < 0.02) world[i] = 8;
+        if (y > s + 30 && Math.random() < 0.01) world[i] = 9;
+        if (Math.random() < 0.1) world[i] = 16;
+      }
+      if (y > s + 5) {
+        const cave = Math.sin(x * 0.08) * Math.sin(y * 0.12) + Math.sin(x * 0.15 + y * 0.07);
+        if (cave > 0.6) world[i] = 0;
+      }
+    }
+    if (x % 7 === 3 && Math.random() < 0.6) {
+      const base = surface[x];
+      for (let ty = base - 1; ty >= base - 5; ty--) {
+        if (ty >= 0) world[ty * WORLD_W + x] = 4;
+      }
+      for (let dy = -3; dy >= -5; dy--) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const ly = base + dy, lx = x + dx;
+          if (ly >= 0 && lx >= 0 && lx < WORLD_W && world[ly * WORLD_W + lx] === 0) {
+            world[ly * WORLD_W + lx] = 5;
+          }
+        }
+      }
+    }
+  }
+  
+  const px = Math.floor(WORLD_W / 2);
+  player.x = px * TILE;
+  let spawnY = 50;
+  while (spawnY > 0 && getBlock(px, spawnY) !== 0) spawnY--;
+  player.y = spawnY * TILE;
+}
+
+function getBlock(x, y) {
+  if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return 0;
+  return world[y * WORLD_W + x];
+}
+
+function setBlock(x, y, id) {
+  if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return;
+  world[y * WORLD_W + x] = id;
+}
+
+function isSolid(x, y) {
+  const b = BLOCKS[getBlock(x, y)];
+  return b && b.solid;
+}
+
+function addItem(id, count) {
+  const item = ITEMS[id] || BLOCKS[id];
+  if (!item) return;
+  for (let i = 0; i < 9; i++) {
+    if (player.hotbar[i] && player.hotbar[i].id === id) {
+      player.hotbar[i].count += count;
+      updateHotbar();
+      if (craftingOpen) updateCrafting();
+      return;
+    }
+  }
+  for (let i = 0; i < 9; i++) {
+    if (!player.hotbar[i]) {
+      player.hotbar[i] = { id, count };
+      updateHotbar();
+      if (craftingOpen) updateCrafting();
+      return;
+    }
+  }
+  for (const s of player.inv) {
+    if (s.id === id) { s.count += count; updateHotbar(); if (craftingOpen) updateCrafting(); return; }
+  }
+  player.inv.push({ id, count });
+  updateHotbar();
+  if (craftingOpen) updateCrafting();
+}
+
+function hasItems(need) {
+  const all = [...player.hotbar.filter(s => s), ...player.inv];
+  for (const [id, count] of need) {
+    let have = 0;
+    for (const s of all) if (s.id === id) have += s.count;
+    if (have < count) return false;
+  }
+  return true;
+}
+
+function consumeItems(need) {
+  for (const [id, count] of need) {
+    let rem = count;
+    for (const s of player.hotbar) {
+      if (s && s.id === id) {
+        const take = Math.min(rem, s.count);
+        s.count -= take;
+        rem -= take;
+        if (s.count <= 0) {
+          const idx = player.hotbar.indexOf(s);
+          player.hotbar[idx] = null;
+        }
+        if (rem <= 0) break;
+      }
+    }
+    for (const s of player.inv) {
+      if (s.id === id) {
+        const take = Math.min(rem, s.count);
+        s.count -= take;
+        rem -= take;
+        if (s.count <= 0) {
+          const idx = player.inv.indexOf(s);
+          player.inv.splice(idx, 1);
+        }
+        if (rem <= 0) break;
+      }
+    }
+  }
+  updateHotbar();
+}
+
+function updateHotbar() {
+  const el = document.getElementById('hotbar');
+  el.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const s = player.hotbar[i];
+    const div = document.createElement('div');
+    div.className = 'slot' + (i === player.selected ? ' active' : '');
+    if (s) {
+      const item = ITEMS[s.id] || BLOCKS[s.id];
+      div.textContent = item.icon || item.name[0];
+      div.style.color = item.color || '#fff';
+      if (s.count > 1) {
+        const c = document.createElement('span');
+        c.className = 'count';
+        c.textContent = s.count;
+        div.appendChild(c);
+      }
+    }
+    el.appendChild(div);
+  }
+}
+
+function showMsg(text) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.style.opacity = 1;
+  setTimeout(() => el.style.opacity = 0, 2000);
+}
+
+function toggleCrafting() {
+  const panel = document.getElementById('inventory');
+  const closeBtn = document.getElementById('inv-close');
+  if (closeBtn) closeBtn.onclick = toggleCrafting;
+  craftingOpen = !craftingOpen;
+  panel.style.display = craftingOpen ? 'flex' : 'none';
+  if (craftingOpen) updateCrafting();
+}
+
+function updateCrafting() {
+  const grid = document.getElementById('inv-grid');
+  const recipesEl = document.getElementById('inv-recipes');
+  grid.innerHTML = '';
+  recipesEl.innerHTML = '';
+  
+  // Hotbar items (9 slots)
+  for (let i = 0; i < 9; i++) {
+    const s = player.hotbar[i];
+    const div = document.createElement('div');
+    div.className = 'inv-slot';
+    if (s) {
+      const item = ITEMS[s.id] || BLOCKS[s.id];
+      div.textContent = item.icon || item.name[0];
+      div.style.color = item.color || '#fff';
+      if (s.count > 1) {
+        const c = document.createElement('span');
+        c.className = 'count';
+        c.textContent = s.count;
+        div.appendChild(c);
+      }
+    }
+    grid.appendChild(div);
+  }
+  
+  // Inventory items (11 more)
+  for (let i = 0; i < 11; i++) {
+    const s = player.inv[i];
+    const div = document.createElement('div');
+    div.className = 'inv-slot';
+    if (s) {
+      const item = ITEMS[s.id] || BLOCKS[s.id];
+      div.textContent = item.icon || item.name[0];
+      div.style.color = item.color || '#fff';
+      if (s.count > 1) {
+        const c = document.createElement('span');
+        c.className = 'count';
+        c.textContent = s.count;
+        div.appendChild(c);
+      }
+    }
+    grid.appendChild(div);
+  }
+  
+  // Recipes
+  const px = Math.floor((player.x + player.w/2) / TILE);
+  const py = Math.floor((player.y + player.h/2) / TILE);
+  let nearCraft = false, nearSmelt = false;
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      const b = getBlock(px + dx, py + dy);
+      if (b === 12) nearCraft = true;
+      if (b === 13) nearSmelt = true;
+    }
+  }
+  
+  for (const r of RECIPES) {
+    if (r.station === 'smelt' && !nearSmelt) continue;
+    if (!r.anywhere && !nearCraft) continue;
+    if (hasItems(r.need)) {
+      const div = document.createElement('div');
+      div.className = 'recipe';
+      div.textContent = `${ITEMS[r.out]?.name || BLOCKS[r.out]?.name} x${r.count}`;
+      div.onclick = () => {
+        consumeItems(r.need);
+        addItem(r.out, r.count);
+        showMsg(`Crafted ${ITEMS[r.out]?.name || BLOCKS[r.out]?.name}`);
+        updateCrafting();
+      };
+      recipesEl.appendChild(div);
+    }
+  }
+  if (recipesEl.children.length === 0) {
+    recipesEl.innerHTML = '<div style="color:#666">Nothing to craft</div>';
+  }
+}
+
+function spawnEnemy(x, y, type) {
+  entities.push({ x, y, vx: 0, vy: 0, w: 20, h: 20, type,
+    hp: type === 'slime' ? 15 : 30, maxHp: type === 'slime' ? 15 : 30,
+    timer: 0, dir: Math.random() < 0.5 ? -1 : 1 });
+}
+
+function spawnDrop(x, y, id, count) {
+  entities.push({ x, y, vx: (Math.random() - 0.5) * 3, vy: -2,
+    w: 10, h: 10, type: 'drop', id, count, life: 600 });
+}
+
+function spawnParticle(x, y, color) {
+  for (let i = 0; i < 4; i++) {
+    particles.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+      life: 20 + Math.random() * 15, color, size: 2 + Math.random() * 3 });
+  }
+}
+
+function updatePlayer() {
+  const speed = 0.4, jump = -7.5, friction = 0.85, gravity = 0.35;
+  
+  if (keys['a'] || keys['ArrowLeft']) { player.vx -= speed; player.facing = -1; }
+  if (keys['d'] || keys['ArrowRight']) { player.vx += speed; player.facing = 1; }
+  if ((keys['w'] || keys[' '] || keys['ArrowUp']) && player.onGround) {
+    player.vy = jump; player.onGround = false;
+  }
+  
+  player.vx *= friction;
+  player.vy += gravity;
+  
+  // X collision
+  player.x += player.vx;
+  const topY = Math.floor(player.y / TILE);
+  const botY = Math.floor((player.y + player.h - 1) / TILE);
+  if (player.vx > 0) {
+    const rightEdge = Math.floor((player.x + player.w) / TILE);
+    if (isSolid(rightEdge, topY) || isSolid(rightEdge, botY)) {
+      player.x = rightEdge * TILE - player.w - 0.1;
+      player.vx = 0;
+    }
+  } else if (player.vx < 0) {
+    const leftEdge = Math.floor(player.x / TILE);
+    if (isSolid(leftEdge, topY) || isSolid(leftEdge, botY)) {
+      player.x = (leftEdge + 1) * TILE + 0.1;
+      player.vx = 0;
+    }
+  }
+  
+  // Y collision
+  player.y += player.vy;
+  const leftX = Math.floor(player.x / TILE);
+  const rightX = Math.floor((player.x + player.w - 1) / TILE);
+  if (player.vy > 0) {
+    const botEdge = Math.floor((player.y + player.h) / TILE);
+    if (isSolid(leftX, botEdge) || isSolid(rightX, botEdge)) {
+      player.y = botEdge * TILE - player.h - 0.1;
+      player.vy = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+  } else if (player.vy < 0) {
+    const topEdge = Math.floor(player.y / TILE);
+    if (isSolid(leftX, topEdge) || isSolid(rightX, topEdge)) {
+      player.y = (topEdge + 1) * TILE + 0.1;
+      player.vy = 0;
+    }
+  } else {
+    const botEdge = Math.floor((player.y + player.h) / TILE);
+    player.onGround = isSolid(leftX, botEdge) || isSolid(rightX, botEdge);
+  }
+  
+  player.x = Math.max(0, Math.min(WORLD_W * TILE - player.w, player.x));
+  player.y = Math.max(0, Math.min(WORLD_H * TILE - player.h, player.y));
+  
+  player.hunger -= 0.005;
+  if (player.hunger <= 0) { player.hunger = 0; player.hp -= 0.05; }
+  
+  camX += (player.x - W/2 - camX) * 0.1;
+  camY += (player.y - H/2 - camY) * 0.1;
+  camX = Math.max(0, Math.min(WORLD_W * TILE - W, camX));
+  camY = Math.max(0, Math.min(WORLD_H * TILE - H, camY));
+}
+
+function updateEntities() {
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const e = entities[i];
+    if (e.type === 'drop') {
+      e.vy += 0.3; e.x += e.vx; e.y += e.vy; e.vx *= 0.9;
+      const ty = Math.floor((e.y + e.h) / TILE);
+      const tx = Math.floor((e.x + e.w/2) / TILE);
+      if (isSolid(tx, ty)) { e.y = ty * TILE - e.h; e.vy = 0; e.vx *= 0.5; }
+      const dx = (player.x + player.w/2) - (e.x + e.w/2);
+      const dy = (player.y + player.h/2) - (e.y + e.h/2);
+      if (Math.hypot(dx, dy) < 30) {
+        addItem(e.id, e.count);
+        showMsg(`+${e.count} ${ITEMS[e.id]?.name || BLOCKS[e.id]?.name}`);
+        entities.splice(i, 1); continue;
+      }
+      e.life--;
+      if (e.life <= 0) entities.splice(i, 1);
+    } else if (e.type === 'slime' || e.type === 'zombie') {
+      const dx = (player.x + player.w/2) - (e.x + e.w/2);
+      const dy = (player.y + player.h/2) - (e.y + e.h/2);
+      const dist = Math.hypot(dx, dy);
+      
+      if (dist < 300) {
+        e.dir = dx > 0 ? 1 : -1;
+        e.vx += e.dir * (e.type === 'slime' ? 0.08 : 0.12);
+        if (e.onGround && Math.random() < 0.03) e.vy = -5;
+      } else {
+        e.vx += e.dir * 0.03;
+        if (Math.random() < 0.01) e.dir *= -1;
+      }
+      
+      e.vx *= 0.9; e.vy += 0.35;
+      e.x += e.vx;
+      let etx = Math.floor((e.x + e.w/2) / TILE);
+      if (isSolid(etx, Math.floor(e.y / TILE)) || isSolid(etx, Math.floor((e.y + e.h - 1) / TILE))) {
+        e.x = (etx + (e.vx > 0 ? -0.6 : 0.6)) * TILE - e.w/2;
+        e.vx = 0; e.dir *= -1;
+      }
+      e.y += e.vy;
+      etx = Math.floor((e.x + e.w/2) / TILE);
+      const ety = Math.floor((e.y + e.h) / TILE);
+      if (isSolid(etx, ety) || isSolid(Math.floor(e.x / TILE), ety)) {
+        if (e.vy > 0) { e.y = ety * TILE - e.h; e.onGround = true; }
+        else { e.y = (ety + 1) * TILE; }
+        e.vy = 0;
+      } else { e.onGround = false; }
+      
+      if (dist < 20 && player.hp > 0) {
+        player.hp -= (e.type === 'slime' ? 0.3 : 0.5);
+        player.vx += (dx > 0 ? 1 : -1) * 3;
+        player.vy -= 2;
+      }
+      if (player.swing > 0 && dist < 40) {
+        const tool = player.hotbar[player.selected];
+        const dmg = tool && ITEMS[tool.id]?.tool === 'sword' ? ITEMS[tool.id].dmg : 5;
+        e.hp -= dmg;
+        e.vx += (dx > 0 ? -1 : 1) * 4; e.vy -= 3;
+        spawnParticle(e.x + e.w/2, e.y + e.h/2, '#f44');
+        if (e.hp <= 0) {
+          spawnDrop(e.x, e.y, e.type === 'slime' ? 34 : 35, 1);
+          entities.splice(i, 1);
+        }
+      }
+    }
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function updateSpawning() {
+  if (time < 12000) return;
+  if (Math.random() < 0.003 && entities.filter(e => e.type === 'slime' || e.type === 'zombie').length < 8) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const sx = Math.floor((player.x + side * 400) / TILE);
+    const sy = Math.floor(player.y / TILE);
+    let gy = sy;
+    while (gy < WORLD_H - 1 && getBlock(sx, gy) === 0) gy++;
+    if (gy < WORLD_H - 1) spawnEnemy(sx * TILE, (gy - 1) * TILE, Math.random() < 0.6 ? 'slime' : 'zombie');
+  }
+}
+
+function getMouseTile() {
+  const mx = mouseX + camX;
+  const my = mouseY + camY;
+  return { x: Math.floor(mx / TILE), y: Math.floor(my / TILE) };
+}
+
+function mineBlock(tx, ty) {
+  const b = getBlock(tx, ty);
+  if (b === 0) return;
+  const block = BLOCKS[b];
+  const tool = player.hotbar[player.selected];
+  let power = 1;
+  if (tool && ITEMS[tool.id]?.tool === 'pick') power = ITEMS[tool.id].power;
+  
+  if (!player.mining || player.mining.x !== tx || player.mining.y !== ty) {
+    player.mining = { x: tx, y: ty, progress: 0, max: block.hp * 10 / power };
+  }
+  player.mining.progress += 1;
+  spawnParticle(tx * TILE + TILE/2, ty * TILE + TILE/2, block.color);
+  
+  if (player.mining.progress >= player.mining.max) {
+    const dropId = block.drop || b;
+    if (dropId !== 0) spawnDrop(tx * TILE + 4, ty * TILE, dropId, 1);
+    setBlock(tx, ty, 0);
+    player.mining = null;
+  }
+}
+
+function placeBlock(tx, ty) {
+  const slot = player.hotbar[player.selected];
+  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14)) return;
+  if (getBlock(tx, ty) !== 0) return;
+  const px = Math.floor((player.x + player.w/2) / TILE);
+  const py = Math.floor((player.y + player.h/2) / TILE);
+  if (tx === px && ty === py) return;
+  setBlock(tx, ty, slot.id);
+  slot.count--;
+  if (slot.count <= 0) player.hotbar[player.selected] = null;
+  updateHotbar();
+}
+
+function updateLight() {
+  const isDay = time < 12000;
+  const ambient = isDay ? 180 : 30;
+  for (let i = 0; i < light.length; i++) light[i] = ambient;
+  
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const b = getBlock(x, y);
+      if (BLOCKS[b]?.light) {
+        const r = BLOCKS[b].light;
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const d = Math.abs(dx) + Math.abs(dy);
+            if (d > r) continue;
+            const lx = x + dx, ly = y + dy;
+            if (lx < 0 || lx >= WORLD_W || ly < 0 || ly >= WORLD_H) continue;
+            const li = ly * WORLD_W + lx;
+            light[li] = Math.max(light[li], 255 - d * 18);
+          }
+        }
+      }
+    }
+  }
+}
+
+function draw() {
+  const isDay = time < 12000;
+  const skyR = isDay ? 100 : 10;
+  const skyG = isDay ? 150 : 10;
+  const skyB = isDay ? 220 : 30;
+  ctx.fillStyle = `rgb(${skyR},${skyG},${skyB})`;
+  ctx.fillRect(0, 0, W, H);
+  
+  const celestialX = W/2 + Math.cos((time / DAY_LEN) * Math.PI * 2 - Math.PI/2) * (W/2 - 40);
+  const celestialY = H/2 + Math.sin((time / DAY_LEN) * Math.PI * 2 - Math.PI/2) * (H/2 - 40);
+  if (isDay) {
+    ctx.fillStyle = '#ffdd44';
+    ctx.beginPath(); ctx.arc(celestialX, celestialY, 20, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.fillStyle = '#dddddd';
+    ctx.beginPath(); ctx.arc(celestialX, celestialY, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 50; i++) {
+      ctx.fillRect(((i * 137) % W), ((i * 89) % (H/2)), 2, 2);
+    }
+  }
+  
+  ctx.save();
+  ctx.translate(-Math.floor(camX), -Math.floor(camY));
+  
+  const startX = Math.floor(camX / TILE);
+  const startY = Math.floor(camY / TILE);
+  const endX = Math.min(WORLD_W, startX + Math.ceil(W / TILE) + 2);
+  const endY = Math.min(WORLD_H, startY + Math.ceil(H / TILE) + 2);
+  
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const b = getBlock(x, y);
+      if (b === 0) continue;
+      const block = BLOCKS[b];
+      const li = y * WORLD_W + x;
+      const l = light[li] / 255;
+      
+      const c = block.color;
+      let r, g, bval, a = 1;
+      if (c.length === 4) {
+        r = parseInt(c[1] + c[1], 16);
+        g = parseInt(c[2] + c[2], 16);
+        bval = parseInt(c[3] + c[3], 16);
+      } else {
+        r = parseInt(c.slice(1, 3), 16);
+        g = parseInt(c.slice(3, 5), 16);
+        bval = parseInt(c.slice(5, 7), 16);
+        if (c.length > 7) a = parseInt(c.slice(7, 9), 16) / 255;
+      }
+      ctx.fillStyle = `rgba(${Math.floor(r * l)},${Math.floor(g * l)},${Math.floor(bval * l)},${a})`;
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      
+      if (b === 3 && y > 0 && getBlock(x, y-1) === 0) {
+        ctx.fillStyle = `rgba(60,160,40,${l})`;
+        ctx.fillRect(x * TILE + 2, y * TILE, TILE - 4, 3);
+      }
+      if (b === 10) {
+        ctx.fillStyle = `rgba(255,220,100,${l * 0.8})`;
+        ctx.fillRect(x * TILE + 8, y * TILE + 4, 8, 14);
+      }
+    }
+  }
+  
+  for (const e of entities) {
+    if (e.type === 'drop') {
+      const item = ITEMS[e.id] || BLOCKS[e.id];
+      ctx.fillStyle = item.color || '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText(item.icon || item.name[0], e.x, e.y + 10);
+    } else if (e.type === 'slime') {
+      ctx.fillStyle = '#44aa44';
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle = '#66cc66';
+      ctx.fillRect(e.x + 4, e.y + 4, 4, 4);
+      ctx.fillRect(e.x + 12, e.y + 4, 4, 4);
+    } else if (e.type === 'zombie') {
+      ctx.fillStyle = '#336633';
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle = '#ff4444';
+      ctx.fillRect(e.x + (e.dir > 0 ? 12 : 4), e.y + 6, 4, 4);
+    }
+  }
+  
+  ctx.fillStyle = '#4488aa';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle = '#eeccaa';
+  ctx.fillRect(player.x + 2, player.y + 2, 14, 10);
+  ctx.fillStyle = '#222222';
+  ctx.fillRect(player.x + (player.facing > 0 ? 10 : 4), player.y + 5, 3, 3);
+  
+  if (player.swing > 0) {
+    ctx.fillStyle = '#eeccaa';
+    const swingAngle = player.swing * 0.3 * player.facing;
+    ctx.save();
+    ctx.translate(player.x + player.w/2, player.y + 16);
+    ctx.rotate(swingAngle);
+    ctx.fillRect(0, -2, 16, 4);
+    ctx.restore();
+    player.swing--;
+  }
+  
+  if (player.mining) {
+    const crack = Math.floor(player.mining.progress / player.mining.max * 4);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    const mx = player.mining.x * TILE;
+    const my = player.mining.y * TILE;
+    if (crack >= 1) { ctx.beginPath(); ctx.moveTo(mx + 4, my + 4); ctx.lineTo(mx + 20, my + 20); ctx.stroke(); }
+    if (crack >= 2) { ctx.beginPath(); ctx.moveTo(mx + 20, my + 4); ctx.lineTo(mx + 4, my + 20); ctx.stroke(); }
+    if (crack >= 3) { ctx.beginPath(); ctx.moveTo(mx + 12, my + 2); ctx.lineTo(mx + 12, my + 22); ctx.stroke(); }
+  }
+  
+  for (const p of particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  
+  if (!isDay) {
+    ctx.fillStyle = 'rgba(0,0,20,0.4)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  
+  const hpFill = document.getElementById('hp-fill');
+  if (hpFill) hpFill.style.width = (player.hp / player.maxHp * 100) + '%';
+  const timeEl = document.getElementById('time');
+  if (timeEl) timeEl.textContent = isDay ? 'Day' : 'Night';
+  const depthEl = document.getElementById('depth');
+  if (depthEl) depthEl.textContent = Math.floor((player.y + player.h) / TILE - 60);
+}
+
+// Input
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) {
+    mouseDown = true;
+    const t = getMouseTile();
+    if (keys['Shift']) placeBlock(t.x, t.y);
+    else { mineBlock(t.x, t.y); player.swing = 10; }
+  } else if (e.button === 2) {
+    const t = getMouseTile();
+    placeBlock(t.x, t.y);
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (e.button === 0) { mouseDown = false; player.mining = null; }
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key >= '1' && e.key <= '9') {
+    player.selected = parseInt(e.key) - 1;
+    updateHotbar();
+  }
+  if (e.key.toLowerCase() === 'e') toggleCrafting();
+  if (e.key.toLowerCase() === 'q') {
+    const slot = player.hotbar[player.selected];
+    if (slot) {
+      spawnDrop(player.x, player.y, slot.id, 1);
+      slot.count--;
+      if (slot.count <= 0) player.hotbar[player.selected] = null;
+      updateHotbar();
+    }
+  }
+});
+
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Game loop
+function gameLoop() {
+  time = (time + 1) % DAY_LEN;
+  updatePlayer();
+  updateEntities();
+  updateLight();
+  updateSpawning();
+  if (mouseDown && !keys['Shift']) {
+    const t = getMouseTile();
+    mineBlock(t.x, t.y);
+  }
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+generate();
+addItem(10, 8);
+updateHotbar();
+updateLight();
+gameLoop();
+</script>
+</body>
+</html>
