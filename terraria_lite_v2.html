@@ -577,15 +577,18 @@ function updatePlayer() {
 }
 
 function updateEntities() {
+  const px = player.x + player.w/2, py = player.y + player.h/2;
   for (let i = entities.length - 1; i >= 0; i--) {
     const e = entities[i];
+    const dist = Math.hypot(e.x - px, e.y - py);
+    if (dist > 1200 && e.type !== 'drop') continue;
     if (e.type === 'drop') {
       e.vy += 0.3; e.x += e.vx; e.y += e.vy; e.vx *= 0.9;
       const ty = Math.floor((e.y + e.h) / TILE);
       const tx = Math.floor((e.x + e.w/2) / TILE);
       if (isSolid(tx, ty)) { e.y = ty * TILE - e.h; e.vy = 0; e.vx *= 0.5; }
-      const dx = (player.x + player.w/2) - (e.x + e.w/2);
-      const dy = (player.y + player.h/2) - (e.y + e.h/2);
+      const dx = px - (e.x + e.w/2);
+      const dy = py - (e.y + e.h/2);
       if (Math.hypot(dx, dy) < 30) {
         addItem(e.id, e.count);
         showMsg(`+${e.count} ${ITEMS[e.id]?.name || BLOCKS[e.id]?.name}`);
@@ -594,11 +597,11 @@ function updateEntities() {
       e.life--;
       if (e.life <= 0) entities.splice(i, 1);
     } else if (e.type === 'slime' || e.type === 'zombie') {
-      const dx = (player.x + player.w/2) - (e.x + e.w/2);
-      const dy = (player.y + player.h/2) - (e.y + e.h/2);
-      const dist = Math.hypot(dx, dy);
+      const dx = px - (e.x + e.w/2);
+      const dy = py - (e.y + e.h/2);
+      const edist = Math.hypot(dx, dy);
       
-      if (dist < 300) {
+      if (edist < 300) {
         e.dir = dx > 0 ? 1 : -1;
         e.vx += e.dir * (e.type === 'slime' ? 0.08 : 0.12);
         if (e.onGround && Math.random() < 0.03) e.vy = -5;
@@ -623,14 +626,14 @@ function updateEntities() {
         e.vy = 0;
       } else { e.onGround = false; }
       
-      if (dist < 20 && player.hp > 0) {
+      if (edist < 20 && player.hp > 0) {
         const def = getArmorDef();
         const raw = e.type === 'slime' ? 0.3 : 0.5;
         player.hp -= Math.max(raw * (1 - def * 0.05), raw * 0.2);
         player.vx += (dx > 0 ? 1 : -1) * 3;
         player.vy -= 2;
       }
-      if (player.swing > 0 && dist < 40) {
+      if (player.swing > 0 && edist < 40) {
         const tool = player.hotbar[player.selected];
         const dmg = tool && ITEMS[tool.id]?.tool === 'sword' ? ITEMS[tool.id].dmg : 5;
         e.hp -= dmg;
@@ -915,20 +918,36 @@ function placeBlock(tx, ty) {
 function updateLight() {
   const isDay = time < 12000;
   const ambient = isDay ? 180 : 30;
-  for (let i = 0; i < light.length; i++) light[i] = ambient;
-  
-  for (let y = 0; y < WORLD_H; y++) {
-    for (let x = 0; x < WORLD_W; x++) {
+  const px = Math.floor((player.x + player.w/2) / TILE);
+  const py = Math.floor((player.y + player.h/2) / TILE);
+  const R = 50;
+  const sx = Math.max(0, px - R), ex = Math.min(WORLD_W, px + R);
+  const sy = Math.max(0, py - R), ey = Math.min(WORLD_H, py + R);
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
+      light[y * WORLD_W + x] = ambient;
+    }
+  }
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
       const b = getBlock(x, y);
       if (BLOCKS[b]?.light) {
         const r = BLOCKS[b].light;
-        for (let dy = -r; dy <= r; dy++) {
-          for (let dx = -r; dx <= r; dx++) {
-            const d = Math.abs(dx) + Math.abs(dy);
-            if (d > r) continue;
-            const lx = x + dx, ly = y + dy;
-            if (lx < 0 || lx >= WORLD_W || ly < 0 || ly >= WORLD_H) continue;
-            const li = ly * WORLD_W + lx;
+        const r2 = r * r;
+        const ls = Math.max(sy, y - r), le = Math.min(ey, y + r + 1);
+        const xs = Math.max(sx, x - r), xe = Math.min(ex, x + r + 1);
+        for (let ly = ls; ly < le; ly++) {
+          const dy = ly - y;
+          const dy2 = dy * dy;
+          const rem = r2 - dy2;
+          if (rem < 0) continue;
+          const maxDx = Math.floor(Math.sqrt(rem));
+          const lxs = Math.max(xs, x - maxDx);
+          const lxe = Math.min(xe, x + maxDx + 1);
+          const base = ly * WORLD_W;
+          for (let lx = lxs; lx < lxe; lx++) {
+            const d = Math.abs(lx - x) + Math.abs(dy);
+            const li = base + lx;
             light[li] = Math.max(light[li], 255 - d * 18);
           }
         }
@@ -1069,17 +1088,17 @@ function draw() {
   const depthEl = document.getElementById('depth');
   if (depthEl) depthEl.textContent = Math.floor((player.y + player.h) / TILE - 60);
 
-  // Minimap
+  // Minimap (throttled)
   const mm = document.getElementById('minimap');
-  if (mm.style.display !== 'none') {
+  if (mm.style.display !== 'none' && time % 6 === 0) {
     const mmCtx = mm.getContext('2d');
     const mmW = mm.width, mmH = mm.height;
     const scaleX = mmW / WORLD_W;
     const scaleY = mmH / WORLD_H;
     mmCtx.fillStyle = '#000';
     mmCtx.fillRect(0, 0, mmW, mmH);
-    for (let y = 0; y < WORLD_H; y += 4) {
-      for (let x = 0; x < WORLD_W; x += 4) {
+    for (let y = 0; y < WORLD_H; y += 6) {
+      for (let x = 0; x < WORLD_W; x += 6) {
         const b = getBlock(x, y);
         if (b === 0) continue;
         const block = BLOCKS[b];
@@ -1087,7 +1106,7 @@ function draw() {
         if (c.length === 4) c = '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
         else if (c.length > 7) c = c.slice(0, 7);
         mmCtx.fillStyle = c;
-        mmCtx.fillRect(x * scaleX, y * scaleY, Math.max(1, scaleX * 4), Math.max(1, scaleY * 4));
+        mmCtx.fillRect(x * scaleX, y * scaleY, Math.max(1, scaleX * 6), Math.max(1, scaleY * 6));
       }
     }
     mmCtx.fillStyle = '#f00';
