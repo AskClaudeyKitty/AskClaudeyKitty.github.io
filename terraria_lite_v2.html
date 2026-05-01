@@ -394,6 +394,13 @@ function getBlock(x, y) {
 function setBlock(x, y, id) {
   if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return;
   world[y * WORLD_W + x] = id;
+  if (mpRoomCode) {
+    supaFetch('mp_blocks', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: { room_code: mpRoomCode, x, y, block_id: id, updated_at: new Date().toISOString() }
+    }).catch(() => {});
+  }
 }
 
 function isSolid(x, y) {
@@ -1542,10 +1549,31 @@ let mpRoomCode = null;
 let mpIsHost = false;
 let mpPlayerId = Math.random().toString(36).slice(2, 10);
 let mpOtherPlayers = {};
-let mpSyncInterval = null;
+let mpBlockInterval = null;
+let mpLastBlockCheck = new Date(0).toISOString();
+
+function startMpBlockSync() {
+  if (!mpRoomCode) return;
+  mpBlockInterval = setInterval(() => {
+    supaFetch('mp_blocks', { query: `?room_code=eq.${mpRoomCode}&updated_at=gt.${encodeURIComponent(mpLastBlockCheck)}&select=x,y,block_id,updated_at` })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        for (const b of data) {
+          world[b.y * WORLD_W + b.x] = b.block_id;
+          if (b.updated_at > mpLastBlockCheck) mpLastBlockCheck = b.updated_at;
+        }
+      }).catch(() => {});
+  }, 800);
+}
+
+function stopMpBlockSync() {
+  if (mpBlockInterval) { clearInterval(mpBlockInterval); mpBlockInterval = null; }
+  mpLastBlockCheck = new Date(0).toISOString();
+}
 
 function startMpSync() {
   if (!mpRoomCode) return;
+  startMpBlockSync();
   mpSyncInterval = setInterval(() => {
     // Upload my position
     supaFetch('mp_players', {
@@ -1570,6 +1598,7 @@ function startMpSync() {
 
 function stopMpSync() {
   if (mpSyncInterval) { clearInterval(mpSyncInterval); mpSyncInterval = null; }
+  stopMpBlockSync();
   mpOtherPlayers = {};
 }
 
