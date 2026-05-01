@@ -14,8 +14,8 @@
   #hp-bar { width: 160px; height: 16px; background: #222; border: 2px solid #555; margin-bottom: 6px; position: relative; }
   #hp-fill { height: 100%; width: 100%; background: linear-gradient(180deg, #ff4444, #aa0000); transition: width 0.2s; }
   #stats { font-size: 8px; color: #ccc; }
-  #hotbar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; pointer-events: none; }
-  .slot { width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #777; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; position: relative; font-family: 'Press Start 2P', monospace; }
+  #hotbar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(5, 40px); gap: 3px; pointer-events: auto; }
+  .slot { width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #777; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; position: relative; font-family: 'Press Start 2P', monospace; cursor: pointer; }
   .slot.active { border-color: #ffff44; background: rgba(255,255,0,0.2); }
   .slot .count { position: absolute; bottom: 2px; right: 4px; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 #000; }
   #inventory { position: absolute; top: 8px; right: 8px; background: rgba(15,15,25,0.95); border: 3px solid #555; width: 280px; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; }
@@ -132,7 +132,7 @@ const player = {
   facing: 1,
   onGround: false,
   inv: [],
-  hotbar: [null, null, null, null, null, null, null, null, null],
+  hotbar: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
   selected: 0,
   mining: null,
   swing: 0,
@@ -296,10 +296,12 @@ function consumeItems(need) {
 function updateHotbar() {
   const el = document.getElementById('hotbar');
   el.innerHTML = '';
-  for (let i = 0; i < 9; i++) {
+  // 5x4 grid = 20 slots, first 9 are hotbar
+  for (let i = 0; i < 20; i++) {
     const s = player.hotbar[i];
     const div = document.createElement('div');
     div.className = 'slot' + (i === player.selected ? ' active' : '');
+    div.dataset.index = i;
     if (s) {
       const item = ITEMS[s.id] || BLOCKS[s.id];
       div.textContent = item.icon || item.name[0];
@@ -311,6 +313,10 @@ function updateHotbar() {
         div.appendChild(c);
       }
     }
+    div.onclick = () => {
+      player.selected = i;
+      updateHotbar();
+    };
     el.appendChild(div);
   }
 }
