@@ -1156,6 +1156,8 @@ function draw() {
   ctx.fillRect(player.x + 2, player.y + 2, 14, 10);
   ctx.fillStyle = '#222222';
   ctx.fillRect(player.x + (player.facing > 0 ? 10 : 4), player.y + 5, 3, 3);
+
+  drawOtherPlayers();
   
   if (player.swing > 0) {
     ctx.fillStyle = '#eeccaa';
@@ -1374,6 +1376,7 @@ function startGame() {
   updateHotbar();
   updateArmorUI();
   updateLight();
+  if (mpRoomCode) startMpSync();
   requestAnimationFrame(gameLoop);
 
   if (gameMode === 'tutorial') {
@@ -1537,6 +1540,50 @@ function fetchRooms() {
 
 let mpRoomCode = null;
 let mpIsHost = false;
+let mpPlayerId = Math.random().toString(36).slice(2, 10);
+let mpOtherPlayers = {};
+let mpSyncInterval = null;
+
+function startMpSync() {
+  if (!mpRoomCode) return;
+  mpSyncInterval = setInterval(() => {
+    // Upload my position
+    supaFetch('mp_players', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: { room_code: mpRoomCode, player_id: mpPlayerId, x: Math.floor(player.x), y: Math.floor(player.y), updated_at: new Date().toISOString() }
+    }).catch(() => {});
+    // Download other players
+    supaFetch('mp_players', { query: `?room_code=eq.${mpRoomCode}&player_id=neq.${mpPlayerId}&select=player_id,x,y,updated_at` })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const now = Date.now();
+        mpOtherPlayers = {};
+        for (const p of data) {
+          if (now - new Date(p.updated_at).getTime() < 10000) {
+            mpOtherPlayers[p.player_id] = { x: p.x, y: p.y };
+          }
+        }
+      }).catch(() => {});
+  }, 500);
+}
+
+function stopMpSync() {
+  if (mpSyncInterval) { clearInterval(mpSyncInterval); mpSyncInterval = null; }
+  mpOtherPlayers = {};
+}
+
+function drawOtherPlayers() {
+  for (const id in mpOtherPlayers) {
+    const p = mpOtherPlayers[id];
+    ctx.fillStyle = '#aa4444';
+    ctx.fillRect(p.x, p.y, 18, 34);
+    ctx.fillStyle = '#eeccaa';
+    ctx.fillRect(p.x + 2, p.y + 2, 14, 10);
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(p.x + 10, p.y + 5, 3, 3);
+  }
+}
 
 function hostMultiplayerRoom() {
   const code = genCode();
