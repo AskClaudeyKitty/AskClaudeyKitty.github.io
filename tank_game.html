@@ -600,7 +600,7 @@ function startCampaignLevel(level) {
     weapon: 0,
     fuel: config.playerFuel,
     maxFuel: config.playerFuel,
-    ammo: p.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 50)))),
+    type: p, ammo: p.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 50)))),
     bonusWeapon: null,
     bonusAmmo: 0,
     shockTimer: 0,
@@ -911,7 +911,7 @@ function initTanks() {
   const startHp2 = p.name === 'Invincible' ? 1 : playerHp2;
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: startHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
-    ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
+    type: p, ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: startShield2, infiniteShield: p.infiniteShield || false
   });
   const botHp2 = testBotMode ? 100000 : b.hp;
@@ -1430,7 +1430,7 @@ function resetGame() {
   const startHp2 = p.name === 'Invincible' ? 1 : playerHp2;
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80, angle: 45, hp: startHp2, maxHp: playerHp2, weapon: 0, fuel: playerFuel2, maxFuel: playerFuel2,
-    ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
+    type: p, ammo: p.weapons.map(w => w.ammo === -1 ? -1 : 1),
     bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: startShield2, infiniteShield: p.infiniteShield || false
   });
   const botHp2 = testBotMode ? 100000 : b.hp;
