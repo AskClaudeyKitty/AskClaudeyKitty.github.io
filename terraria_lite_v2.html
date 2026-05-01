@@ -228,7 +228,7 @@ function isSolid(x, y) {
 function addItem(id, count) {
   const item = ITEMS[id] || BLOCKS[id];
   if (!item) return;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 20; i++) {
     if (player.hotbar[i] && player.hotbar[i].id === id) {
       player.hotbar[i].count += count;
       updateHotbar();
@@ -236,7 +236,7 @@ function addItem(id, count) {
       return;
     }
   }
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 20; i++) {
     if (!player.hotbar[i]) {
       player.hotbar[i] = { id, count };
       updateHotbar();
