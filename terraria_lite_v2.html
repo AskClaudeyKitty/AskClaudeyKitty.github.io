@@ -743,7 +743,7 @@ function shootArrow() {
   });
 }
 
-function openChest(tx, ty) {
+function openChestUI(tx, ty) {
   const key = `${tx},${ty}`;
   if (!chests.has(key)) chests.set(key, []);
   openChest = { x: tx, y: ty, items: chests.get(key) };
@@ -898,7 +898,7 @@ function mineBlock(tx, ty) {
 
 function placeBlock(tx, ty) {
   const b = getBlock(tx, ty);
-  if (b === 23) { openChest(tx, ty); return; }
+  if (b === 23) { openChestUI(tx, ty); return; }
   const slot = player.hotbar[player.selected];
   if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14)) return;
   if (b !== 0) return;
