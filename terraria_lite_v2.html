@@ -550,65 +550,77 @@ function spawnParticle(x, y, color) {
 }
 
 function updatePlayer() {
-  const speed = 0.4, jump = -7.5, friction = 0.85, gravity = 0.35;
-  
-  if (keys['a'] || keys['ArrowLeft']) { player.vx -= speed; player.facing = -1; }
-  if (keys['d'] || keys['ArrowRight']) { player.vx += speed; player.facing = 1; }
-  if ((keys['w'] || keys[' '] || keys['ArrowUp']) && player.onGround) {
-    player.vy = jump; player.onGround = false;
-  }
-  
-  player.vx *= friction;
-  player.vy += gravity;
-  
-  // X collision
-  player.x += player.vx;
-  const topY = Math.floor(player.y / TILE);
-  const botY = Math.floor((player.y + player.h - 1) / TILE);
-  if (player.vx > 0) {
-    const rightEdge = Math.floor((player.x + player.w) / TILE);
-    if (isSolid(rightEdge, topY) || isSolid(rightEdge, botY)) {
-      player.x = rightEdge * TILE - player.w - 0.1;
-      player.vx = 0;
-    }
-  } else if (player.vx < 0) {
-    const leftEdge = Math.floor(player.x / TILE);
-    if (isSolid(leftEdge, topY) || isSolid(leftEdge, botY)) {
-      player.x = (leftEdge + 1) * TILE + 0.1;
-      player.vx = 0;
-    }
-  }
-  
-  // Y collision
-  player.y += player.vy;
-  const leftX = Math.floor(player.x / TILE);
-  const rightX = Math.floor((player.x + player.w - 1) / TILE);
-  if (player.vy > 0) {
-    const botEdge = Math.floor((player.y + player.h) / TILE);
-    if (isSolid(leftX, botEdge) || isSolid(rightX, botEdge)) {
-      player.y = botEdge * TILE - player.h - 0.1;
-      player.vy = 0;
-      player.onGround = true;
-    } else {
-      player.onGround = false;
-    }
-  } else if (player.vy < 0) {
-    const topEdge = Math.floor(player.y / TILE);
-    if (isSolid(leftX, topEdge) || isSolid(rightX, topEdge)) {
-      player.y = (topEdge + 1) * TILE + 0.1;
-      player.vy = 0;
-    }
+  const speed = gameMode === 'creative' ? 0.8 : 0.4;
+  const jump = -7.5, friction = 0.85, gravity = gameMode === 'creative' ? 0.15 : 0.35;
+
+  if (gameMode === 'creative') {
+    if (keys['a'] || keys['ArrowLeft']) { player.vx -= speed; player.facing = -1; }
+    if (keys['d'] || keys['ArrowRight']) { player.vx += speed; player.facing = 1; }
+    if (keys['w'] || keys['ArrowUp']) { player.vy -= speed; }
+    if (keys['s'] || keys['ArrowDown']) { player.vy += speed; }
+    player.vx *= friction; player.vy *= friction;
+    player.x += player.vx; player.y += player.vy;
+    player.onGround = false;
   } else {
-    const botEdge = Math.floor((player.y + player.h) / TILE);
-    player.onGround = isSolid(leftX, botEdge) || isSolid(rightX, botEdge);
+    if (keys['a'] || keys['ArrowLeft']) { player.vx -= speed; player.facing = -1; }
+    if (keys['d'] || keys['ArrowRight']) { player.vx += speed; player.facing = 1; }
+    if ((keys['w'] || keys[' '] || keys['ArrowUp']) && player.onGround) {
+      player.vy = jump; player.onGround = false;
+    }
+    player.vx *= friction;
+    player.vy += gravity;
+
+    // X collision
+    player.x += player.vx;
+    const topY = Math.floor(player.y / TILE);
+    const botY = Math.floor((player.y + player.h - 1) / TILE);
+    if (player.vx > 0) {
+      const rightEdge = Math.floor((player.x + player.w) / TILE);
+      if (isSolid(rightEdge, topY) || isSolid(rightEdge, botY)) {
+        player.x = rightEdge * TILE - player.w - 0.1;
+        player.vx = 0;
+      }
+    } else if (player.vx < 0) {
+      const leftEdge = Math.floor(player.x / TILE);
+      if (isSolid(leftEdge, topY) || isSolid(leftEdge, botY)) {
+        player.x = (leftEdge + 1) * TILE + 0.1;
+        player.vx = 0;
+      }
+    }
+
+    // Y collision
+    player.y += player.vy;
+    const leftX = Math.floor(player.x / TILE);
+    const rightX = Math.floor((player.x + player.w - 1) / TILE);
+    if (player.vy > 0) {
+      const botEdge = Math.floor((player.y + player.h) / TILE);
+      if (isSolid(leftX, botEdge) || isSolid(rightX, botEdge)) {
+        player.y = botEdge * TILE - player.h - 0.1;
+        player.vy = 0;
+        player.onGround = true;
+      } else {
+        player.onGround = false;
+      }
+    } else if (player.vy < 0) {
+      const topEdge = Math.floor(player.y / TILE);
+      if (isSolid(leftX, topEdge) || isSolid(rightX, topEdge)) {
+        player.y = (topEdge + 1) * TILE + 0.1;
+        player.vy = 0;
+      }
+    } else {
+      const botEdge = Math.floor((player.y + player.h) / TILE);
+      player.onGround = isSolid(leftX, botEdge) || isSolid(rightX, botEdge);
+    }
   }
-  
+
   player.x = Math.max(0, Math.min(WORLD_W * TILE - player.w, player.x));
   player.y = Math.max(0, Math.min(WORLD_H * TILE - player.h, player.y));
-  
-  player.hunger -= 0.005;
-  if (player.hunger <= 0) { player.hunger = 0; player.hp -= 0.05; }
-  
+
+  if (gameMode !== 'creative') {
+    player.hunger -= 0.005 * getDiffMult();
+    if (player.hunger <= 0) { player.hunger = 0; player.hp -= 0.05 * getDiffMult(); }
+  }
+
   camX += (player.x - W/2 - camX) * 0.1;
   camY += (player.y - H/2 - camY) * 0.1;
   camX = Math.max(0, Math.min(WORLD_W * TILE - W, camX));
@@ -665,9 +677,10 @@ function updateEntities() {
         e.vy = 0;
       } else { e.onGround = false; }
       
-      if (edist < 20 && player.hp > 0) {
+      if (edist < 20 && player.hp > 0 && gameMode !== 'creative') {
         const def = getArmorDef();
-        const raw = e.type === 'slime' ? 0.3 : 0.5;
+        const mult = getDiffMult();
+        const raw = (e.type === 'slime' ? 0.3 : 0.5) * mult;
         player.hp -= Math.max(raw * (1 - def * 0.05), raw * 0.2);
         player.vx += (dx > 0 ? 1 : -1) * 3;
         player.vy -= 2;
@@ -763,21 +776,23 @@ function updateRegen() {
 function shootArrow() {
   const slot = player.hotbar[player.selected];
   if (!slot || slot.id !== 37) return;
-  let arrowSlot = null;
-  for (let i = 0; i < 20; i++) {
-    if (player.hotbar[i] && player.hotbar[i].id === 38) { arrowSlot = player.hotbar[i]; break; }
+  if (gameMode !== 'creative') {
+    let arrowSlot = null;
+    for (let i = 0; i < 20; i++) {
+      if (player.hotbar[i] && player.hotbar[i].id === 38) { arrowSlot = player.hotbar[i]; break; }
+    }
+    if (!arrowSlot) {
+      for (const s of player.inv) { if (s.id === 38) { arrowSlot = s; break; } }
+    }
+    if (!arrowSlot) { showMsg('No arrows!'); return; }
+    arrowSlot.count--;
+    if (arrowSlot.count <= 0) {
+      for (let i = 0; i < 20; i++) if (player.hotbar[i] === arrowSlot) player.hotbar[i] = null;
+      const idx = player.inv.indexOf(arrowSlot);
+      if (idx >= 0) player.inv.splice(idx, 1);
+    }
+    updateHotbar();
   }
-  if (!arrowSlot) {
-    for (const s of player.inv) { if (s.id === 38) { arrowSlot = s; break; } }
-  }
-  if (!arrowSlot) { showMsg('No arrows!'); return; }
-  arrowSlot.count--;
-  if (arrowSlot.count <= 0) {
-    for (let i = 0; i < 20; i++) if (player.hotbar[i] === arrowSlot) player.hotbar[i] = null;
-    const idx = player.inv.indexOf(arrowSlot);
-    if (idx >= 0) player.inv.splice(idx, 1);
-  }
-  updateHotbar();
   entities.push({
     x: player.x + player.w/2, y: player.y + player.h/2,
     vx: player.facing * 8, vy: -1,
@@ -899,8 +914,11 @@ function stopMusic() {
 }
 
 function updateSpawning() {
+  if (gameMode === 'creative' || gameMode === 'tutorial') return;
   if (time < 12000) return;
-  if (Math.random() < 0.003 && entities.filter(e => e.type === 'slime' || e.type === 'zombie').length < 8) {
+  const mult = getDiffMult();
+  const maxEnemies = difficulty === 'easy' ? 4 : difficulty === 'hard' ? 12 : 8;
+  if (Math.random() < 0.003 * mult && entities.filter(e => e.type === 'slime' || e.type === 'zombie').length < maxEnemies) {
     const side = Math.random() < 0.5 ? -1 : 1;
     const sx = Math.floor((player.x + side * 400) / TILE);
     const sy = Math.floor(player.y / TILE);
@@ -923,13 +941,21 @@ function mineBlock(tx, ty) {
   const tool = player.hotbar[player.selected];
   let power = 1;
   if (tool && ITEMS[tool.id]?.tool === 'pick') power = ITEMS[tool.id].power;
-  
+
+  if (gameMode === 'creative') {
+    const dropId = block.drop || b;
+    if (dropId !== 0) spawnDrop(tx * TILE + 4, ty * TILE, dropId, 1);
+    setBlock(tx, ty, 0);
+    spawnParticle(tx * TILE + TILE/2, ty * TILE + TILE/2, block.color);
+    return;
+  }
+
   if (!player.mining || player.mining.x !== tx || player.mining.y !== ty) {
     player.mining = { x: tx, y: ty, progress: 0, max: block.hp * 10 / power };
   }
   player.mining.progress += 1;
   spawnParticle(tx * TILE + TILE/2, ty * TILE + TILE/2, block.color);
-  
+
   if (player.mining.progress >= player.mining.max) {
     const dropId = block.drop || b;
     if (dropId !== 0) spawnDrop(tx * TILE + 4, ty * TILE, dropId, 1);
@@ -949,8 +975,10 @@ function placeBlock(tx, ty) {
   if (tx === px && ty === py) return;
   setBlock(tx, ty, slot.id);
   if (slot.id === 23) chests.set(`${tx},${ty}`, []);
-  slot.count--;
-  if (slot.count <= 0) player.hotbar[player.selected] = null;
+  if (gameMode !== 'creative') {
+    slot.count--;
+    if (slot.count <= 0) player.hotbar[player.selected] = null;
+  }
   updateHotbar();
 }
 
@@ -1225,19 +1253,176 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
-generate();
-addItem(10, 8);
-addItem(37, 1);
-addItem(38, 50);
-updateHotbar();
-updateArmorUI();
-updateLight();
+let gameMode = 'survival';
+let difficulty = 'normal';
+let selectedWorld = null;
+let worlds = [];
+let tutorialStep = 0;
+let inGame = false;
+
+const TUTORIAL_STEPS = [
+  "Welcome to Terraria Lite! Use A/D or Arrow Keys to move.",
+  "Press W or Space to jump. Hold Shift and click to place blocks.",
+  "Left-click to mine blocks. Different tools mine faster.",
+  "Press E to open the Crafting Guide. Green items can be crafted now.",
+  "Press F to shoot arrows when holding a bow.",
+  "Press M to toggle the minimap. Press Q to drop items.",
+  "Equip armor by clicking the H/C/L slots with armor in your hotbar.",
+  "Click chests to open them. You can store items inside.",
+  "Enemies spawn at night. Craft swords to fight back!",
+  "That's the basics! Good luck exploring the biomes."
+];
+
+function loadWorlds() {
+  try {
+    const data = localStorage.getItem('terraria_worlds');
+    if (data) worlds = JSON.parse(data);
+  } catch (e) { worlds = []; }
+}
+
+function saveWorlds() {
+  try { localStorage.setItem('terraria_worlds', JSON.stringify(worlds)); } catch (e) {}
+}
+
+function renderWorldList() {
+  const el = document.getElementById('world-list');
+  el.innerHTML = '';
+  if (worlds.length === 0) {
+    el.innerHTML = '<div style="color:#666;font-size:9px;text-align:center;">No worlds yet</div>';
+    return;
+  }
+  worlds.forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = 'world-slot' + (selectedWorld === i ? ' selected' : '');
+    div.innerHTML = `<div><div class="world-name">${w.name}</div><div class="world-info">${w.mode} | ${w.diff} | ${Math.floor(w.playTime / 60)}m</div></div>`;
+    div.onclick = () => { selectedWorld = i; renderWorldList(); };
+    el.appendChild(div);
+  });
+}
+
+function getDiffMult() {
+  return difficulty === 'easy' ? 0.5 : difficulty === 'hard' ? 2 : 1;
+}
+
+function startGame() {
+  inGame = true;
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('c').style.display = 'block';
+
+  if (gameMode === 'creative') {
+    player.maxHp = 9999; player.hp = 9999;
+    player.hunger = 9999;
+    for (let id = 1; id <= 23; id++) addItem(id, 999);
+    for (let id = 37; id <= 44; id++) addItem(id, 99);
+  } else {
+    const mult = getDiffMult();
+    player.maxHp = gameMode === 'tutorial' ? 200 : Math.round(100 / mult);
+    player.hp = player.maxHp;
+    player.hunger = 100;
+    addItem(10, 8);
+    if (gameMode === 'tutorial') {
+      addItem(26, 1); addItem(30, 1); addItem(37, 1); addItem(38, 50);
+      addItem(39, 1); addItem(40, 1); addItem(41, 1);
+    } else {
+      addItem(37, 1); addItem(38, 50);
+    }
+  }
+
+  updateHotbar();
+  updateArmorUI();
+  updateLight();
+  requestAnimationFrame(gameLoop);
+
+  if (gameMode === 'tutorial') {
+    tutorialStep = 0;
+    showTutorialStep();
+  }
+}
+
+function showTutorialStep() {
+  const overlay = document.getElementById('tutorial-overlay');
+  const text = document.getElementById('tutorial-text');
+  if (tutorialStep >= TUTORIAL_STEPS.length) {
+    overlay.style.display = 'none';
+    return;
+  }
+  text.textContent = TUTORIAL_STEPS[tutorialStep];
+  overlay.style.display = 'flex';
+}
+
+document.getElementById('tutorial-next').onclick = () => {
+  tutorialStep++;
+  showTutorialStep();
+};
+
+function newWorld() {
+  const name = prompt('World name:', 'World ' + (worlds.length + 1));
+  if (!name) return;
+  generate();
+  chests.clear();
+  entities.length = 0;
+  particles.length = 0;
+  time = 0;
+  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+  player.armor = { helm: null, chest: null, leg: null };
+  player.hotbar = player.hotbar.map(() => null);
+  player.inv = [];
+  selectedWorld = worlds.length;
+  worlds.push({ name, mode: gameMode, diff: difficulty, playTime: 0, seed: Math.random() });
+  saveWorlds();
+  renderWorldList();
+  startGame();
+}
+
+function loadWorld() {
+  if (selectedWorld === null || !worlds[selectedWorld]) { alert('Select a world first'); return; }
+  const w = worlds[selectedWorld];
+  gameMode = w.mode;
+  difficulty = w.diff;
+  generate();
+  startGame();
+}
+
+function deleteWorld() {
+  if (selectedWorld === null || !worlds[selectedWorld]) { alert('Select a world first'); return; }
+  if (!confirm('Delete ' + worlds[selectedWorld].name + '?')) return;
+  worlds.splice(selectedWorld, 1);
+  selectedWorld = null;
+  saveWorlds();
+  renderWorldList();
+}
+
+// Menu event listeners
+document.getElementById('btn-new').onclick = newWorld;
+document.getElementById('btn-load').onclick = loadWorld;
+document.getElementById('btn-delete').onclick = deleteWorld;
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    gameMode = btn.dataset.mode;
+  };
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
+  };
+});
+
+// In-game UI hooks
 document.getElementById('chest-close').onclick = closeChest;
 document.getElementById('music-toggle').onclick = toggleMusic;
 document.getElementById('helm-slot').onclick = () => equipArmor('helm');
 document.getElementById('chest-slot').onclick = () => equipArmor('chest');
 document.getElementById('leg-slot').onclick = () => equipArmor('leg');
-requestAnimationFrame(gameLoop);
+
+// Init menu
+loadWorlds();
+renderWorldList();
 </script>
 </body>
 </html>
