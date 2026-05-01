@@ -34,6 +34,16 @@
   .recipe-ing { font-size: 7px; color: #999; margin-top: 2px; }
   .recipe .out-icon { font-size: 12px; margin-right: 6px; }
   #msg { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); color: #ffff44; font-size: 10px; text-shadow: 2px 2px 0 #000; pointer-events: none; opacity: 0; transition: opacity 0.3s; font-family: 'Press Start 2P', monospace; }
+  #minimap { position: absolute; top: 8px; right: 8px; width: 160px; height: 100px; border: 2px solid #555; background: rgba(0,0,0,0.7); image-rendering: pixelated; display: none; }
+  #armor-panel { position: absolute; bottom: 8px; left: 8px; display: flex; gap: 4px; pointer-events: auto; }
+  .armor-slot { width: 36px; height: 36px; background: rgba(0,0,0,0.7); border: 2px solid #777; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; font-family: 'Press Start 2P', monospace; cursor: pointer; }
+  .armor-slot.active { border-color: #ffff44; }
+  #chest-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(15,15,25,0.98); border: 3px solid #555; padding: 12px; display: none; flex-direction: column; gap: 8px; font-family: 'Press Start 2P', monospace; z-index: 10; }
+  #chest-header { color: #ffff44; font-size: 10px; display: flex; justify-content: space-between; }
+  #chest-grid { display: grid; grid-template-columns: repeat(5, 36px); gap: 3px; }
+  .chest-slot { width: 36px; height: 36px; background: rgba(0,0,0,0.6); border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; cursor: pointer; }
+  #music-toggle { position: absolute; bottom: 8px; right: 8px; color: #888; font-size: 8px; cursor: pointer; pointer-events: auto; font-family: 'Press Start 2P', monospace; }
+  #music-toggle:hover { color: #ffff44; }
 </style>
 </head>
 <body>
@@ -53,6 +63,17 @@
       </div>
     </div>
   </div>
+  <canvas id="minimap" width="160" height="100"></canvas>
+  <div id="armor-panel">
+    <div class="armor-slot" id="helm-slot" title="Helmet">H</div>
+    <div class="armor-slot" id="chest-slot" title="Chestplate">C</div>
+    <div class="armor-slot" id="leg-slot" title="Leggings">L</div>
+  </div>
+  <div id="chest-ui">
+    <div id="chest-header">Chest <span id="chest-close" style="cursor:pointer;color:#f44">X</span></div>
+    <div id="chest-grid"></div>
+  </div>
+  <div id="music-toggle">♪ OFF</div>
   <div id="msg"></div>
 </div>
 <script>
@@ -61,7 +82,7 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
 const TILE = 24;
-const WORLD_W = 400, WORLD_H = 300;
+const WORLD_W = 800, WORLD_H = 400;
 const DAY_LEN = 24000;
 
 const world = new Uint8Array(WORLD_W * WORLD_H);
@@ -85,6 +106,13 @@ const BLOCKS = {
   14: { name: 'Glass', color: '#aaddff88', solid: false, hp: 2 },
   15: { name: 'Brick', color: '#aa5555', solid: true, hp: 5 },
   16: { name: 'Mossy Stone', color: '#558866', solid: true, hp: 5 },
+  17: { name: 'Snow', color: '#eeeeee', solid: true, hp: 2 },
+  18: { name: 'Ice', color: '#aaddff', solid: true, hp: 3 },
+  19: { name: 'Snow Grass', color: '#ddeedd', solid: true, hp: 2, top: true },
+  20: { name: 'Cactus', color: '#44aa44', solid: true, hp: 2, drop: 36 },
+  21: { name: 'Corruption Grass', color: '#8844aa', solid: true, hp: 2, top: true },
+  22: { name: 'Ebonstone', color: '#442255', solid: true, hp: 5 },
+  23: { name: 'Chest', color: '#aa7744', solid: true, hp: 4, special: 'chest' },
 };
 
 const ITEMS = {
@@ -104,6 +132,15 @@ const ITEMS = {
   33: { name: 'Gold Sword', icon: 's', color: '#ffdd44', tool: 'sword', dmg: 35 },
   34: { name: 'Apple', icon: 'A', color: '#dd4444', food: 15 },
   35: { name: 'Meat', icon: 'M', color: '#aa6644', food: 30 },
+  36: { name: 'Cactus', icon: 'c', color: '#44aa44' },
+  37: { name: 'Bow', icon: 'B', color: '#aa7744', tool: 'bow' },
+  38: { name: 'Arrow', icon: '→', color: '#dddddd', ammo: 'arrow' },
+  39: { name: 'Wood Helmet', icon: 'h', color: '#aa7744', armor: 'helm', def: 1 },
+  40: { name: 'Wood Chestplate', icon: 'c', color: '#aa7744', armor: 'chest', def: 2 },
+  41: { name: 'Wood Leggings', icon: 'l', color: '#aa7744', armor: 'leg', def: 1 },
+  42: { name: 'Iron Helmet', icon: 'h', color: '#bbbbbb', armor: 'helm', def: 3 },
+  43: { name: 'Iron Chestplate', icon: 'c', color: '#bbbbbb', armor: 'chest', def: 5 },
+  44: { name: 'Iron Leggings', icon: 'l', color: '#bbbbbb', armor: 'leg', def: 2 },
 };
 
 const RECIPES = [
@@ -123,6 +160,14 @@ const RECIPES = [
   { out: 14, count: 2, need: [[2, 1], [20, 1]], name: 'Glass', station: 'smelt' },
   { out: 15, count: 4, need: [[2, 1]], name: 'Brick', station: 'smelt' },
   { out: 13, count: 1, need: [[2, 8]], name: 'Furnace' },
+  { out: 37, count: 1, need: [[11, 5], [23, 2]], name: 'Bow' },
+  { out: 38, count: 10, need: [[11, 1], [23, 1]], name: 'Arrow', anywhere: true },
+  { out: 39, count: 1, need: [[11, 10]], name: 'Wood Helmet' },
+  { out: 40, count: 1, need: [[11, 15]], name: 'Wood Chestplate' },
+  { out: 41, count: 1, need: [[11, 12]], name: 'Wood Leggings' },
+  { out: 42, count: 1, need: [[24, 5]], name: 'Iron Helmet' },
+  { out: 43, count: 1, need: [[24, 8]], name: 'Iron Chestplate' },
+  { out: 44, count: 1, need: [[24, 6]], name: 'Iron Leggings' },
 ];
 
 const player = {
@@ -137,6 +182,7 @@ const player = {
   selected: 0,
   mining: null,
   swing: 0,
+  armor: { helm: null, chest: null, leg: null },
 };
 
 let camX = 0, camY = 0;
@@ -152,49 +198,92 @@ const FIXED_DT = 1 / TARGET_FPS;
 let lastTime = 0;
 let accumulator = 0;
 
+const chests = new Map();
+let regenTimer = 0;
+let openChest = null;
+
+function getBiome(x) {
+  if (x < WORLD_W * 0.25) return 'snow';
+  if (x > WORLD_W * 0.35 && x < WORLD_W * 0.45) return 'desert';
+  if (x > WORLD_W * 0.7) return 'corruption';
+  return 'forest';
+}
+
 function generate() {
   function noise(x) {
     return Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12;
   }
   const surface = [];
   for (let x = 0; x < WORLD_W; x++) surface[x] = Math.floor(60 + noise(x));
-  
+
   for (let x = 0; x < WORLD_W; x++) {
+    const biome = getBiome(x);
     for (let y = 0; y < WORLD_H; y++) {
       const i = y * WORLD_W + x;
       const s = surface[x];
-      if (y < s) world[i] = 0;           // air above surface
-      else if (y === s) world[i] = 3;     // grass at surface
-      else if (y < s + 3) world[i] = 1;  // dirt below surface
-      else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1; // sand/dirt deeper
-      else if (y < s + 20) {
-        world[i] = 2;
-        if (Math.random() < 0.03) world[i] = 7;
-        if (Math.random() < 0.015) world[i] = 8;
-        if (y > s + 15 && Math.random() < 0.008) world[i] = 9;
+      if (y < s) { world[i] = 0; continue; }
+
+      if (biome === 'snow') {
+        if (y === s) world[i] = 19;
+        else if (y < s + 3) world[i] = 17;
+        else if (y < s + 10) world[i] = 18;
+        else {
+          world[i] = 2;
+          if (Math.random() < 0.03) world[i] = 7;
+          if (Math.random() < 0.015) world[i] = 8;
+        }
+      } else if (biome === 'desert') {
+        if (y === s) world[i] = 6;
+        else if (y < s + 15) world[i] = 6;
+        else {
+          world[i] = 2;
+          if (Math.random() < 0.02) world[i] = 7;
+          if (Math.random() < 0.01) world[i] = 8;
+        }
+      } else if (biome === 'corruption') {
+        if (y === s) world[i] = 21;
+        else if (y < s + 3) world[i] = 1;
+        else if (y < s + 12) world[i] = 22;
+        else {
+          world[i] = 22;
+          if (Math.random() < 0.04) world[i] = 7;
+          if (Math.random() < 0.02) world[i] = 8;
+        }
       } else {
-        world[i] = 2;
-        if (Math.random() < 0.05) world[i] = 7;
-        if (Math.random() < 0.02) world[i] = 8;
-        if (y > s + 30 && Math.random() < 0.01) world[i] = 9;
-        if (Math.random() < 0.1) world[i] = 16;
+        if (y === s) world[i] = 3;
+        else if (y < s + 3) world[i] = 1;
+        else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1;
+        else if (y < s + 20) {
+          world[i] = 2;
+          if (Math.random() < 0.03) world[i] = 7;
+          if (Math.random() < 0.015) world[i] = 8;
+          if (y > s + 15 && Math.random() < 0.008) world[i] = 9;
+        } else {
+          world[i] = 2;
+          if (Math.random() < 0.05) world[i] = 7;
+          if (Math.random() < 0.02) world[i] = 8;
+          if (y > s + 30 && Math.random() < 0.01) world[i] = 9;
+          if (Math.random() < 0.1) world[i] = 16;
+        }
       }
       if (y > s + 5) {
         const cave = Math.sin(x * 0.08) * Math.sin(y * 0.12) + Math.sin(x * 0.15 + y * 0.07);
         if (cave > 0.6) world[i] = 0;
       }
     }
-    // Trees - only on grass, check valid placement
+
+    // Trees / Cacti
+    const base = surface[x];
+    const topBlock = getBlock(x, base);
     if (x % 7 === 3 && Math.random() < 0.6) {
-      const base = surface[x];
-      // Only place if base is grass
-      if (getBlock(x, base) === 3) {
-        // Trunk - replace air above grass, keep ground below
+      if (biome === 'desert' && topBlock === 6) {
+        for (let ty = base - 1; ty >= base - 3 && ty >= 0; ty--) {
+          if (getBlock(x, ty) === 0) world[ty * WORLD_W + x] = 20;
+        }
+      } else if ((topBlock === 3 || topBlock === 19) && getBlock(x, base) !== 0) {
         for (let ty = base - 1; ty >= base - 5 && ty >= 0; ty--) {
-          // Only place wood in air blocks, not solid ground
           if (getBlock(x, ty) === 0) world[ty * WORLD_W + x] = 4;
         }
-        // Leaves - only in air
         for (let dy = -3; dy >= -5; dy--) {
           for (let dx = -2; dx <= 2; dx++) {
             const ly = base + dy, lx = x + dx;
@@ -206,11 +295,10 @@ function generate() {
       }
     }
   }
-  
+
   const px = Math.floor(WORLD_W / 2);
   player.x = px * TILE;
   const surfaceY = surface[px];
-  // Spawn above surface, not underground
   let spawnY = surfaceY - 3;
   while (spawnY > 0 && getBlock(px, spawnY) !== 0) spawnY--;
   player.y = spawnY * TILE;
@@ -536,7 +624,9 @@ function updateEntities() {
       } else { e.onGround = false; }
       
       if (dist < 20 && player.hp > 0) {
-        player.hp -= (e.type === 'slime' ? 0.3 : 0.5);
+        const def = getArmorDef();
+        const raw = e.type === 'slime' ? 0.3 : 0.5;
+        player.hp -= Math.max(raw * (1 - def * 0.05), raw * 0.2);
         player.vx += (dx > 0 ? 1 : -1) * 3;
         player.vy -= 2;
       }
@@ -551,6 +641,30 @@ function updateEntities() {
           entities.splice(i, 1);
         }
       }
+    } else if (e.type === 'arrow') {
+      e.x += e.vx; e.y += e.vy; e.vy += 0.15;
+      e.life--;
+      const etx = Math.floor((e.x + e.w/2) / TILE);
+      const ety = Math.floor((e.y + e.h/2) / TILE);
+      if (isSolid(etx, ety)) { entities.splice(i, 1); continue; }
+      for (let j = entities.length - 1; j >= 0; j--) {
+        const en = entities[j];
+        if (en.type === 'slime' || en.type === 'zombie') {
+          const adx = (en.x + en.w/2) - e.x;
+          const ady = (en.y + en.h/2) - e.y;
+          if (Math.hypot(adx, ady) < 20) {
+            en.hp -= 15;
+            en.vx += e.dir * 3; en.vy -= 2;
+            spawnParticle(en.x + en.w/2, en.y + en.h/2, '#f44');
+            if (en.hp <= 0) {
+              spawnDrop(en.x, en.y, en.type === 'slime' ? 34 : 35, 1);
+              entities.splice(j, 1);
+            }
+            entities.splice(i, 1); break;
+          }
+        }
+      }
+      if (e.life <= 0) entities.splice(i, 1);
     }
   }
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -558,6 +672,188 @@ function updateEntities() {
     p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
     if (p.life <= 0) particles.splice(i, 1);
   }
+}
+
+function getArmorDef() {
+  let def = 0;
+  for (const slot of ['helm', 'chest', 'leg']) {
+    const a = player.armor[slot];
+    if (a) def += ITEMS[a.id]?.def || 0;
+  }
+  return def;
+}
+
+function updateRegen() {
+  regenTimer++;
+  if (regenTimer % 600 === 0) {
+    for (let x = 0; x < WORLD_W; x += 7) {
+      if (Math.random() < 0.1) {
+        const s = Math.floor(60 + (Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12));
+        const top = getBlock(x, s);
+        if ((top === 3 || top === 19) && getBlock(x, s-1) === 0) {
+          for (let ty = s - 1; ty >= s - 5 && ty >= 0; ty--) {
+            if (getBlock(x, ty) === 0) world[ty * WORLD_W + x] = 4;
+          }
+          for (let dy = -3; dy >= -5; dy--) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const ly = s + dy, lx = x + dx;
+              if (ly >= 0 && lx >= 0 && lx < WORLD_W && getBlock(lx, ly) === 0) {
+                world[ly * WORLD_W + lx] = 5;
+              }
+            }
+          }
+        }
+      }
+    }
+    for (let i = 0; i < 20; i++) {
+      const ox = Math.floor(Math.random() * WORLD_W);
+      const oy = Math.floor(Math.random() * (WORLD_H - 100) + 80);
+      if (getBlock(ox, oy) === 2) {
+        const r = Math.random();
+        if (r < 0.3) setBlock(ox, oy, 7);
+        else if (r < 0.5) setBlock(ox, oy, 8);
+        else if (r < 0.6) setBlock(ox, oy, 9);
+      }
+    }
+  }
+}
+
+function shootArrow() {
+  const slot = player.hotbar[player.selected];
+  if (!slot || slot.id !== 37) return;
+  let arrowSlot = null;
+  for (let i = 0; i < 20; i++) {
+    if (player.hotbar[i] && player.hotbar[i].id === 38) { arrowSlot = player.hotbar[i]; break; }
+  }
+  if (!arrowSlot) {
+    for (const s of player.inv) { if (s.id === 38) { arrowSlot = s; break; } }
+  }
+  if (!arrowSlot) { showMsg('No arrows!'); return; }
+  arrowSlot.count--;
+  if (arrowSlot.count <= 0) {
+    for (let i = 0; i < 20; i++) if (player.hotbar[i] === arrowSlot) player.hotbar[i] = null;
+    const idx = player.inv.indexOf(arrowSlot);
+    if (idx >= 0) player.inv.splice(idx, 1);
+  }
+  updateHotbar();
+  entities.push({
+    x: player.x + player.w/2, y: player.y + player.h/2,
+    vx: player.facing * 8, vy: -1,
+    w: 8, h: 3, type: 'arrow', life: 120, dir: player.facing
+  });
+}
+
+function openChest(tx, ty) {
+  const key = `${tx},${ty}`;
+  if (!chests.has(key)) chests.set(key, []);
+  openChest = { x: tx, y: ty, items: chests.get(key) };
+  updateChestUI();
+  document.getElementById('chest-ui').style.display = 'flex';
+}
+
+function closeChest() {
+  if (openChest) {
+    chests.set(`${openChest.x},${openChest.y}`, openChest.items);
+    openChest = null;
+  }
+  document.getElementById('chest-ui').style.display = 'none';
+}
+
+function updateChestUI() {
+  const grid = document.getElementById('chest-grid');
+  grid.innerHTML = '';
+  if (!openChest) return;
+  for (let i = 0; i < 10; i++) {
+    const s = openChest.items[i];
+    const div = document.createElement('div');
+    div.className = 'chest-slot';
+    if (s) {
+      const item = ITEMS[s.id] || BLOCKS[s.id];
+      div.textContent = item.icon || item.name[0];
+      div.style.color = item.color || '#fff';
+    }
+    div.onclick = () => {
+      if (s) {
+        addItem(s.id, s.count);
+        openChest.items.splice(i, 1);
+      } else {
+        const hand = player.hotbar[player.selected];
+        if (hand) {
+          openChest.items[i] = { id: hand.id, count: hand.count };
+          player.hotbar[player.selected] = null;
+        }
+      }
+      updateChestUI();
+      updateHotbar();
+    };
+    grid.appendChild(div);
+  }
+}
+
+function toggleMinimap() {
+  const mm = document.getElementById('minimap');
+  mm.style.display = mm.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateArmorUI() {
+  const slots = { helm: 'helm-slot', chest: 'chest-slot', leg: 'leg-slot' };
+  for (const [type, id] of Object.entries(slots)) {
+    const el = document.getElementById(id);
+    const a = player.armor[type];
+    if (a) {
+      const item = ITEMS[a.id];
+      el.textContent = item.icon;
+      el.style.color = item.color;
+      el.style.borderColor = '#ffff44';
+    } else {
+      el.textContent = type[0].toUpperCase();
+      el.style.color = '#fff';
+      el.style.borderColor = '#777';
+    }
+  }
+}
+
+function equipArmor(type) {
+  const slot = player.hotbar[player.selected];
+  if (!slot || !ITEMS[slot.id]?.armor || ITEMS[slot.id].armor !== type) return;
+  const old = player.armor[type];
+  player.armor[type] = { id: slot.id, count: 1 };
+  player.hotbar[player.selected] = old ? { id: old.id, count: 1 } : null;
+  updateArmorUI();
+  updateHotbar();
+}
+
+let musicOn = false;
+let audioCtx = null;
+let musicInterval = null;
+
+function toggleMusic() {
+  musicOn = !musicOn;
+  document.getElementById('music-toggle').textContent = musicOn ? '♪ ON' : '♪ OFF';
+  if (musicOn) startMusic(); else stopMusic();
+}
+
+function startMusic() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+  let noteIdx = 0;
+  musicInterval = setInterval(() => {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = notes[noteIdx % notes.length] * (time < 12000 ? 1 : 0.5);
+    gain.gain.value = 0.03;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+    noteIdx++;
+  }, 250);
+}
+
+function stopMusic() {
+  if (musicInterval) clearInterval(musicInterval);
 }
 
 function updateSpawning() {
@@ -601,13 +897,16 @@ function mineBlock(tx, ty) {
 }
 
 function placeBlock(tx, ty) {
+  const b = getBlock(tx, ty);
+  if (b === 23) { openChest(tx, ty); return; }
   const slot = player.hotbar[player.selected];
   if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14)) return;
-  if (getBlock(tx, ty) !== 0) return;
+  if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
   const py = Math.floor((player.y + player.h/2) / TILE);
   if (tx === px && ty === py) return;
   setBlock(tx, ty, slot.id);
+  if (slot.id === 23) chests.set(`${tx},${ty}`, []);
   slot.count--;
   if (slot.count <= 0) player.hotbar[player.selected] = null;
   updateHotbar();
@@ -769,6 +1068,31 @@ function draw() {
   if (timeEl) timeEl.textContent = isDay ? 'Day' : 'Night';
   const depthEl = document.getElementById('depth');
   if (depthEl) depthEl.textContent = Math.floor((player.y + player.h) / TILE - 60);
+
+  // Minimap
+  const mm = document.getElementById('minimap');
+  if (mm.style.display !== 'none') {
+    const mmCtx = mm.getContext('2d');
+    const mmW = mm.width, mmH = mm.height;
+    const scaleX = mmW / WORLD_W;
+    const scaleY = mmH / WORLD_H;
+    mmCtx.fillStyle = '#000';
+    mmCtx.fillRect(0, 0, mmW, mmH);
+    for (let y = 0; y < WORLD_H; y += 4) {
+      for (let x = 0; x < WORLD_W; x += 4) {
+        const b = getBlock(x, y);
+        if (b === 0) continue;
+        const block = BLOCKS[b];
+        let c = block.color;
+        if (c.length === 4) c = '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+        else if (c.length > 7) c = c.slice(0, 7);
+        mmCtx.fillStyle = c;
+        mmCtx.fillRect(x * scaleX, y * scaleY, Math.max(1, scaleX * 4), Math.max(1, scaleY * 4));
+      }
+    }
+    mmCtx.fillStyle = '#f00';
+    mmCtx.fillRect(player.x / TILE * scaleX - 1, player.y / TILE * scaleY - 1, 3, 3);
+  }
 }
 
 // Input
@@ -803,6 +1127,8 @@ window.addEventListener('keydown', e => {
     updateHotbar();
   }
   if (e.key.toLowerCase() === 'e') toggleCrafting();
+  if (e.key.toLowerCase() === 'f') shootArrow();
+  if (e.key.toLowerCase() === 'm') toggleMinimap();
   if (e.key.toLowerCase() === 'q') {
     const slot = player.hotbar[player.selected];
     if (slot) {
@@ -829,6 +1155,7 @@ function gameLoop(now) {
     updateEntities();
     updateLight();
     updateSpawning();
+    updateRegen();
     if (mouseDown && !keys['Shift']) {
       const t = getMouseTile();
       mineBlock(t.x, t.y);
@@ -842,8 +1169,16 @@ function gameLoop(now) {
 
 generate();
 addItem(10, 8);
+addItem(37, 1);
+addItem(38, 50);
 updateHotbar();
+updateArmorUI();
 updateLight();
+document.getElementById('chest-close').onclick = closeChest;
+document.getElementById('music-toggle').onclick = toggleMusic;
+document.getElementById('helm-slot').onclick = () => equipArmor('helm');
+document.getElementById('chest-slot').onclick = () => equipArmor('chest');
+document.getElementById('leg-slot').onclick = () => equipArmor('leg');
 requestAnimationFrame(gameLoop);
 </script>
 </body>
