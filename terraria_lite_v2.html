@@ -18,18 +18,21 @@
   .slot { width: 40px; height: 40px; background: rgba(0,0,0,0.7); border: 2px solid #777; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; position: relative; font-family: 'Press Start 2P', monospace; cursor: pointer; }
   .slot.active { border-color: #ffff44; background: rgba(255,255,0,0.2); }
   .slot .count { position: absolute; bottom: 2px; right: 4px; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 #000; }
-  #inventory { position: absolute; top: 8px; right: 8px; background: rgba(15,15,25,0.95); border: 3px solid #555; width: 280px; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; }
+  #inventory { position: absolute; top: 8px; right: 8px; background: rgba(15,15,25,0.95); border: 3px solid #555; width: 320px; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; max-height: 520px; }
   #inv-header { background: #2a2a3a; padding: 8px 10px; font-size: 10px; color: #ffff44; border-bottom: 2px solid #444; display: flex; justify-content: space-between; align-items: center; }
   #inv-close { cursor: pointer; color: #ff4444; font-size: 12px; }
   #inv-close:hover { color: #ff8888; }
-  #inv-content { display: flex; padding: 8px; gap: 8px; }
-  #inv-grid { display: grid; grid-template-columns: repeat(5, 40px); gap: 3px; }
-  .inv-slot { width: 40px; height: 40px; background: rgba(0,0,0,0.6); border: 2px solid #555; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; position: relative; }
-  .inv-slot .count { position: absolute; bottom: 2px; right: 4px; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 #000; }
+  #inv-content { display: flex; flex-direction: column; padding: 8px; gap: 4px; overflow-y: auto; }
   #inv-crafting { flex: 1; }
   #inv-crafting h4 { color: #ffff44; font-size: 9px; margin-bottom: 6px; border-bottom: 1px solid #444; padding-bottom: 3px; }
-  .recipe { padding: 4px 0; cursor: pointer; font-size: 8px; color: #aaa; }
-  .recipe:hover { color: #ffff44; }
+  .recipe { padding: 5px 6px; cursor: pointer; font-size: 8px; border-radius: 2px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
+  .recipe.can { background: rgba(40,80,40,0.6); border: 1px solid #4a8a2a; color: #8aff8a; }
+  .recipe.can:hover { background: rgba(60,120,60,0.7); color: #aaffaa; }
+  .recipe.cant { background: rgba(30,30,30,0.5); border: 1px solid #444; color: #666; }
+  .recipe.cant:hover { background: rgba(40,40,40,0.6); color: #888; }
+  .recipe-name { font-weight: bold; }
+  .recipe-ing { font-size: 7px; color: #999; margin-top: 2px; }
+  .recipe .out-icon { font-size: 12px; margin-right: 6px; }
   #msg { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); color: #ffff44; font-size: 10px; text-shadow: 2px 2px 0 #000; pointer-events: none; opacity: 0; transition: opacity 0.3s; font-family: 'Press Start 2P', monospace; }
 </style>
 </head>
@@ -43,11 +46,9 @@
   <div id="hotbar"></div>
   <div id="crafting"></div>
   <div id="inventory">
-    <div id="inv-header">Inventory <span id="inv-close">X</span></div>
+    <div id="inv-header">Crafting Guide <span id="inv-close">X</span></div>
     <div id="inv-content">
-      <div id="inv-grid"></div>
       <div id="inv-crafting">
-        <h4>Crafting</h4>
         <div id="inv-recipes"></div>
       </div>
     </div>
@@ -343,50 +344,9 @@ function toggleCrafting() {
 }
 
 function updateCrafting() {
-  const grid = document.getElementById('inv-grid');
   const recipesEl = document.getElementById('inv-recipes');
-  grid.innerHTML = '';
   recipesEl.innerHTML = '';
-  
-  // Hotbar items (9 slots)
-  for (let i = 0; i < 9; i++) {
-    const s = player.hotbar[i];
-    const div = document.createElement('div');
-    div.className = 'inv-slot';
-    if (s) {
-      const item = ITEMS[s.id] || BLOCKS[s.id];
-      div.textContent = item.icon || item.name[0];
-      div.style.color = item.color || '#fff';
-      if (s.count > 1) {
-        const c = document.createElement('span');
-        c.className = 'count';
-        c.textContent = s.count;
-        div.appendChild(c);
-      }
-    }
-    grid.appendChild(div);
-  }
-  
-  // Inventory items (11 more)
-  for (let i = 0; i < 11; i++) {
-    const s = player.inv[i];
-    const div = document.createElement('div');
-    div.className = 'inv-slot';
-    if (s) {
-      const item = ITEMS[s.id] || BLOCKS[s.id];
-      div.textContent = item.icon || item.name[0];
-      div.style.color = item.color || '#fff';
-      if (s.count > 1) {
-        const c = document.createElement('span');
-        c.className = 'count';
-        c.textContent = s.count;
-        div.appendChild(c);
-      }
-    }
-    grid.appendChild(div);
-  }
-  
-  // Recipes
+
   const px = Math.floor((player.x + player.w/2) / TILE);
   const py = Math.floor((player.y + player.h/2) / TILE);
   let nearCraft = false, nearSmelt = false;
@@ -397,25 +357,50 @@ function updateCrafting() {
       if (b === 13) nearSmelt = true;
     }
   }
-  
+
   for (const r of RECIPES) {
-    if (r.station === 'smelt' && !nearSmelt) continue;
-    if (!r.anywhere && !nearCraft) continue;
-    if (hasItems(r.need)) {
-      const div = document.createElement('div');
-      div.className = 'recipe';
-      div.textContent = `${ITEMS[r.out]?.name || BLOCKS[r.out]?.name} x${r.count}`;
+    const outItem = ITEMS[r.out] || BLOCKS[r.out];
+    const canCraft = hasItems(r.need);
+    const stationOk = (!r.station || (r.station === 'smelt' && nearSmelt) || (r.station !== 'smelt' && (r.anywhere || nearCraft)));
+
+    const div = document.createElement('div');
+    div.className = 'recipe ' + (canCraft && stationOk ? 'can' : 'cant');
+
+    const left = document.createElement('div');
+    const icon = document.createElement('span');
+    icon.className = 'out-icon';
+    icon.textContent = outItem?.icon || outItem?.name?.[0] || '?';
+    icon.style.color = outItem?.color || '#fff';
+
+    const name = document.createElement('span');
+    name.className = 'recipe-name';
+    name.textContent = `${outItem?.name || '?'} x${r.count}`;
+
+    left.appendChild(icon);
+    left.appendChild(name);
+
+    const ing = document.createElement('div');
+    ing.className = 'recipe-ing';
+    const needText = r.need.map(n => {
+      const it = ITEMS[n[0]] || BLOCKS[n[0]];
+      return `${it?.name || '?'} x${n[1]}`;
+    }).join(', ');
+    const stationText = r.station === 'smelt' ? ' [Furnace]' : (!r.anywhere ? ' [Table]' : '');
+    ing.textContent = needText + stationText;
+
+    div.appendChild(left);
+    div.appendChild(ing);
+
+    if (canCraft && stationOk) {
       div.onclick = () => {
         consumeItems(r.need);
         addItem(r.out, r.count);
-        showMsg(`Crafted ${ITEMS[r.out]?.name || BLOCKS[r.out]?.name}`);
+        showMsg(`Crafted ${outItem?.name}`);
         updateCrafting();
       };
-      recipesEl.appendChild(div);
     }
-  }
-  if (recipesEl.children.length === 0) {
-    recipesEl.innerHTML = '<div style="color:#666">Nothing to craft</div>';
+
+    recipesEl.appendChild(div);
   }
 }
 
