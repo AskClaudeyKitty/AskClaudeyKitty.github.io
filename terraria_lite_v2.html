@@ -178,16 +178,23 @@ function generate() {
         if (cave > 0.6) world[i] = 0;
       }
     }
+    // Trees - only on grass, check valid placement
     if (x % 7 === 3 && Math.random() < 0.6) {
       const base = surface[x];
-      for (let ty = base - 1; ty >= base - 5; ty--) {
-        if (ty >= 0) world[ty * WORLD_W + x] = 4;
-      }
-      for (let dy = -3; dy >= -5; dy--) {
-        for (let dx = -2; dx <= 2; dx++) {
-          const ly = base + dy, lx = x + dx;
-          if (ly >= 0 && lx >= 0 && lx < WORLD_W && world[ly * WORLD_W + lx] === 0) {
-            world[ly * WORLD_W + lx] = 5;
+      // Only place if base is grass
+      if (getBlock(x, base) === 3) {
+        // Trunk - replace air above grass, keep ground below
+        for (let ty = base - 1; ty >= base - 5 && ty >= 0; ty--) {
+          // Only place wood in air blocks, not solid ground
+          if (getBlock(x, ty) === 0) world[ty * WORLD_W + x] = 4;
+        }
+        // Leaves - only in air
+        for (let dy = -3; dy >= -5; dy--) {
+          for (let dx = -2; dx <= 2; dx++) {
+            const ly = base + dy, lx = x + dx;
+            if (ly >= 0 && lx >= 0 && lx < WORLD_W && getBlock(lx, ly) === 0) {
+              world[ly * WORLD_W + lx] = 5;
+            }
           }
         }
       }
