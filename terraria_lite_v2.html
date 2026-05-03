@@ -83,6 +83,10 @@
       <button class="menu-btn" id="btn-multiplayer">Multiplayer</button>
     </div>
     <div class="menu-row">
+      <input id="seed-input" class="menu-btn" style="width:160px;font-size:8px;text-align:center;" placeholder="Seed (optional)" maxlength="12">
+      <button class="menu-btn" id="btn-seed" style="font-size:8px;">Use Seed</button>
+    </div>
+    <div class="menu-row">
       <button class="menu-btn mode-btn" data-mode="survival">Survival</button>
       <button class="menu-btn mode-btn" data-mode="creative">Creative</button>
       <button class="menu-btn mode-btn" data-mode="coop">Co-op</button>
@@ -291,7 +295,17 @@ function getBiome(x) {
   return 'forest';
 }
 
-function generate() {
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function generate(seed) {
+  const rng = mulberry32(seed);
   function noise(x) {
     return Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12;
   }
@@ -311,16 +325,16 @@ function generate() {
         else if (y < s + 10) world[i] = 18;
         else {
           world[i] = 2;
-          if (Math.random() < 0.03) world[i] = 7;
-          if (Math.random() < 0.015) world[i] = 8;
+          if (rng() < 0.03) world[i] = 7;
+          if (rng() < 0.015) world[i] = 8;
         }
       } else if (biome === 'desert') {
         if (y === s) world[i] = 6;
         else if (y < s + 15) world[i] = 6;
         else {
           world[i] = 2;
-          if (Math.random() < 0.02) world[i] = 7;
-          if (Math.random() < 0.01) world[i] = 8;
+          if (rng() < 0.02) world[i] = 7;
+          if (rng() < 0.01) world[i] = 8;
         }
       } else if (biome === 'corruption') {
         if (y === s) world[i] = 21;
@@ -328,24 +342,24 @@ function generate() {
         else if (y < s + 12) world[i] = 22;
         else {
           world[i] = 22;
-          if (Math.random() < 0.04) world[i] = 7;
-          if (Math.random() < 0.02) world[i] = 8;
+          if (rng() < 0.04) world[i] = 7;
+          if (rng() < 0.02) world[i] = 8;
         }
       } else {
         if (y === s) world[i] = 3;
         else if (y < s + 3) world[i] = 1;
-        else if (y < s + 8) world[i] = Math.random() < 0.3 ? 6 : 1;
+        else if (y < s + 8) world[i] = rng() < 0.3 ? 6 : 1;
         else if (y < s + 20) {
           world[i] = 2;
-          if (Math.random() < 0.03) world[i] = 7;
-          if (Math.random() < 0.015) world[i] = 8;
-          if (y > s + 15 && Math.random() < 0.008) world[i] = 9;
+          if (rng() < 0.03) world[i] = 7;
+          if (rng() < 0.015) world[i] = 8;
+          if (y > s + 15 && rng() < 0.008) world[i] = 9;
         } else {
           world[i] = 2;
-          if (Math.random() < 0.05) world[i] = 7;
-          if (Math.random() < 0.02) world[i] = 8;
-          if (y > s + 30 && Math.random() < 0.01) world[i] = 9;
-          if (Math.random() < 0.1) world[i] = 16;
+          if (rng() < 0.05) world[i] = 7;
+          if (rng() < 0.02) world[i] = 8;
+          if (y > s + 30 && rng() < 0.01) world[i] = 9;
+          if (rng() < 0.1) world[i] = 16;
         }
       }
       if (y > s + 5) {
@@ -357,7 +371,7 @@ function generate() {
     // Trees / Cacti
     const base = surface[x];
     const topBlock = getBlock(x, base);
-    if (x % 7 === 3 && Math.random() < 0.6) {
+    if (x % 7 === 3 && rng() < 0.6) {
       if (biome === 'desert' && topBlock === 6) {
         for (let ty = base - 1; ty >= base - 3 && ty >= 0; ty--) {
           if (getBlock(x, ty) === 0) world[ty * WORLD_W + x] = 20;
@@ -1346,7 +1360,7 @@ function renderWorldList() {
   worlds.forEach((w, i) => {
     const div = document.createElement('div');
     div.className = 'world-slot' + (selectedWorld === i ? ' selected' : '');
-    div.innerHTML = `<div><div class="world-name">${w.name}</div><div class="world-info">${w.mode} | ${w.diff} | ${Math.floor(w.playTime / 60)}m</div></div>`;
+    div.innerHTML = `<div><div class="world-name">${w.name}</div><div class="world-info">${w.mode} | ${w.diff} | ${Math.floor(w.playTime / 60)}m | Seed: ${w.seed}</div></div>`;
     div.onclick = () => { selectedWorld = i; renderWorldList(); };
     el.appendChild(div);
   });
@@ -1408,10 +1422,11 @@ document.getElementById('tutorial-next').onclick = () => {
   showTutorialStep();
 };
 
-function newWorld() {
+function newWorld(seed) {
   const name = prompt('World name:', 'World ' + (worlds.length + 1));
   if (!name) return;
-  generate();
+  const finalSeed = seed || Math.floor(Math.random() * 2147483647);
+  generate(finalSeed);
   chests.clear();
   entities.length = 0;
   particles.length = 0;
@@ -1421,18 +1436,26 @@ function newWorld() {
   player.hotbar = player.hotbar.map(() => null);
   player.inv = [];
   selectedWorld = worlds.length;
-  worlds.push({ name, mode: gameMode, diff: difficulty, playTime: 0, seed: Math.random() });
+  worlds.push({ name, mode: gameMode, diff: difficulty, playTime: 0, seed: finalSeed });
   saveWorlds();
   renderWorldList();
   startGame();
 }
+
+document.getElementById('btn-seed').onclick = () => {
+  const input = document.getElementById('seed-input').value.trim();
+  if (!input) return;
+  const seed = parseInt(input);
+  if (isNaN(seed)) { alert('Enter a number seed'); return; }
+  newWorld(seed);
+};
 
 function loadWorld() {
   if (selectedWorld === null || !worlds[selectedWorld]) { alert('Select a world first'); return; }
   const w = worlds[selectedWorld];
   gameMode = w.mode;
   difficulty = w.diff;
-  generate();
+  generate(w.seed || 12345);
   startGame();
 }
 
@@ -1620,7 +1643,8 @@ function hostMultiplayerRoom() {
   if (!worldName) return;
   setMpStatus('Creating room...', '#ffff44');
   gameMode = 'coop';
-  generate();
+  const seed = Math.floor(Math.random() * 2147483647);
+  generate(seed);
   chests.clear();
   entities.length = 0;
   particles.length = 0;
@@ -1632,7 +1656,7 @@ function hostMultiplayerRoom() {
   const worldData = worldToBase64(world);
   supaFetch('multiplayer_rooms', {
     method: 'POST',
-    body: { code, world_name: worldName, world_data: worldData, player_count: 1, last_active: new Date().toISOString() }
+    body: { code, world_name: worldName, world_data: worldData, player_count: 1, last_active: new Date().toISOString(), seed }
   }).then(() => {
     setMpStatus('Room created! Code: ' + code, '#4a8a2a');
     mpRoomCode = code;
@@ -1653,6 +1677,8 @@ function joinMultiplayerRoom() {
       if (!Array.isArray(data) || data.length === 0) { setMpStatus('Room not found', '#ff4444'); return; }
       const room = data[0];
       gameMode = 'coop';
+      const seed = room.seed || 12345;
+      generate(seed);
       const arr = base64ToWorld(room.world_data);
       world.set(arr);
       // Set spawn position after loading world
