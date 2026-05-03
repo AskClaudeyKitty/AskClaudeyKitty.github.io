@@ -1563,7 +1563,7 @@ function startMpBlockSync() {
           if (b.updated_at > mpLastBlockCheck) mpLastBlockCheck = b.updated_at;
         }
       }).catch(() => {});
-  }, 800);
+  }, 300);
 }
 
 function stopMpBlockSync() {
@@ -1593,7 +1593,7 @@ function startMpSync() {
           }
         }
       }).catch(() => {});
-  }, 500);
+  }, 200);
 }
 
 function stopMpSync() {
