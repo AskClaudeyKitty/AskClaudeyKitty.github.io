@@ -179,6 +179,13 @@ const BLOCKS = {
   21: { name: 'Corruption Grass', color: '#8844aa', solid: true, hp: 2, top: true },
   22: { name: 'Ebonstone', color: '#442255', solid: true, hp: 5 },
   23: { name: 'Chest', color: '#aa7744', solid: true, hp: 4, special: 'chest' },
+  24: { name: 'Water', color: '#4488cc88', solid: false, hp: 1, liquid: true },
+  25: { name: 'Lava', color: '#cc440088', solid: false, hp: 1, liquid: true, damage: 2 },
+  26: { name: 'Hellstone', color: '#cc2222', solid: true, hp: 8, drop: 45 },
+  27: { name: 'Obsidian', color: '#222244', solid: true, hp: 6 },
+  28: { name: 'Wood Platform', color: '#aa7744', solid: false, hp: 2, platform: true },
+  29: { name: 'Door', color: '#886644', solid: false, hp: 3, special: 'door' },
+  30: { name: 'Bed', color: '#aa4444', solid: false, hp: 2, special: 'bed' },
 };
 
 const ITEMS = {
@@ -207,6 +214,9 @@ const ITEMS = {
   42: { name: 'Iron Helmet', icon: 'h', color: '#bbbbbb', armor: 'helm', def: 3 },
   43: { name: 'Iron Chestplate', icon: 'c', color: '#bbbbbb', armor: 'chest', def: 5 },
   44: { name: 'Iron Leggings', icon: 'l', color: '#bbbbbb', armor: 'leg', def: 2 },
+  45: { name: 'Bucket', icon: 'b', color: '#aaaaaa', tool: 'bucket' },
+  46: { name: 'Hellstone Bar', icon: '=', color: '#cc2222' },
+  47: { name: 'Obsidian Skull', icon: 'o', color: '#222244', armor: 'helm', def: 5 },
 };
 
 const RECIPES = [
@@ -234,6 +244,9 @@ const RECIPES = [
   { out: 42, count: 1, need: [[24, 5]], name: 'Iron Helmet' },
   { out: 43, count: 1, need: [[24, 8]], name: 'Iron Chestplate' },
   { out: 44, count: 1, need: [[24, 6]], name: 'Iron Leggings' },
+  { out: 45, count: 1, need: [[24, 3]], name: 'Bucket' },
+  { out: 46, count: 1, need: [[45, 1], [26, 3], [20, 1]], name: 'Hellstone Bar', station: 'smelt' },
+  { out: 47, count: 1, need: [[46, 5], [27, 10]], name: 'Obsidian Skull' },
 ];
 
 const player = {
@@ -427,6 +440,76 @@ function generate(seed) {
         loot.push({ id: 10, count: 5 + Math.floor(rng() * 10) });
       }
       chests.set(`${cx},${cy}`, loot);
+    }
+  }
+
+  // Water pools
+  for (let i = 0; i < 15 + Math.floor(rng() * 10); i++) {
+    const wx = Math.floor(rng() * WORLD_W);
+    const wy = Math.floor(rng() * (WORLD_H - 150) + 80);
+    const wsize = 3 + Math.floor(rng() * 8);
+    for (let dx = -wsize; dx <= wsize; dx++) {
+      for (let dy = 0; dy <= wsize; dy++) {
+        const lx = wx + dx, ly = wy + dy;
+        if (lx >= 0 && lx < WORLD_W && ly >= 0 && ly < WORLD_H) {
+          if (getBlock(lx, ly) === 0 && isSolid(lx, ly + 1)) {
+            world[ly * WORLD_W + lx] = 24;
+          }
+        }
+      }
+    }
+  }
+
+  // Lava at bottom + hell biome
+  for (let x = 0; x < WORLD_W; x++) {
+    for (let y = WORLD_H - 20; y < WORLD_H; y++) {
+      const i = y * WORLD_W + x;
+      if (world[i] === 2 || world[i] === 0) {
+        if (y > WORLD_H - 8) world[i] = 25;
+        else world[i] = 26;
+      }
+    }
+  }
+
+  // Ocean edges
+  for (let x = 0; x < 30; x++) {
+    const depth = Math.floor(30 - x * 0.8);
+    for (let y = surface[x]; y < surface[x] + depth && y < WORLD_H; y++) {
+      world[y * WORLD_W + x] = 24;
+    }
+  }
+  for (let x = WORLD_W - 30; x < WORLD_W; x++) {
+    const depth = Math.floor(30 - (WORLD_W - 1 - x) * 0.8);
+    for (let y = surface[x]; y < surface[x] + depth && y < WORLD_H; y++) {
+      world[y * WORLD_W + x] = 24;
+    }
+  }
+
+  // Water pools
+  for (let i = 0; i < 15 + Math.floor(rng() * 10); i++) {
+    const wx = Math.floor(rng() * WORLD_W);
+    const wy = Math.floor(rng() * (WORLD_H - 150) + 80);
+    const wsize = 3 + Math.floor(rng() * 8);
+    for (let dx = -wsize; dx <= wsize; dx++) {
+      for (let dy = 0; dy <= wsize; dy++) {
+        const lx = wx + dx, ly = wy + dy;
+        if (lx >= 0 && lx < WORLD_W && ly >= 0 && ly < WORLD_H) {
+          if (getBlock(lx, ly) === 0 && isSolid(lx, ly + 1)) {
+            world[ly * WORLD_W + lx] = 24;
+          }
+        }
+      }
+    }
+  }
+
+  // Lava at bottom + hell biome
+  for (let x = 0; x < WORLD_W; x++) {
+    for (let y = WORLD_H - 20; y < WORLD_H; y++) {
+      const i = y * WORLD_W + x;
+      if (world[i] === 2 || world[i] === 0) {
+        if (y > WORLD_H - 8) world[i] = 25;
+        else world[i] = 26;
+      }
     }
   }
 
@@ -1071,13 +1154,16 @@ function placeBlock(tx, ty) {
   const b = getBlock(tx, ty);
   if (b === 23) { openChestUI(tx, ty); return; }
   const slot = player.hotbar[player.selected];
-  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14)) return;
+  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
   if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
   const py = Math.floor((player.y + player.h/2) / TILE);
   if (tx === px && ty === py) return;
   setBlock(tx, ty, slot.id);
-  if (slot.id === 23) chests.set(`${tx},${ty}`, []);
+  if (slot.id === 23) {
+    chests.set(`${tx},${ty}`, []);
+    if (mpRoomCode) syncChest(`${tx},${ty}`, []);
+  }
   if (gameMode !== 'creative') {
     slot.count--;
     if (slot.count <= 0) player.hotbar[player.selected] = null;
@@ -1473,6 +1559,36 @@ document.getElementById('tutorial-next').onclick = () => {
   showTutorialStep();
 };
 
+function saveWorldData() {
+  if (selectedWorld === null || !worlds[selectedWorld]) return;
+  const key = 'terraria_world_' + selectedWorld;
+  const data = {
+    world: worldToBase64(world),
+    chests: Array.from(chests.entries()),
+    time: time,
+    playerX: player.x,
+    playerY: player.y,
+    playerHp: player.hp,
+    playerArmor: player.armor,
+    playerHotbar: player.hotbar,
+    playerInv: player.inv
+  };
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+}
+
+function loadWorldData(index) {
+  const key = 'terraria_world_' + index;
+  try {
+    const data = localStorage.getItem(key);
+    if (data) return JSON.parse(data);
+  } catch (e) {}
+  return null;
+}
+
+function clearWorldData(index) {
+  try { localStorage.removeItem('terraria_world_' + index); } catch (e) {}
+}
+
 function newWorld(seed) {
   const name = prompt('World name:', 'World ' + (worlds.length + 1));
   if (!name) return;
@@ -1506,13 +1622,29 @@ function loadWorld() {
   const w = worlds[selectedWorld];
   gameMode = w.mode;
   difficulty = w.diff;
-  generate(w.seed || 12345);
+  const saved = loadWorldData(selectedWorld);
+  if (saved) {
+    const arr = base64ToWorld(saved.world);
+    world.set(arr);
+    chests.clear();
+    for (const [k, v] of saved.chests) chests.set(k, v);
+    time = saved.time || 0;
+    player.x = saved.playerX || 0;
+    player.y = saved.playerY || 0;
+    player.hp = saved.playerHp || player.maxHp;
+    player.armor = saved.playerArmor || { helm: null, chest: null, leg: null };
+    player.hotbar = saved.playerHotbar || player.hotbar.map(() => null);
+    player.inv = saved.playerInv || [];
+  } else {
+    generate(w.seed || 12345);
+  }
   startGame();
 }
 
 function deleteWorld() {
   if (selectedWorld === null || !worlds[selectedWorld]) { alert('Select a world first'); return; }
   if (!confirm('Delete ' + worlds[selectedWorld].name + '?')) return;
+  clearWorldData(selectedWorld);
   worlds.splice(selectedWorld, 1);
   selectedWorld = null;
   saveWorlds();
@@ -1755,6 +1887,7 @@ document.getElementById('btn-mp-back').onclick = hideMultiplayerMenu;
 
 function exitWorld() {
   inGame = false;
+  saveWorldData();
   stopMpSync();
   mpRoomCode = null;
   mpIsHost = false;
