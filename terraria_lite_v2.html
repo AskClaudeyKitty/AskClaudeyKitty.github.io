@@ -1534,6 +1534,11 @@ function startGame() {
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('c').style.display = 'block';
   document.getElementById('btn-exit').style.display = 'block';
+  document.getElementById('hotbar').style.display = 'grid';
+  document.getElementById('armor-panel').style.display = 'flex';
+  document.getElementById('music-toggle').style.display = 'block';
+  document.getElementById('ui').style.display = 'block';
+  document.getElementById('msg').style.display = 'block';
 
   if (gameMode === 'creative') {
     player.maxHp = 9999; player.hp = 9999;
@@ -1982,6 +1987,12 @@ function exitWorld() {
   document.getElementById('c').style.display = 'none';
   document.getElementById('btn-exit').style.display = 'none';
   document.getElementById('chat-box').style.display = 'none';
+  document.getElementById('hotbar').style.display = 'none';
+  document.getElementById('armor-panel').style.display = 'none';
+  document.getElementById('minimap').style.display = 'none';
+  document.getElementById('music-toggle').style.display = 'none';
+  document.getElementById('ui').style.display = 'none';
+  document.getElementById('msg').style.display = 'none';
   document.getElementById('title-screen').style.display = 'flex';
   document.getElementById('inventory').style.display = 'none';
   document.getElementById('chest-ui').style.display = 'none';
