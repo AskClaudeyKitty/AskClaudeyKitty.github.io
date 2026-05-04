@@ -141,6 +141,10 @@
   </div>
   <div id="music-toggle">♪ OFF</div>
   <div id="msg"></div>
+  <div id="chat-box" style="position:absolute;bottom:60px;left:8px;width:280px;height:120px;background:rgba(0,0,0,0.7);border:2px solid #555;display:none;flex-direction:column;z-index:5;">
+    <div id="chat-log" style="flex:1;overflow-y:auto;padding:4px;font-size:8px;color:#fff;font-family:'Press Start 2P',monospace;"></div>
+    <input id="chat-input" style="background:#1a1a2e;border:1px solid #555;color:#fff;padding:4px;font-size:8px;font-family:'Press Start 2P',monospace;" placeholder="Press Enter to chat" maxlength="60">
+  </div>
 </div>
 <script>
 const canvas = document.getElementById('c');
@@ -1028,6 +1032,7 @@ function updateChestUI() {
       }
       updateChestUI();
       updateHotbar();
+      if (mpRoomCode) syncChest(`${openChest.x},${openChest.y}`, openChest.items);
     };
     grid.appendChild(div);
   }
@@ -1233,7 +1238,17 @@ function draw() {
       ctx.fillRect(((i * 137) % W), ((i * 89) % (H/2)), 2, 2);
     }
   }
-  
+
+  // Weather - rain at night
+  if (time % 24000 > 18000 && time % 24000 < 24000) {
+    ctx.fillStyle = 'rgba(100,150,200,0.3)';
+    for (let i = 0; i < 50; i++) {
+      const rx = ((i * 137 + time) % W);
+      const ry = ((i * 89 + time * 2) % H);
+      ctx.fillRect(rx, ry, 1, 4);
+    }
+  }
+
   ctx.save();
   ctx.translate(-Math.floor(camX), -Math.floor(camY));
   
@@ -1414,6 +1429,11 @@ window.addEventListener('keydown', e => {
     player.selected = parseInt(e.key) - 1;
     updateHotbar();
   }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const chatBox = document.getElementById('chat-box');
+    chatBox.style.display = chatBox.style.display === 'none' ? 'flex' : 'none';
+    if (chatBox.style.display === 'flex') document.getElementById('chat-input').focus();
+  }
   if (e.key.toLowerCase() === 'e') toggleCrafting();
   if (e.key.toLowerCase() === 'f') shootArrow();
   if (e.key.toLowerCase() === 'm') toggleMinimap();
@@ -1534,7 +1554,7 @@ function startGame() {
   updateHotbar();
   updateArmorUI();
   updateLight();
-  if (mpRoomCode) startMpSync();
+  if (mpRoomCode) { startMpSync(); startChatSync(); }
   requestAnimationFrame(gameLoop);
 
   if (gameMode === 'tutorial') {
@@ -1777,10 +1797,27 @@ function stopMpBlockSync() {
   mpLastBlockCheck = new Date(0).toISOString();
 }
 
+function syncChest(key, items) {
+  if (!mpRoomCode) return;
+  supaFetch('mp_chests', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates' },
+    body: { room_code: mpRoomCode, chest_key: key, items: JSON.stringify(items), updated_at: new Date().toISOString() }
+  }).catch(() => {});
+}
+
 function startMpSync() {
   if (!mpRoomCode) return;
   startMpBlockSync();
   mpSyncInterval = setInterval(() => {
+    // Sync chests
+    supaFetch('mp_chests', { query: `?room_code=eq.${mpRoomCode}&select=chest_key,items,updated_at` })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        for (const c of data) {
+          try { chests.set(c.chest_key, JSON.parse(c.items)); } catch (e) {}
+        }
+      }).catch(() => {});
     // Upload my position
     supaFetch('mp_players', {
       method: 'POST',
@@ -1805,7 +1842,40 @@ function startMpSync() {
 function stopMpSync() {
   if (mpSyncInterval) { clearInterval(mpSyncInterval); mpSyncInterval = null; }
   stopMpBlockSync();
+  stopChatSync();
   mpOtherPlayers = {};
+}
+
+let chatInterval = null;
+
+function sendChat(msg) {
+  if (!mpRoomCode || !msg.trim()) return;
+  supaFetch('mp_chat', {
+    method: 'POST',
+    body: { room_code: mpRoomCode, player_id: mpPlayerId, message: msg.trim(), created_at: new Date().toISOString() }
+  }).catch(() => {});
+}
+
+function startChatSync() {
+  if (!mpRoomCode) return;
+  chatInterval = setInterval(() => {
+    supaFetch('mp_chat', { query: `?room_code=eq.${mpRoomCode}&order=created_at.desc&limit=20` })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const log = document.getElementById('chat-log');
+        log.innerHTML = '';
+        data.reverse().forEach(c => {
+          const div = document.createElement('div');
+          div.textContent = (c.player_id === mpPlayerId ? 'You' : 'Player') + ': ' + c.message;
+          div.style.color = c.player_id === mpPlayerId ? '#8aff8a' : '#ffff44';
+          log.appendChild(div);
+        });
+      }).catch(() => {});
+  }, 1000);
+}
+
+function stopChatSync() {
+  if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
 }
 
 function drawOtherPlayers() {
@@ -1904,6 +1974,14 @@ function exitWorld() {
   openChest = null;
   renderWorldList();
 }
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const input = document.getElementById('chat-input');
+    sendChat(input.value);
+    input.value = '';
+  }
+});
 
 document.getElementById('btn-exit').onclick = exitWorld;
 loadWorlds();
