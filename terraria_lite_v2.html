@@ -1533,6 +1533,7 @@ function startGame() {
   inGame = true;
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('c').style.display = 'block';
+  document.getElementById('btn-exit').style.display = 'block';
 
   if (gameMode === 'creative') {
     player.maxHp = 9999; player.hp = 9999;
@@ -1979,6 +1980,8 @@ function exitWorld() {
     saveWorlds();
   }
   document.getElementById('c').style.display = 'none';
+  document.getElementById('btn-exit').style.display = 'none';
+  document.getElementById('chat-box').style.display = 'none';
   document.getElementById('title-screen').style.display = 'flex';
   document.getElementById('inventory').style.display = 'none';
   document.getElementById('chest-ui').style.display = 'none';
