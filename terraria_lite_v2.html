@@ -117,6 +117,7 @@
   <div id="ui">
     <div id="hp-bar"><div id="hp-fill"></div></div>
     <div id="stats"><span id="time">Day</span> | Depth: <span id="depth">0</span>m | DEF: <span id="defense">0</span></div>
+    <button id="btn-exit" style="position:absolute;top:0;right:0;background:#2a2a4a;border:2px solid #555;color:#fff;padding:4px 8px;font-size:8px;cursor:pointer;font-family:'Press Start 2P',monospace;pointer-events:auto;">Exit</button>
   </div>
   <div id="hotbar"></div>
   <div id="crafting"></div>
@@ -1330,6 +1331,7 @@ window.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'e') toggleCrafting();
   if (e.key.toLowerCase() === 'f') shootArrow();
   if (e.key.toLowerCase() === 'm') toggleMinimap();
+  if (e.key === 'Escape') exitWorld();
   if (e.key.toLowerCase() === 'q') {
     const slot = player.hotbar[player.selected];
     if (slot) {
@@ -1751,7 +1753,26 @@ document.getElementById('btn-host').onclick = hostMultiplayerRoom;
 document.getElementById('btn-join').onclick = joinMultiplayerRoom;
 document.getElementById('btn-mp-back').onclick = hideMultiplayerMenu;
 
-// Init menu
+function exitWorld() {
+  inGame = false;
+  stopMpSync();
+  mpRoomCode = null;
+  mpIsHost = false;
+  if (selectedWorld !== null && worlds[selectedWorld]) {
+    worlds[selectedWorld].playTime += Math.floor(time / 60);
+    saveWorlds();
+  }
+  document.getElementById('c').style.display = 'none';
+  document.getElementById('title-screen').style.display = 'flex';
+  document.getElementById('inventory').style.display = 'none';
+  document.getElementById('chest-ui').style.display = 'none';
+  document.getElementById('tutorial-overlay').style.display = 'none';
+  craftingOpen = false;
+  openChest = null;
+  renderWorldList();
+}
+
+document.getElementById('btn-exit').onclick = exitWorld;
 loadWorlds();
 renderWorldList();
 </script>
