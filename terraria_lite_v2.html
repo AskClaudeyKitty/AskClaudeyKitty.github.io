@@ -1159,7 +1159,7 @@ function placeBlock(tx, ty) {
   const b = getBlock(tx, ty);
   if (b === 23) { openChestUI(tx, ty); return; }
   const slot = player.hotbar[player.selected];
-  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
+  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 4 && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
   if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
   const py = Math.floor((player.y + player.h/2) / TILE);
