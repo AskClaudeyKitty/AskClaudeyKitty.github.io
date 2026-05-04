@@ -164,6 +164,7 @@ const BLOCKS = {
   2: { name: 'Stone', color: '#777777', solid: true, hp: 4 },
   3: { name: 'Grass', color: '#4a8a2a', solid: true, hp: 2, top: true },
   4: { name: 'Wood', color: '#aa7744', solid: false, hp: 3, drop: 4 },
+  31: { name: 'Wood Block', color: '#996633', solid: true, hp: 3, drop: 4 },
   5: { name: 'Leaves', color: '#2a6a1a', solid: false, hp: 1 },
   6: { name: 'Sand', color: '#d4c85a', solid: true, hp: 2 },
   7: { name: 'Coal', color: '#222222', solid: true, hp: 5, drop: 20 },
@@ -1160,12 +1161,13 @@ function placeBlock(tx, ty) {
   if (b === 23) { openChestUI(tx, ty); return; }
   const slot = player.hotbar[player.selected];
   if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 4 && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
+  const placeId = slot.id === 4 ? 31 : slot.id;
   if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
   const py = Math.floor((player.y + player.h/2) / TILE);
   if (tx === px && ty === py) return;
-  setBlock(tx, ty, slot.id);
-  if (slot.id === 23) {
+  setBlock(tx, ty, placeId);
+  if (placeId === 23) {
     chests.set(`${tx},${ty}`, []);
     if (mpRoomCode) syncChest(`${tx},${ty}`, []);
   }
