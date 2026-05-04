@@ -1753,24 +1753,35 @@ function setMpStatus(msg, color) {
 function fetchRooms() {
   const list = document.getElementById('room-list');
   list.innerHTML = '<div style="color:#666;font-size:8px;text-align:center;">Loading...</div>';
-  supaFetch('multiplayer_rooms', { query: '?select=code,world_name,player_count,created_at&order=created_at.desc&limit=20' })
-    .then(data => {
-      list.innerHTML = '';
-      if (!Array.isArray(data) || data.length === 0) {
-        list.innerHTML = '<div style="color:#666;font-size:8px;text-align:center;">No active rooms</div>';
-        return;
-      }
-      data.forEach(r => {
-        const div = document.createElement('div');
-        div.className = 'room-slot';
-        div.innerHTML = `<div><span class="room-code">${r.code}</span><div class="room-info">${r.world_name || 'Unknown'} | ${r.player_count || 1} players</div></div>`;
-        div.onclick = () => { document.getElementById('mp-input').value = r.code; };
-        list.appendChild(div);
+  Promise.all([
+    supaFetch('multiplayer_rooms', { query: '?select=code,world_name,created_at&order=created_at.desc&limit=20' }),
+    supaFetch('mp_players', { query: '?select=room_code,updated_at' })
+  ]).then(([rooms, players]) => {
+    list.innerHTML = '';
+    if (!Array.isArray(rooms) || rooms.length === 0) {
+      list.innerHTML = '<div style="color:#666;font-size:8px;text-align:center;">No active rooms</div>';
+      return;
+    }
+    const cutoff = Date.now() - 30000;
+    const activeCounts = {};
+    if (Array.isArray(players)) {
+      players.forEach(p => {
+        if (new Date(p.updated_at).getTime() > cutoff) {
+          activeCounts[p.room_code] = (activeCounts[p.room_code] || 0) + 1;
+        }
       });
-    })
-    .catch(() => {
-      list.innerHTML = '<div style="color:#a44;font-size:8px;text-align:center;">Error loading rooms</div>';
+    }
+    rooms.forEach(r => {
+      const count = activeCounts[r.code] || 0;
+      const div = document.createElement('div');
+      div.className = 'room-slot';
+      div.innerHTML = `<div><span class="room-code">${r.code}</span><div class="room-info">${r.world_name || 'Unknown'} | ${count} players</div></div>`;
+      div.onclick = () => { document.getElementById('mp-input').value = r.code; };
+      list.appendChild(div);
     });
+  }).catch(() => {
+    list.innerHTML = '<div style="color:#a44;font-size:8px;text-align:center;">Error loading rooms</div>';
+  });
 }
 
 let mpRoomCode = null;
@@ -1911,7 +1922,7 @@ function hostMultiplayerRoom() {
   const worldData = worldToBase64(world);
   supaFetch('multiplayer_rooms', {
     method: 'POST',
-    body: { code, world_name: worldName, world_data: worldData, player_count: 1, last_active: new Date().toISOString(), seed }
+    body: { code, world_name: worldName, world_data: worldData, last_active: new Date().toISOString(), seed }
   }).then(() => {
     setMpStatus('Room created! Code: ' + code, '#4a8a2a');
     mpRoomCode = code;
@@ -1945,7 +1956,7 @@ function joinMultiplayerRoom() {
       player.y = spawnY * TILE;
       mpRoomCode = code;
       mpIsHost = false;
-      supaFetch('multiplayer_rooms', { method: 'PATCH', query: `?code=eq.${code}`, body: { player_count: (room.player_count || 1) + 1, last_active: new Date().toISOString() } });
+      supaFetch('multiplayer_rooms', { method: 'PATCH', query: `?code=eq.${code}`, body: { last_active: new Date().toISOString() } });
       document.getElementById('multiplayer-menu').style.display = 'none';
       startGame();
     })
