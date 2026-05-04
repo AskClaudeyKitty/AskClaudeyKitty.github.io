@@ -116,7 +116,7 @@
   <canvas id="c" width="960" height="540"></canvas>
   <div id="ui">
     <div id="hp-bar"><div id="hp-fill"></div></div>
-    <div id="stats"><span id="time">Day</span> | Depth: <span id="depth">0</span>m</div>
+    <div id="stats"><span id="time">Day</span> | Depth: <span id="depth">0</span>m | DEF: <span id="defense">0</span></div>
   </div>
   <div id="hotbar"></div>
   <div id="crafting"></div>
@@ -363,8 +363,14 @@ function generate(seed) {
         }
       }
       if (y > s + 5) {
-        const cave = Math.sin(x * 0.08) * Math.sin(y * 0.12) + Math.sin(x * 0.15 + y * 0.07);
-        if (cave > 0.6) world[i] = 0;
+        // Multiple cave systems with varying sizes
+        const cave1 = Math.sin(x * 0.08 + seed * 0.01) * Math.sin(y * 0.12 + seed * 0.02);
+        const cave2 = Math.sin(x * 0.15 + y * 0.07 + seed * 0.03);
+        const cave3 = Math.sin(x * 0.03 + seed * 0.05) * Math.cos(y * 0.05);
+        const cave4 = Math.sin(x * 0.25 + y * 0.18) * Math.cos(x * 0.11);
+        if (cave1 + cave2 > 0.5 + rng() * 0.3) world[i] = 0;
+        if (cave3 > 0.7) world[i] = 0;
+        if (cave4 > 0.8 && rng() < 0.3) world[i] = 0;
       }
     }
 
@@ -389,6 +395,37 @@ function generate(seed) {
           }
         }
       }
+    }
+  }
+
+  // Random loot chests in caves
+  const chestCount = 8 + Math.floor(rng() * 12);
+  for (let i = 0; i < chestCount; i++) {
+    const cx = Math.floor(rng() * WORLD_W);
+    const cy = Math.floor(rng() * (WORLD_H - 100) + 60);
+    if (getBlock(cx, cy) === 0 && isSolid(cx, cy + 1)) {
+      setBlock(cx, cy, 23);
+      const loot = [];
+      const roll = rng();
+      if (roll < 0.15) {
+        loot.push({ id: 26, count: 1 });
+        loot.push({ id: 30, count: 1 });
+      } else if (roll < 0.3) {
+        loot.push({ id: 37, count: 1 });
+        loot.push({ id: 38, count: 20 + Math.floor(rng() * 30) });
+      } else if (roll < 0.45) {
+        loot.push({ id: 39, count: 1 });
+        loot.push({ id: 40, count: 1 });
+        loot.push({ id: 41, count: 1 });
+      } else if (roll < 0.6) {
+        loot.push({ id: 28, count: 1 });
+      } else if (roll < 0.75) {
+        loot.push({ id: 32, count: 1 });
+      } else {
+        loot.push({ id: 34, count: 3 + Math.floor(rng() * 5) });
+        loot.push({ id: 10, count: 5 + Math.floor(rng() * 10) });
+      }
+      chests.set(`${cx},${cy}`, loot);
     }
   }
 
@@ -805,7 +842,8 @@ function getArmorDef() {
 function updateRegen() {
   regenTimer++;
   if (regenTimer % 600 === 0) {
-    for (let x = 0; x < WORLD_W; x += 7) {
+    // Tree regen - only at original tree positions (x % 7 === 3)
+    for (let x = 3; x < WORLD_W; x += 7) {
       if (Math.random() < 0.1) {
         const s = Math.floor(60 + (Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12));
         const top = getBlock(x, s);
@@ -1168,6 +1206,15 @@ function draw() {
       ctx.fillRect(e.x, e.y, e.w, e.h);
       ctx.fillStyle = '#ff4444';
       ctx.fillRect(e.x + (e.dir > 0 ? 12 : 4), e.y + 6, 4, 4);
+    } else if (e.type === 'arrow') {
+      ctx.fillStyle = '#dddddd';
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(Math.atan2(e.vy, e.vx));
+      ctx.fillRect(-4, -1, 8, 2);
+      ctx.fillStyle = '#aa7744';
+      ctx.fillRect(2, -2, 3, 4);
+      ctx.restore();
     }
   }
   
@@ -1220,6 +1267,8 @@ function draw() {
   if (timeEl) timeEl.textContent = isDay ? 'Day' : 'Night';
   const depthEl = document.getElementById('depth');
   if (depthEl) depthEl.textContent = Math.floor((player.y + player.h) / TILE - 60);
+  const defEl = document.getElementById('defense');
+  if (defEl) defEl.textContent = getArmorDef();
 
   // Minimap (throttled)
   const mm = document.getElementById('minimap');
