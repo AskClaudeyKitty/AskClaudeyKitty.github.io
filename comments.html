@@ -170,7 +170,7 @@ async function postComment() {
   try {
     await supaFetch('comments', {
       method: 'POST',
-      body: { name, message: msg, created_at: new Date().toISOString() }
+      body: { name, message: msg }
     });
     document.getElementById('msg-input').value = '';
     await loadComments();
