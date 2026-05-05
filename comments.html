@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comments</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back:hover { color: #333; }
+  h1 {
+    font-size: 1.8rem;
+    color: #1a1a1a;
+    margin-bottom: 24px;
+  }
+  .comment-form {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 24px;
+  }
+  .comment-form input, .comment-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    font-family: inherit;
+  }
+  .comment-form input:focus, .comment-form textarea:focus {
+    outline: none;
+    border-color: #333;
+  }
+  .comment-form textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .comment-form button {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .comment-form button:hover { background: #555; }
+  .comment-form button:disabled { background: #999; cursor: not-allowed; }
+  .comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .comment {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid #e0e0e0;
+  }
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .comment-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 0.95rem;
+  }
+  .comment-time {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  .comment-body {
+    color: #444;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .loading {
+    text-align: center;
+    color: #888;
+    padding: 40px;
+  }
+  .error {
+    color: #e53e3e;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="index.html" class="back">← Back to Games</a>
+  <h1>💬 Comments</h1>
+  <div class="comment-form">
+    <input id="name-input" placeholder="Your name" maxlength="30">
+    <textarea id="msg-input" placeholder="Write a comment..." maxlength="500"></textarea>
+    <button id="submit-btn" onclick="postComment()">Post</button>
+  </div>
+  <div id="comments-list" class="comments-list">
+    <div class="loading">Loading comments...</div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
+
+function supaFetch(table, opts = {}) {
+  const url = `${SUPA_URL}/rest/v1/${table}${opts.query || ''}`;
+  const headers = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    ...(opts.headers || {})
+  };
+  return fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined }).then(r => r.json());
+}
+
+async function loadComments() {
+  const list = document.getElementById('comments-list');
+  list.innerHTML = '<div class="loading">Loading comments...</div>';
+  try {
+    const data = await supaFetch('comments', { query: '?select=name,message,created_at&order=created_at.desc&limit=100' });
+    if (!Array.isArray(data)) { list.innerHTML = '<div class="error">Failed to load comments</div>'; return; }
+    if (data.length === 0) { list.innerHTML = '<div class="loading">No comments yet. Be the first!</div>'; return; }
+    list.innerHTML = '';
+    data.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      const time = new Date(c.created_at).toLocaleString();
+      div.innerHTML = `<div class="comment-header"><span class="comment-name">${escapeHtml(c.name || 'Anonymous')}</span><span class="comment-time">${time}</span></div><div class="comment-body">${escapeHtml(c.message)}</div>`;
+      list.appendChild(div);
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="error">Failed to load comments</div>';
+  }
+}
+
+async function postComment() {
+  const name = document.getElementById('name-input').value.trim() || 'Anonymous';
+  const msg = document.getElementById('msg-input').value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Posting...';
+  try {
+    await supaFetch('comments', {
+      method: 'POST',
+      body: { name, message: msg, created_at: new Date().toISOString() }
+    });
+    document.getElementById('msg-input').value = '';
+    await loadComments();
+  } catch (e) {
+    alert('Failed to post comment');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Post';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+loadComments();
+</script>
+</body>
+</html>
