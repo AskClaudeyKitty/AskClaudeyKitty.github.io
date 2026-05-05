@@ -126,7 +126,7 @@
 const SUPA_URL = 'https://khsdgbglmzyuiqsfalcv.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtoc2RnYmdsbXp5dWlxc2ZhbGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDM0OTEsImV4cCI6MjA5MTA3OTQ5MX0.2UIz8Gan0OV0XZDQO_8LGgjzf15hZtHwO6WtKcznS1k';
 
-function supaFetch(table, opts = {}) {
+async function supaFetch(table, opts = {}) {
   const url = `${SUPA_URL}/rest/v1/${table}${opts.query || ''}`;
   const headers = {
     'apikey': SUPA_KEY,
@@ -134,7 +134,10 @@ function supaFetch(table, opts = {}) {
     'Content-Type': 'application/json',
     ...(opts.headers || {})
   };
-  return fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined }).then(r => r.json());
+  const r = await fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  const data = await r.json();
+  if (!r.ok) throw new Error(JSON.stringify(data));
+  return data;
 }
 
 async function loadComments() {
@@ -172,7 +175,7 @@ async function postComment() {
     document.getElementById('msg-input').value = '';
     await loadComments();
   } catch (e) {
-    alert('Failed to post comment');
+    alert('Failed to post: ' + e.message);
   }
   btn.disabled = false;
   btn.textContent = 'Post';
