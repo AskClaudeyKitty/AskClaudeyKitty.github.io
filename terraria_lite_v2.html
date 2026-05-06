@@ -307,11 +307,23 @@ const chests = new Map();
 let regenTimer = 0;
 let openChest = null;
 
+let biomeMap = [];
+
+function generateBiomes(rng) {
+  biomeMap = [];
+  const biomes = ['forest', 'snow', 'desert', 'corruption'];
+  let x = 0;
+  while (x < WORLD_W) {
+    const size = 60 + Math.floor(rng() * 140);
+    const b = biomes[Math.floor(rng() * biomes.length)];
+    for (let i = 0; i < size && x < WORLD_W; i++, x++) {
+      biomeMap[x] = b;
+    }
+  }
+}
+
 function getBiome(x) {
-  if (x < WORLD_W * 0.25) return 'snow';
-  if (x > WORLD_W * 0.35 && x < WORLD_W * 0.45) return 'desert';
-  if (x > WORLD_W * 0.7) return 'corruption';
-  return 'forest';
+  return biomeMap[x] || 'forest';
 }
 
 function mulberry32(a) {
@@ -325,6 +337,7 @@ function mulberry32(a) {
 
 function generate(seed) {
   const rng = mulberry32(seed);
+  generateBiomes(rng);
   function noise(x) {
     return Math.sin(x * 0.05) * 8 + Math.sin(x * 0.13) * 4 + Math.sin(x * 0.03) * 12;
   }
