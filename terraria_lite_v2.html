@@ -188,6 +188,7 @@ const BLOCKS = {
   25: { name: 'Lava', color: '#cc440088', solid: false, hp: 1, liquid: true, damage: 2 },
   26: { name: 'Hellstone', color: '#cc2222', solid: true, hp: 8, drop: 45 },
   27: { name: 'Obsidian', color: '#222244', solid: true, hp: 6 },
+  61: { name: 'Diamond Ore', color: '#44aaff', solid: true, hp: 10, drop: 61 },
   28: { name: 'Wood Platform', color: '#aa7744', solid: false, hp: 2, platform: true },
   29: { name: 'Door', color: '#886644', solid: false, hp: 3, special: 'door' },
   30: { name: 'Bed', color: '#aa4444', solid: false, hp: 2, special: 'bed' },
@@ -222,6 +223,25 @@ const ITEMS = {
   45: { name: 'Bucket', icon: 'b', color: '#aaaaaa', tool: 'bucket' },
   46: { name: 'Hellstone Bar', icon: '=', color: '#cc2222' },
   47: { name: 'Obsidian Skull', icon: 'o', color: '#222244', armor: 'helm', def: 5 },
+  48: { name: 'Wood Axe', icon: 'a', color: '#aa7744', tool: 'axe', power: 2 },
+  49: { name: 'Stone Axe', icon: 'a', color: '#888888', tool: 'axe', power: 3 },
+  50: { name: 'Iron Axe', icon: 'a', color: '#bbbbbb', tool: 'axe', power: 5 },
+  51: { name: 'Gold Axe', icon: 'a', color: '#ffdd44', tool: 'axe', power: 7 },
+  52: { name: 'Wood Hammer', icon: 'h', color: '#aa7744', tool: 'hammer', power: 2 },
+  53: { name: 'Stone Hammer', icon: 'h', color: '#888888', tool: 'hammer', power: 3 },
+  54: { name: 'Iron Hammer', icon: 'h', color: '#bbbbbb', tool: 'hammer', power: 5 },
+  55: { name: 'Gold Hammer', icon: 'h', color: '#ffdd44', tool: 'hammer', power: 7 },
+  56: { name: 'Wood Shovel', icon: 'S', color: '#aa7744', tool: 'shovel', power: 2 },
+  57: { name: 'Stone Shovel', icon: 'S', color: '#888888', tool: 'shovel', power: 3 },
+  58: { name: 'Iron Shovel', icon: 'S', color: '#bbbbbb', tool: 'shovel', power: 5 },
+  59: { name: 'Gold Shovel', icon: 'S', color: '#ffdd44', tool: 'shovel', power: 7 },
+  60: { name: 'Fishing Rod', icon: 'R', color: '#aa7744', tool: 'rod' },
+  61: { name: 'Diamond', icon: 'D', color: '#44aaff' },
+  62: { name: 'Hellstone Pick', icon: 'p', color: '#cc2222', tool: 'pick', power: 10 },
+  63: { name: 'Hellstone Sword', icon: 's', color: '#cc2222', tool: 'sword', dmg: 50 },
+  64: { name: 'Hellstone Axe', icon: 'a', color: '#cc2222', tool: 'axe', power: 10 },
+  65: { name: 'Hellstone Hammer', icon: 'h', color: '#cc2222', tool: 'hammer', power: 10 },
+  66: { name: 'Hellstone Shovel', icon: 'S', color: '#cc2222', tool: 'shovel', power: 10 },
 };
 
 const RECIPES = [
@@ -252,7 +272,50 @@ const RECIPES = [
   { out: 45, count: 1, need: [[24, 3]], name: 'Bucket' },
   { out: 46, count: 1, need: [[45, 1], [26, 3], [20, 1]], name: 'Hellstone Bar', station: 'smelt' },
   { out: 47, count: 1, need: [[46, 5], [27, 10]], name: 'Obsidian Skull' },
+  { out: 48, count: 1, need: [[11, 3], [23, 2]], name: 'Wood Axe' },
+  { out: 49, count: 1, need: [[2, 3], [23, 2]], name: 'Stone Axe' },
+  { out: 50, count: 1, need: [[24, 3], [23, 2]], name: 'Iron Axe' },
+  { out: 51, count: 1, need: [[25, 3], [23, 2]], name: 'Gold Axe' },
+  { out: 52, count: 1, need: [[11, 4], [23, 1]], name: 'Wood Hammer' },
+  { out: 53, count: 1, need: [[2, 4], [23, 1]], name: 'Stone Hammer' },
+  { out: 54, count: 1, need: [[24, 4], [23, 1]], name: 'Iron Hammer' },
+  { out: 55, count: 1, need: [[25, 4], [23, 1]], name: 'Gold Hammer' },
+  { out: 56, count: 1, need: [[11, 2], [23, 2]], name: 'Wood Shovel' },
+  { out: 57, count: 1, need: [[2, 2], [23, 2]], name: 'Stone Shovel' },
+  { out: 58, count: 1, need: [[24, 2], [23, 2]], name: 'Iron Shovel' },
+  { out: 59, count: 1, need: [[25, 2], [23, 2]], name: 'Gold Shovel' },
+  { out: 60, count: 1, need: [[11, 8], [23, 3]], name: 'Fishing Rod' },
+  { out: 62, count: 1, need: [[46, 3], [23, 2]], name: 'Hellstone Pick' },
+  { out: 63, count: 1, need: [[46, 2], [23, 1]], name: 'Hellstone Sword' },
+  { out: 64, count: 1, need: [[46, 3], [23, 2]], name: 'Hellstone Axe' },
+  { out: 65, count: 1, need: [[46, 4], [23, 1]], name: 'Hellstone Hammer' },
+  { out: 66, count: 1, need: [[46, 2], [23, 2]], name: 'Hellstone Shovel' },
 ];
+
+const achievements = {
+  unlocked: new Set(),
+  stats: { mined: 0, placed: 0, killed: 0, chests: 0, crafted: 0, depth: 0, biomes: new Set(), nights: 0 },
+  list: [
+    { id: 'first_blood', name: 'First Blood', desc: 'Kill your first enemy', check: s => s.killed >= 1 },
+    { id: 'miner', name: 'Miner', desc: 'Mine 100 blocks', check: s => s.mined >= 100 },
+    { id: 'builder', name: 'Builder', desc: 'Place 50 blocks', check: s => s.placed >= 50 },
+    { id: 'explorer', name: 'Explorer', desc: 'Visit all biomes', check: s => s.biomes.size >= 4 },
+    { id: 'deep_diver', name: 'Deep Diver', desc: 'Reach depth 100', check: s => s.depth >= 100 },
+    { id: 'treasure_hunter', name: 'Treasure Hunter', desc: 'Open 10 chests', check: s => s.chests >= 10 },
+    { id: 'master_crafter', name: 'Master Crafter', desc: 'Craft 20 items', check: s => s.crafted >= 20 },
+    { id: 'survivor', name: 'Survivor', desc: 'Survive 5 nights', check: s => s.nights >= 5 },
+  ]
+};
+
+function checkAchievements() {
+  for (const a of achievements.list) {
+    if (!achievements.unlocked.has(a.id) && a.check(achievements.stats)) {
+      achievements.unlocked.add(a.id);
+      showMsg('🏆 ' + a.name + ': ' + a.desc);
+      SFX.achievement();
+    }
+  }
+}
 
 const player = {
   x: 0, y: 0, vx: 0, vy: 0,
@@ -292,6 +355,7 @@ let activePlayer = player;
 
 let camX = 0, camY = 0;
 let time = 0;
+let loadedFromSave = false;
 const entities = [];
 const particles = [];
 const keys = {};
@@ -428,6 +492,35 @@ function generate(seed) {
         }
       }
     }
+  }
+
+  // Random villages on surface
+  const villageCount = 2 + Math.floor(rng() * 3);
+  for (let v = 0; v < villageCount; v++) {
+    const vx = Math.floor(80 + rng() * (WORLD_W - 160));
+    const vy = surface[vx];
+    const houseW = 5 + Math.floor(rng() * 4);
+    const houseH = 3 + Math.floor(rng() * 2);
+    for (let hx = 0; hx < houseW; hx++) {
+      for (let hy = 0; hy < houseH; hy++) {
+        const wx = vx + hx, wy = vy - 1 - hy;
+        if (wx >= 0 && wx < WORLD_W && wy >= 0 && wy < WORLD_H) {
+          if (hx === 0 || hx === houseW - 1 || hy === houseH - 1) {
+            world[wy * WORLD_W + wx] = 11;
+          } else if (hy === 0) {
+            world[wy * WORLD_W + wx] = 0;
+          }
+        }
+      }
+    }
+    const doorX = vx + Math.floor(houseW / 2);
+    const doorY = vy - 1;
+    if (doorX >= 0 && doorX < WORLD_W && doorY >= 0 && doorY < WORLD_H) {
+      world[doorY * WORLD_W + doorX] = 29;
+    }
+    const villagerX = (vx + 1) * TILE;
+    const villagerY = (vy - 2) * TILE;
+    entities.push({ x: villagerX, y: villagerY, w: 16, h: 30, type: 'villager', life: 999999, dir: 1, timer: 0 });
   }
 
   // Random loot chests in caves
@@ -768,7 +861,7 @@ function updatePlayer() {
     if (keys['a'] || keys['ArrowLeft']) { player.vx -= speed; player.facing = -1; }
     if (keys['d'] || keys['ArrowRight']) { player.vx += speed; player.facing = 1; }
     if ((keys['w'] || keys[' '] || keys['ArrowUp']) && player.onGround) {
-      player.vy = jump; player.onGround = false;
+      player.vy = jump; player.onGround = false; SFX.jump();
     }
     player.vx *= friction;
     player.vy += gravity;
@@ -846,6 +939,7 @@ function updateEntities() {
       if (Math.hypot(dx, dy) < 30) {
         addItem(e.id, e.count);
         showMsg(`+${e.count} ${ITEMS[e.id]?.name || BLOCKS[e.id]?.name}`);
+        SFX.collect();
         entities.splice(i, 1); continue;
       }
       e.life--;
@@ -887,15 +981,19 @@ function updateEntities() {
         player.hp -= Math.max(raw * (1 - def * 0.05), raw * 0.2);
         player.vx += (dx > 0 ? 1 : -1) * 3;
         player.vy -= 2;
+        SFX.hurt();
       }
       if (player.swing > 0 && edist < 40) {
         const tool = player.hotbar[player.selected];
         const dmg = tool && ITEMS[tool.id]?.tool === 'sword' ? ITEMS[tool.id].dmg : 5;
         e.hp -= dmg;
         e.vx += (dx > 0 ? -1 : 1) * 4; e.vy -= 3;
-        spawnParticle(e.x + e.w/2, e.y + e.h/2, '#f44');
+        SFX.hit();
         if (e.hp <= 0) {
-          spawnDrop(e.x, e.y, e.type === 'slime' ? 34 : 35, 1);
+          SFX.enemyDie();
+          achievements.stats.killed++;
+          checkAchievements(
+          checkAchievements(e.type === 'slime' ? 34 : 35, 1);
           entities.splice(i, 1);
         }
       }
@@ -916,6 +1014,9 @@ function updateEntities() {
             spawnParticle(en.x + en.w/2, en.y + en.h/2, '#f44');
             if (en.hp <= 0) {
               spawnDrop(en.x, en.y, en.type === 'slime' ? 34 : 35, 1);
+              SFX.enemyDie();
+              achievements.stats.killed++;
+              checkAchievements();
               entities.splice(j, 1);
             }
             entities.splice(i, 1); break;
@@ -972,6 +1073,7 @@ function updateRegen() {
         if (r < 0.3) setBlock(ox, oy, 7);
         else if (r < 0.5) setBlock(ox, oy, 8);
         else if (r < 0.6) setBlock(ox, oy, 9);
+        else if (r < 0.65) setBlock(ox, oy, 61);
       }
     }
   }
@@ -1008,6 +1110,9 @@ function openChestUI(tx, ty) {
   const key = `${tx},${ty}`;
   if (!chests.has(key)) chests.set(key, []);
   openChest = { x: tx, y: ty, items: chests.get(key) };
+  SFX.openChest();
+  achievements.stats.chestsOpened++;
+  checkAchievements();
   updateChestUI();
   document.getElementById('chest-ui').style.display = 'flex';
 }
@@ -1089,22 +1194,60 @@ let musicOn = false;
 let audioCtx = null;
 let musicInterval = null;
 
+function playSfx(freq, duration, type, vol) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'square';
+  osc.frequency.value = freq;
+  gain.gain.value = vol || 0.08;
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+const SFX = {
+  mine() { playSfx(200 + Math.random()*100, 0.08, 'sawtooth', 0.06); },
+  place() { playSfx(400, 0.06, 'square', 0.05); },
+  swing() { playSfx(150, 0.1, 'sawtooth', 0.04); },
+  hit() { playSfx(100, 0.12, 'square', 0.08); },
+  hurt() { playSfx(80, 0.15, 'sawtooth', 0.07); },
+  jump() { playSfx(300, 0.05, 'sine', 0.04); },
+  craft() { playSfx(600, 0.08, 'square', 0.05); playSfx(800, 0.06, 'square', 0.04); },
+  openChest() { playSfx(500, 0.06, 'sine', 0.05); playSfx(700, 0.08, 'sine', 0.04); },
+  enemyDie() { playSfx(120, 0.15, 'sawtooth', 0.06); },
+  collect() { playSfx(440, 0.05, 'sine', 0.05); playSfx(660, 0.05, 'sine', 0.04); },
+  achievement() { playSfx(523, 0.1, 'square', 0.06); setTimeout(()=>playSfx(659,0.1,'square',0.06),100); setTimeout(()=>playSfx(784,0.15,'square',0.08),200); }
+};
+
 function toggleMusic() {
   musicOn = !musicOn;
   document.getElementById('music-toggle').textContent = musicOn ? '♪ ON' : '♪ OFF';
   if (musicOn) startMusic(); else stopMusic();
 }
 
+function getBiomeNotes() {
+  const bx = Math.floor((player.x + player.w/2) / TILE);
+  const biome = getBiome(Math.max(0, Math.min(WORLD_W-1, bx)));
+  if (biome === 'snow') return [349.23, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+  if (biome === 'desert') return [293.66, 329.63, 369.99, 392.00, 440.00, 493.88, 554.37, 587.33];
+  if (biome === 'corruption') return [130.81, 146.83, 155.56, 164.81, 196.00, 207.65, 233.08, 246.94];
+  return [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+}
+
 function startMusic() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
   let noteIdx = 0;
   musicInterval = setInterval(() => {
     if (audioCtx.state === 'suspended') audioCtx.resume();
+    const notes = getBiomeNotes();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'square';
-    osc.frequency.value = notes[noteIdx % notes.length] * (time < 12000 ? 1 : 0.5);
+    const isDay = time < 12000;
+    osc.frequency.value = notes[noteIdx % notes.length] * (isDay ? 1 : 0.5);
     gain.gain.value = 0.03;
     osc.connect(gain);
     gain.connect(audioCtx.destination);
@@ -1145,7 +1288,14 @@ function mineBlock(tx, ty) {
   const block = BLOCKS[b];
   const tool = player.hotbar[player.selected];
   let power = 1;
-  if (tool && ITEMS[tool.id]?.tool === 'pick') power = ITEMS[tool.id].power;
+  if (tool) {
+    const ttype = ITEMS[tool.id]?.tool;
+    if (ttype === 'pick' && block.hp >= 3) power = ITEMS[tool.id].power;
+    else if (ttype === 'axe' && (b === 4 || b === 5 || b === 31)) power = ITEMS[tool.id].power;
+    else if (ttype === 'hammer' && (b === 11 || b === 12 || b === 13 || b === 15 || b === 28 || b === 29 || b === 30)) power = ITEMS[tool.id].power;
+    else if (ttype === 'shovel' && (b === 1 || b === 3 || b === 6 || b === 17 || b === 19 || b === 21)) power = ITEMS[tool.id].power;
+    else if (ttype === 'pick') power = ITEMS[tool.id].power;
+  }
 
   if (gameMode === 'creative') {
     const dropId = block.drop || b;
@@ -1166,6 +1316,39 @@ function mineBlock(tx, ty) {
     if (dropId !== 0) spawnDrop(tx * TILE + 4, ty * TILE, dropId, 1);
     setBlock(tx, ty, 0);
     player.mining = null;
+    SFX.mine();
+    achievements.stats.mined++;
+    checkAchievements();
+    // Break entire tree when mining any wood/leaves block
+    if (b === 4 || b === 5) {
+      breakTree(tx, ty);
+    }
+  }
+}
+
+function breakTree(tx, ty) {
+  const queue = [[tx, ty]];
+  const visited = new Set([`${tx},${ty}`]);
+  while (queue.length > 0) {
+    const [cx, cy] = queue.shift();
+    const cb = getBlock(cx, cy);
+    if (cb === 4 || cb === 5) {
+      const dropId = BLOCKS[cb].drop || cb;
+      if (dropId !== 0) spawnDrop(cx * TILE + 4, cy * TILE, dropId, 1);
+      setBlock(cx, cy, 0);
+      spawnParticle(cx * TILE + TILE/2, cy * TILE + TILE/2, BLOCKS[cb].color);
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = cx + dx, ny = cy + dy;
+          const key = `${nx},${ny}`;
+          if (!visited.has(key)) {
+            visited.add(key);
+            const nb = getBlock(nx, ny);
+            if (nb === 4 || nb === 5) queue.push([nx, ny]);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1188,6 +1371,9 @@ function placeBlock(tx, ty) {
     slot.count--;
     if (slot.count <= 0) player.hotbar[player.selected] = null;
   }
+  SFX.place();
+  achievements.stats.placed++;
+  checkAchievements();
   updateHotbar();
 }
 
@@ -1323,6 +1509,13 @@ function draw() {
       ctx.fillRect(e.x, e.y, e.w, e.h);
       ctx.fillStyle = '#ff4444';
       ctx.fillRect(e.x + (e.dir > 0 ? 12 : 4), e.y + 6, 4, 4);
+    } else if (e.type === 'villager') {
+      ctx.fillStyle = '#ccaa88';
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle = '#553311';
+      ctx.fillRect(e.x + 2, e.y + 2, 12, 6);
+      ctx.fillStyle = '#222222';
+      ctx.fillRect(e.x + (e.dir > 0 ? 10 : 4), e.y + 4, 3, 3);
     } else if (e.type === 'arrow') {
       ctx.fillStyle = '#dddddd';
       ctx.save();
@@ -1558,7 +1751,7 @@ function startGame() {
     player.hunger = 9999;
     for (let id = 1; id <= 23; id++) addItem(id, 999);
     for (let id = 37; id <= 44; id++) addItem(id, 99);
-  } else {
+  } else if (!loadedFromSave) {
     const mult = getDiffMult();
     player.maxHp = gameMode === 'tutorial' ? 200 : Math.round(100 / mult);
     player.hp = player.maxHp;
@@ -1647,6 +1840,7 @@ function newWorld(seed) {
   worlds.push({ name, mode: gameMode, diff: difficulty, playTime: 0, seed: finalSeed });
   saveWorlds();
   renderWorldList();
+  loadedFromSave = false;
   startGame();
 }
 
@@ -1676,8 +1870,10 @@ function loadWorld() {
     player.armor = saved.playerArmor || { helm: null, chest: null, leg: null };
     player.hotbar = saved.playerHotbar || player.hotbar.map(() => null);
     player.inv = saved.playerInv || [];
+    loadedFromSave = true;
   } else {
     generate(w.seed || 12345);
+    loadedFromSave = false;
   }
   startGame();
 }
