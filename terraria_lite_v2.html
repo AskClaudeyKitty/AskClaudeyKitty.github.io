@@ -531,7 +531,7 @@ function generate(seed) {
     }
   }
 
-  const px = Math.floor(WORLD_W / 2);
+  const px = Math.floor(50 + rng() * (WORLD_W - 100));
   player.x = px * TILE;
   const surfaceY = surface[px];
   let spawnY = surfaceY - 3;
@@ -1967,7 +1967,7 @@ function joinMultiplayerRoom() {
       const arr = base64ToWorld(room.world_data);
       world.set(arr);
       // Set spawn position after loading world
-      const px = Math.floor(WORLD_W / 2);
+      const px = Math.floor(50 + Math.random() * (WORLD_W - 100));
       player.x = px * TILE;
       let spawnY = 0;
       while (spawnY < WORLD_H && getBlock(px, spawnY) === 0) spawnY++;
