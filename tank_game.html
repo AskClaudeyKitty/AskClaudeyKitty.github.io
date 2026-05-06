@@ -4210,20 +4210,86 @@ document.getElementById('btn-fire').addEventListener('mousedown', (e) => {
 
 // Canvas touch events for mobile drag-to-aim
 canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  if (state !== 'game' || gameOver) return;
-  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
-  
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
   const m = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-  
+
+  if (state === 'menu') {
+    e.preventDefault();
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 220 && m.y <= 270) { state = 'select'; selectScroll = 0; campaignMode = false; updateControlsVisibility(); }
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 280 && m.y <= 330) { state = 'campaign'; campaignHover = -1; campaignScroll = 0; updateControlsVisibility(); }
+    if (m.x >= W / 2 - 100 && m.x <= W / 2 + 100 && m.y >= 340 && m.y <= 380) { state = 'tutorial'; tutorialScroll = 0; updateControlsVisibility(); }
+    return;
+  }
+  if (state === 'select') {
+    e.preventDefault();
+    for (let i = 0; i < tankTypes.length; i++) {
+      const t = tankTypes[i];
+      const isLocked = t.locked && (t.unlockCode ? !unlockedCodes.includes(t.unlockCode) : totalWins < (t.unlockWins || 0));
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      const bx = W / 2 - 210 + col * 145;
+      const by = 120 + row * 170 - selectScroll;
+      if (m.x >= bx && m.x <= bx + 130 && m.y >= by && m.y <= by + 150) {
+        if (isLocked) return;
+        menuSelection = i;
+        if (campaignMode) { state = 'campaign'; campaignHover = -1; updateControlsVisibility(); }
+        else startMapSelect();
+        return;
+      }
+    }
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) {
+      if (campaignMode) { state = 'campaign'; campaignHover = -1; updateControlsVisibility(); }
+      else { state = 'menu'; updateControlsVisibility(); }
+      return;
+    }
+    return;
+  }
+  if (state === 'mapSelect') {
+    e.preventDefault();
+    if (m.x >= W / 2 - 60 && m.x <= W / 2 + 60 && m.y >= 80 && m.y <= 110) { startGame(); return; }
+    for (let i = 0; i < maps.length; i++) {
+      const bx = W / 2 - (maps.length * 85) / 2 + i * 85;
+      const by = 140;
+      if (m.x >= bx && m.x <= bx + 75 && m.y >= by && m.y <= by + 180) { startGame(i); return; }
+    }
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; updateControlsVisibility(); return; }
+    return;
+  }
+  if (state === 'campaign') {
+    e.preventDefault();
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
+    if (m.x >= W - 120 && m.x <= W - 20 && m.y >= 15 && m.y <= 45) { state = 'select'; selectScroll = 0; campaignMode = true; updateControlsVisibility(); return; }
+    const cols = 10, cellW = 70, cellH = 32, gap = 4;
+    const startX = W / 2 - (cols * (cellW + gap)) / 2;
+    const startY = 90;
+    for (let i = 0; i < 100; i++) {
+      const col = i % cols, row = Math.floor(i / cols);
+      const bx = startX + col * (cellW + gap);
+      const by = startY + row * (cellH + gap) - campaignScroll;
+      if (m.x >= bx && m.x <= bx + cellW && m.y >= by && m.y <= by + cellH) {
+        if (i + 1 <= campaignMaxLevel) startCampaignLevel(i + 1);
+        return;
+      }
+    }
+    return;
+  }
+  if (state === 'tutorial') {
+    e.preventDefault();
+    if (m.x >= 20 && m.x <= 100 && m.y >= 15 && m.y <= 45) { state = 'menu'; updateControlsVisibility(); return; }
+    return;
+  }
+
+  if (state !== 'game' || gameOver) return;
+  e.preventDefault();
+  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
+
   // Check ammo for drag
-  if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) { 
-    if (!tanks[0].bonusAmmo) return; 
+  if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) {
+    if (!tanks[0].bonusAmmo) return;
   }
   else if (tanks[0].ammo[tanks[0].weapon] === 0) return;
-  
+
   // Start drag aiming
   dragging = true;
   dragStartX = m.x; dragStartY = m.y;
