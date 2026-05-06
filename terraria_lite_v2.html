@@ -992,8 +992,7 @@ function updateEntities() {
         if (e.hp <= 0) {
           SFX.enemyDie();
           achievements.stats.killed++;
-          checkAchievements(
-          checkAchievements(e.type === 'slime' ? 34 : 35, 1);
+          checkAchievements();
           entities.splice(i, 1);
         }
       }
