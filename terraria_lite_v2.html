@@ -1208,28 +1208,102 @@ function getBiomeNotes() {
   return [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
 }
 
+const MUSIC_PATTERNS = {
+  forest: [
+    { melody: [0,2,4,2,0,4,2,0,5,4,2,4,0,2,7,4], bass: [0,0,4,4,5,5,0,0], speed: 220 },
+    { melody: [0,2,4,5,4,2,0,2,4,5,7,5,4,2,0,4], bass: [0,0,3,3,4,4,0,0], speed: 240 },
+    { melody: [4,2,0,2,4,5,4,2,0,4,2,0,-1,2,4,5], bass: [4,4,0,0,5,5,0,0], speed: 230 },
+  ],
+  snow: [
+    { melody: [0,2,4,5,4,2,0,-1,0,2,4,7,5,4,2,0], bass: [0,0,3,3,4,4,5,5], speed: 260 },
+    { melody: [4,5,4,2,0,2,4,5,7,5,4,2,0,-1,0,2], bass: [0,0,4,4,3,3,0,0], speed: 280 },
+    { melody: [0,4,2,5,4,7,5,4,2,0,2,4,0,-1,0,4], bass: [0,0,5,5,3,3,4,4], speed: 250 },
+  ],
+  desert: [
+    { melody: [0,1,3,0,1,3,4,3,1,0,3,1,0,-1,0,1], bass: [0,0,3,3,4,4,0,0], speed: 210 },
+    { melody: [3,4,3,1,0,1,3,4,5,4,3,1,0,1,3,0], bass: [3,3,0,0,4,4,0,0], speed: 200 },
+    { melody: [0,3,1,4,3,5,4,3,1,0,3,1,0,1,3,4], bass: [0,0,4,4,3,3,1,1], speed: 220 },
+  ],
+  corruption: [
+    { melody: [0,2,3,2,0,3,2,0,4,3,2,3,0,2,5,3], bass: [0,0,3,3,2,2,0,0], speed: 280 },
+    { melody: [0,3,2,0,3,4,3,2,0,2,3,5,4,3,2,0], bass: [0,0,2,2,3,3,0,0], speed: 300 },
+    { melody: [3,2,0,2,3,4,3,2,0,3,2,0,-1,2,3,4], bass: [3,3,0,0,2,2,0,0], speed: 290 },
+  ],
+};
+
+let currentPattern = null;
+let patternStep = 0;
+let patternTimer = null;
+
+function pickPattern(biome) {
+  const list = MUSIC_PATTERNS[biome] || MUSIC_PATTERNS.forest;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function playNote(freq, duration, type, vol, delay) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const t = audioCtx.currentTime + (delay || 0);
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'square';
+  osc.frequency.value = freq;
+  gain.gain.value = vol || 0.03;
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + duration);
+}
+
 function startMusic() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  let noteIdx = 0;
-  musicInterval = setInterval(() => {
+  const bx = Math.floor((player.x + player.w/2) / TILE);
+  const biome = getBiome(Math.max(0, Math.min(WORLD_W-1, bx)));
+  currentPattern = pickPattern(biome);
+  patternStep = 0;
+
+  function tick() {
+    if (!musicOn) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const notes = getBiomeNotes();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'square';
     const isDay = time < 12000;
-    osc.frequency.value = notes[noteIdx % notes.length] * (isDay ? 1 : 0.5);
-    gain.gain.value = 0.03;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.15);
-    noteIdx++;
-  }, 250);
+    const p = currentPattern;
+    const step = patternStep % p.melody.length;
+    const bassStep = Math.floor(patternStep / 2) % p.bass.length;
+
+    const mi = p.melody[step];
+    if (mi >= 0) {
+      const f = notes[mi % notes.length] * (isDay ? 1 : 0.5);
+      playNote(f, 0.18, 'square', isDay ? 0.025 : 0.015);
+      playNote(f * 2, 0.12, 'sine', 0.01, 0.05);
+    }
+
+    const bi = p.bass[bassStep];
+    if (bi >= 0 && patternStep % 2 === 0) {
+      const bf = notes[bi % notes.length] * 0.5 * (isDay ? 1 : 0.5);
+      playNote(bf, 0.35, 'triangle', isDay ? 0.04 : 0.025);
+    }
+
+    patternStep++;
+    if (patternStep >= p.melody.length) {
+      patternStep = 0;
+      if (Math.random() < 0.3) currentPattern = pickPattern(biome);
+    }
+
+    const nextBiome = getBiome(Math.max(0, Math.min(WORLD_W-1, Math.floor((player.x + player.w/2) / TILE))));
+    if (nextBiome !== biome) {
+      currentPattern = pickPattern(nextBiome);
+      patternStep = 0;
+    }
+
+    patternTimer = setTimeout(tick, p.speed + (Math.random() * 20 - 10));
+  }
+  tick();
 }
 
 function stopMusic() {
-  if (musicInterval) clearInterval(musicInterval);
+  if (patternTimer) clearTimeout(patternTimer);
+  patternTimer = null;
 }
 
 function updateSpawning() {
