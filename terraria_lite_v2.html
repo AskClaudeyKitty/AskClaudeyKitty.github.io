@@ -2047,6 +2047,7 @@ function fetchRooms() {
 let mpRoomCode = null;
 let mpIsHost = false;
 let mpPlayerId = Math.random().toString(36).slice(2, 10);
+const isOwner = document.cookie.indexOf('owner_nocount=1') !== -1;
 let mpOtherPlayers = {};
 let mpBlockInterval = null;
 let mpLastBlockCheck = new Date(0).toISOString();
@@ -2125,7 +2126,7 @@ function sendChat(msg) {
   if (!mpRoomCode || !msg.trim()) return;
   supaFetch('mp_chat', {
     method: 'POST',
-    body: { room_code: mpRoomCode, player_id: mpPlayerId, message: msg.trim(), created_at: new Date().toISOString() }
+    body: { room_code: mpRoomCode, player_id: isOwner ? 'OWNER' : mpPlayerId, message: msg.trim(), created_at: new Date().toISOString() }
   }).catch(() => {});
 }
 
@@ -2139,8 +2140,12 @@ function startChatSync() {
         log.innerHTML = '';
         data.reverse().forEach(c => {
           const div = document.createElement('div');
-          div.textContent = (c.player_id === mpPlayerId ? 'You' : 'Player') + ': ' + c.message;
-          div.style.color = c.player_id === mpPlayerId ? '#8aff8a' : '#ffff44';
+          let name, color;
+          if (c.player_id === 'OWNER') { name = 'owner of page'; color = '#ff4444'; }
+          else if (c.player_id === mpPlayerId) { name = 'You'; color = '#8aff8a'; }
+          else { name = 'Player'; color = '#ffff44'; }
+          div.textContent = name + ': ' + c.message;
+          div.style.color = color;
           log.appendChild(div);
         });
       }).catch(() => {});
