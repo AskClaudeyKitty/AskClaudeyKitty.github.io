@@ -648,9 +648,9 @@ function startCampaignLevel(level) {
   lastProjCount = 0;
   turnCount = 0;
   botDelay = 0;
-  botMoveDone = false;
+  botMove_done = false;
   botMoveFrames = 0;
-  botAimFrame = 0;
+  botAim_frame = 0;
   generateTerrain();
   applyMapBoosts();
   applyMapEffects();
@@ -1550,8 +1550,8 @@ function createExplosion(x, y, w, noTerrain) {
 // ========== BOT AI ==========
 let botMoveFrames = 0;
 let botMoveDir = 0;
-let botMoveDone = false;
-let botAimFrame = 0;
+let botMove_done = false;
+let botAim_frame = 0;
 
 function botShoot() {
   botDelay++;
@@ -1608,10 +1608,10 @@ function botShoot() {
 
     // If fleeing hazard, stop once clear
     if (botMoveFrames === 999 && !inHazard) {
-      botMove_frames = 0;
+      botMoveFrames = 0;
     }
 
-    if (botMove_frames > 0 && bot.fuel > 0 && !botInWater) {
+    if (botMoveFrames > 0 && bot.fuel > 0 && !botInWater) {
       let spd = bot.type.speed * 0.4;
       let botOnIce = false;
       for (const h of hazards) {
@@ -1627,7 +1627,7 @@ function botShoot() {
         bot.x = Math.max(15, Math.min(W - 15, bot.x + botMoveDir * spd));
       }
       bot.fuel -= 0.3;
-      if (botMove_frames !== 999) botMove_frames--;
+      if (botMoveFrames !== 999) botMoveFrames--;
       checkCratePickup(bot, 1);
       return;
     }
