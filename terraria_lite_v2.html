@@ -596,34 +596,6 @@ function generate(seed) {
     }
   }
 
-  // Water pools
-  for (let i = 0; i < 15 + Math.floor(rng() * 10); i++) {
-    const wx = Math.floor(rng() * WORLD_W);
-    const wy = Math.floor(rng() * (WORLD_H - 150) + 80);
-    const wsize = 3 + Math.floor(rng() * 8);
-    for (let dx = -wsize; dx <= wsize; dx++) {
-      for (let dy = 0; dy <= wsize; dy++) {
-        const lx = wx + dx, ly = wy + dy;
-        if (lx >= 0 && lx < WORLD_W && ly >= 0 && ly < WORLD_H) {
-          if (getBlock(lx, ly) === 0 && isSolid(lx, ly + 1)) {
-            world[ly * WORLD_W + lx] = 24;
-          }
-        }
-      }
-    }
-  }
-
-  // Lava at bottom + hell biome
-  for (let x = 0; x < WORLD_W; x++) {
-    for (let y = WORLD_H - 20; y < WORLD_H; y++) {
-      const i = y * WORLD_W + x;
-      if (world[i] === 2 || world[i] === 0) {
-        if (y > WORLD_H - 8) world[i] = 25;
-        else world[i] = 26;
-      }
-    }
-  }
-
   const px = Math.floor(50 + rng() * (WORLD_W - 100));
   player.x = px * TILE;
   const surfaceY = surface[px];
