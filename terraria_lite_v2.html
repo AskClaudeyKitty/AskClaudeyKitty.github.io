@@ -1987,6 +1987,7 @@ function saveWorldData() {
   const data = {
     world: worldToBase64(world),
     chests: Array.from(chests.entries()),
+    entities: entities.filter(e => e.type === 'villager'),
     time: time,
     playerX: player.x,
     playerY: player.y,
@@ -2051,6 +2052,10 @@ function loadWorld() {
     world.set(arr);
     chests.clear();
     for (const [k, v] of saved.chests) chests.set(k, v);
+    entities.length = 0;
+    if (saved.entities) {
+      for (const e of saved.entities) entities.push(e);
+    }
     time = saved.time || 0;
     player.x = saved.playerX || 0;
     player.y = saved.playerY || 0;
@@ -2217,6 +2222,7 @@ let mpIsHost = false;
 let mpPlayerId = Math.random().toString(36).slice(2, 10);
 const isOwner = document.cookie.indexOf('owner_nocount=1') !== -1;
 let mpOtherPlayers = {};
+let mpSyncInterval = null;
 let mpBlockInterval = null;
 let mpLastBlockCheck = new Date(0).toISOString();
 
