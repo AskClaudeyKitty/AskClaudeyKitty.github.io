@@ -2299,6 +2299,23 @@ function appendChatLog(name, msg, color) {
   log.scrollTop = log.scrollHeight;
 }
 
+function findItemByName(name) {
+  const q = name.toLowerCase().replace(/\s+/g, ' ').trim();
+  for (const id in BLOCKS) {
+    if (BLOCKS[id].name.toLowerCase() === q) return parseInt(id);
+  }
+  for (const id in ITEMS) {
+    if (ITEMS[id].name.toLowerCase() === q) return parseInt(id);
+  }
+  for (const id in BLOCKS) {
+    if (BLOCKS[id].name.toLowerCase().includes(q)) return parseInt(id);
+  }
+  for (const id in ITEMS) {
+    if (ITEMS[id].name.toLowerCase().includes(q)) return parseInt(id);
+  }
+  return null;
+}
+
 function sendChat(msg) {
   if (!msg.trim()) return;
   const trimmed = msg.trim();
@@ -2307,9 +2324,16 @@ function sendChat(msg) {
     const parts = trimmed.slice(1).split(' ');
     const cmd = parts[0];
     if (cmd === 'give') {
-      const id = parseInt(parts[1]);
-      const count = parseInt(parts[2]) || 1;
-      if (!isNaN(id) && id > 0 && (BLOCKS[id] || ITEMS[id])) {
+      let id = parseInt(parts[1]);
+      let count = parseInt(parts[parts.length - 1]) || 1;
+      let nameArg = parts.slice(1).join(' ');
+      if (!isNaN(parseInt(parts[parts.length - 1]))) {
+        nameArg = parts.slice(1, -1).join(' ');
+      }
+      if (isNaN(id) || !BLOCKS[id] && !ITEMS[id]) {
+        id = findItemByName(nameArg);
+      }
+      if (id && (BLOCKS[id] || ITEMS[id])) {
         if (gameMode === 'creative' || isOwner) {
           addItem(id, count);
           showMsg(`Gave ${count}x ${(ITEMS[id] || BLOCKS[id]).name}`);
@@ -2318,7 +2342,7 @@ function sendChat(msg) {
           appendChatLog('System', 'No permission', '#ff4444');
         }
       } else {
-        appendChatLog('System', 'Usage: /give <id> <count>', '#ff4444');
+        appendChatLog('System', 'Usage: /give <name or id> <count>', '#ff4444');
       }
       return;
     }
