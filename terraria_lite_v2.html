@@ -139,6 +139,13 @@
     <div id="chest-header">Chest <span id="chest-close" style="cursor:pointer;color:#f44">X</span></div>
     <div id="chest-grid"></div>
   </div>
+  <div id="trade-ui" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,15,25,0.98);border:3px solid #555;padding:12px;display:none;flex-direction:column;gap:8px;font-family:'Press Start 2P',monospace;z-index:10;">
+    <div id="trade-header" style="color:#ffff44;font-size:10px;display:flex;justify-content:space-between;">Trade <span id="trade-close" style="cursor:pointer;color:#f44">X</span></div>
+    <div id="trade-content" style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+      <div id="trade-offer" style="font-size:8px;color:#fff;"></div>
+      <button id="trade-btn" class="menu-btn" style="font-size:8px;padding:6px 12px;">Trade</button>
+    </div>
+  </div>
   <div id="music-toggle">♪ OFF</div>
   <div id="msg"></div>
   <div id="chat-box" style="position:absolute;bottom:60px;left:8px;width:280px;height:120px;background:rgba(0,0,0,0.7);border:2px solid #555;display:none;flex-direction:column;z-index:5;">
@@ -505,10 +512,8 @@ function generate(seed) {
       for (let hy = 0; hy < houseH; hy++) {
         const wx = vx + hx, wy = vy - 1 - hy;
         if (wx >= 0 && wx < WORLD_W && wy >= 0 && wy < WORLD_H) {
-          if (hx === 0 || hx === houseW - 1 || hy === houseH - 1) {
+          if (hx === 0 || hx === houseW - 1 || hy === 0 || hy === houseH - 1) {
             world[wy * WORLD_W + wx] = 11;
-          } else if (hy === 0) {
-            world[wy * WORLD_W + wx] = 0;
           }
         }
       }
@@ -518,9 +523,17 @@ function generate(seed) {
     if (doorX >= 0 && doorX < WORLD_W && doorY >= 0 && doorY < WORLD_H) {
       world[doorY * WORLD_W + doorX] = 29;
     }
-    const villagerX = (vx + 1) * TILE;
+    const villagerX = (vx + Math.floor(houseW/2)) * TILE + 4;
     const villagerY = (vy - 2) * TILE;
-    entities.push({ x: villagerX, y: villagerY, w: 16, h: 30, type: 'villager', life: 999999, dir: 1, timer: 0 });
+    const tradePool = [
+      { give: { id: 38, count: 10 }, get: { id: 26, count: 1 }, msg: "10 arrows for a bow" },
+      { give: { id: 2, count: 20 }, get: { id: 37, count: 1 }, msg: "20 dirt for a wooden pick" },
+      { give: { id: 6, count: 5 }, get: { id: 30, count: 1 }, msg: "5 stone for a sword" },
+      { give: { id: 7, count: 3 }, get: { id: 38, count: 30 }, msg: "3 iron for 30 arrows" },
+      { give: { id: 34, count: 5 }, get: { id: 7, count: 2 }, msg: "5 gel for 2 iron" }
+    ];
+    const trade = tradePool[Math.floor(rng() * tradePool.length)];
+    entities.push({ x: villagerX, y: villagerY, w: 16, h: 30, type: 'villager', life: 999999, dir: 1, timer: 0, vx: 0, vy: 0, onGround: false, homeX: vx * TILE, homeW: houseW * TILE, trade: trade });
   }
 
   // Random loot chests in caves
@@ -995,6 +1008,39 @@ function updateEntities() {
         }
       }
       if (e.life <= 0) entities.splice(i, 1);
+    } else if (e.type === 'villager') {
+      e.timer++;
+      if (e.timer % 120 === 0) {
+        e.dir = Math.random() < 0.5 ? 1 : -1;
+      }
+      if (e.timer % 30 === 0 && e.onGround && Math.random() < 0.3) {
+        e.vy = -3;
+      }
+      e.vx += e.dir * 0.04;
+      e.vx *= 0.9; e.vy += 0.35;
+      e.x += e.vx;
+      let etx = Math.floor((e.x + e.w/2) / TILE);
+      if (isSolid(etx, Math.floor(e.y / TILE)) || isSolid(etx, Math.floor((e.y + e.h - 1) / TILE))) {
+        e.x = (etx + (e.vx > 0 ? -0.6 : 0.6)) * TILE - e.w/2;
+        e.vx = 0; e.dir *= -1;
+      }
+      e.y += e.vy;
+      etx = Math.floor((e.x + e.w/2) / TILE);
+      const ety = Math.floor((e.y + e.h) / TILE);
+      if (isSolid(etx, ety) || isSolid(Math.floor(e.x / TILE), ety)) {
+        if (e.vy > 0) { e.y = ety * TILE - e.h; e.onGround = true; }
+        else { e.y = (ety + 1) * TILE; }
+        e.vy = 0;
+      } else { e.onGround = false; }
+      if (e.homeX !== undefined && (e.x < e.homeX - 20 || e.x > e.homeX + e.homeW + 20)) {
+        e.dir = e.x < e.homeX ? 1 : -1;
+      }
+      const vdx = px - (e.x + e.w/2);
+      const vdy = py - (e.y + e.h/2);
+      if (Math.hypot(vdx, vdy) < 40 && keys['e']) {
+        openTradeUI(e);
+        keys['e'] = false;
+      }
     }
   }
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -1126,6 +1172,71 @@ function updateChestUI() {
     };
     grid.appendChild(div);
   }
+}
+
+let activeTradeVillager = null;
+
+function openTradeUI(villager) {
+  activeTradeVillager = villager;
+  const offer = document.getElementById('trade-offer');
+  const giveName = ITEMS[villager.trade.give.id]?.name || BLOCKS[villager.trade.give.id]?.name;
+  const getName = ITEMS[villager.trade.get.id]?.name || BLOCKS[villager.trade.get.id]?.name;
+  offer.innerHTML = `Give <span style="color:#ff4444">${villager.trade.give.count} ${giveName}</span><br>Get <span style="color:#44ff44">${villager.trade.get.count} ${getName}</span>`;
+  document.getElementById('trade-ui').style.display = 'flex';
+}
+
+function closeTradeUI() {
+  activeTradeVillager = null;
+  document.getElementById('trade-ui').style.display = 'none';
+}
+
+function doTrade() {
+  if (!activeTradeVillager) return;
+  const t = activeTradeVillager.trade;
+  const have = countItem(t.give.id);
+  if (have >= t.give.count) {
+    removeItem(t.give.id, t.give.count);
+    addItem(t.get.id, t.get.count);
+    showMsg(`Traded! Got ${t.get.count} ${ITEMS[t.get.id]?.name || BLOCKS[t.get.id]?.name}`);
+    SFX.collect();
+  } else {
+    showMsg('Not enough items!');
+  }
+}
+
+function countItem(id) {
+  let count = 0;
+  for (const slot of player.hotbar) {
+    if (slot && slot.id === id) count += slot.count;
+  }
+  for (const slot of player.inventory) {
+    if (slot && slot.id === id) count += slot.count;
+  }
+  return count;
+}
+
+function removeItem(id, count) {
+  let remaining = count;
+  for (const slot of player.hotbar) {
+    if (slot && slot.id === id) {
+      const take = Math.min(slot.count, remaining);
+      slot.count -= take;
+      remaining -= take;
+      if (slot.count <= 0) slot = null;
+      if (remaining <= 0) break;
+    }
+  }
+  for (let i = 0; i < player.inventory.length; i++) {
+    const slot = player.inventory[i];
+    if (slot && slot.id === id) {
+      const take = Math.min(slot.count, remaining);
+      slot.count -= take;
+      remaining -= take;
+      if (slot.count <= 0) player.inventory[i] = null;
+      if (remaining <= 0) break;
+    }
+  }
+  updateHotbar();
 }
 
 function toggleMinimap() {
@@ -1956,6 +2067,8 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
 
 // In-game UI hooks
 document.getElementById('chest-close').onclick = closeChest;
+document.getElementById('trade-close').onclick = closeTradeUI;
+document.getElementById('trade-btn').onclick = doTrade;
 document.getElementById('music-toggle').onclick = toggleMusic;
 document.getElementById('helm-slot').onclick = () => equipArmor('helm');
 document.getElementById('chest-slot').onclick = () => equipArmor('chest');
