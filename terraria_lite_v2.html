@@ -249,6 +249,9 @@ const ITEMS = {
   64: { name: 'Hellstone Axe', icon: 'a', color: '#cc2222', tool: 'axe', power: 10 },
   65: { name: 'Hellstone Hammer', icon: 'h', color: '#cc2222', tool: 'hammer', power: 10 },
   66: { name: 'Hellstone Shovel', icon: 'S', color: '#cc2222', tool: 'shovel', power: 10 },
+  67: { name: 'Slime Spawn Egg', icon: 'E', color: '#44aa44', spawn: 'slime' },
+  68: { name: 'Zombie Spawn Egg', icon: 'E', color: '#aa4444', spawn: 'zombie' },
+  69: { name: 'Villager Spawn Egg', icon: 'E', color: '#ddaa44', spawn: 'villager' },
 };
 
 const RECIPES = [
@@ -1512,7 +1515,24 @@ function placeBlock(tx, ty) {
   const b = getBlock(tx, ty);
   if (b === 23) { openChestUI(tx, ty); return; }
   const slot = player.hotbar[player.selected];
-  if (!slot || (!BLOCKS[slot.id]?.solid && slot.id !== 4 && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
+  if (!slot) return;
+
+  const item = ITEMS[slot.id];
+  if (item && item.spawn) {
+    if (item.spawn === 'slime') spawnEnemy(tx * TILE, ty * TILE, 'slime');
+    else if (item.spawn === 'zombie') spawnEnemy(tx * TILE, ty * TILE, 'zombie');
+    else if (item.spawn === 'villager') {
+      entities.push({ x: tx * TILE + 4, y: ty * TILE, w: 16, h: 30, type: 'villager', life: 999999, dir: 1, timer: 0, vx: 0, vy: 0, onGround: false, homeX: tx * TILE, homeW: 5 * TILE, trade: { give: { id: 38, count: 10 }, get: { id: 26, count: 1 }, msg: "10 arrows for a bow" } });
+    }
+    if (gameMode !== 'creative') {
+      slot.count--;
+      if (slot.count <= 0) player.hotbar[player.selected] = null;
+    }
+    updateHotbar();
+    return;
+  }
+
+  if ((!BLOCKS[slot.id]?.solid && slot.id !== 4 && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
   const placeId = slot.id === 4 ? 31 : slot.id;
   if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
@@ -1905,8 +1925,9 @@ function startGame() {
   if (gameMode === 'creative') {
     player.maxHp = 9999; player.hp = 9999;
     player.hunger = 9999;
-    for (let id = 1; id <= 23; id++) addItem(id, 999);
-    for (let id = 37; id <= 44; id++) addItem(id, 99);
+    for (let id = 1; id <= 31; id++) if (BLOCKS[id]) addItem(id, 999);
+    if (BLOCKS[61]) addItem(61, 999);
+    for (let id = 37; id <= 69; id++) if (ITEMS[id]) addItem(id, 99);
   } else if (!loadedFromSave) {
     const mult = getDiffMult();
     player.maxHp = gameMode === 'tutorial' ? 200 : Math.round(100 / mult);
@@ -2099,13 +2120,36 @@ function genCode() {
 function worldToBase64(arr) {
   let s = '';
   for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
-  return btoa(s);
+  try { return btoa(s); } catch (e) {
+    const b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let out = '', j = 0;
+    while (j < arr.length) {
+      const a = arr[j++], b = j < arr.length ? arr[j++] : 0, c = j < arr.length ? arr[j++] : 0;
+      out += b64[a >> 2] + b64[((a & 3) << 4) | (b >> 4)] + (j - 1 < arr.length ? b64[((b & 15) << 2) | (c >> 6)] : '=') + (j < arr.length ? b64[c & 63] : '=');
+    }
+    return out;
+  }
 }
 function base64ToWorld(str) {
-  const s = atob(str);
-  const arr = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) arr[i] = s.charCodeAt(i);
-  return arr;
+  try {
+    const s = atob(str);
+    const arr = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) arr[i] = s.charCodeAt(i);
+    return arr;
+  } catch (e) {
+    const b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const map = {};
+    for (let i = 0; i < b64.length; i++) map[b64[i]] = i;
+    const arr = [];
+    let i = 0;
+    while (i < str.length) {
+      const a = map[str[i++]] || 0, b = map[str[i++]] || 0, c = map[str[i++]] || 0, d = map[str[i++]] || 0;
+      arr.push((a << 2) | (b >> 4));
+      if (str[i - 2] !== '=') arr.push(((b & 15) << 4) | (c >> 6));
+      if (str[i - 1] !== '=') arr.push(((c & 3) << 6) | d);
+    }
+    return new Uint8Array(arr);
+  }
 }
 
 function showMultiplayerMenu() {
@@ -2235,11 +2279,48 @@ function stopMpSync() {
 
 let chatInterval = null;
 
+function appendChatLog(name, msg, color) {
+  const log = document.getElementById('chat-log');
+  const div = document.createElement('div');
+  div.textContent = name + ': ' + msg;
+  div.style.color = color || '#fff';
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
 function sendChat(msg) {
-  if (!mpRoomCode || !msg.trim()) return;
+  if (!msg.trim()) return;
+  const trimmed = msg.trim();
+
+  if (trimmed.startsWith('/')) {
+    const parts = trimmed.slice(1).split(' ');
+    const cmd = parts[0];
+    if (cmd === 'give') {
+      const id = parseInt(parts[1]);
+      const count = parseInt(parts[2]) || 1;
+      if (!isNaN(id) && id > 0 && (BLOCKS[id] || ITEMS[id])) {
+        if (gameMode === 'creative' || isOwner) {
+          addItem(id, count);
+          showMsg(`Gave ${count}x ${(ITEMS[id] || BLOCKS[id]).name}`);
+          appendChatLog('System', `Gave ${count}x ${(ITEMS[id] || BLOCKS[id]).name}`, '#8aff8a');
+        } else {
+          appendChatLog('System', 'No permission', '#ff4444');
+        }
+      } else {
+        appendChatLog('System', 'Usage: /give <id> <count>', '#ff4444');
+      }
+      return;
+    }
+  }
+
+  if (!mpRoomCode) {
+    appendChatLog('You', trimmed, '#8aff8a');
+    return;
+  }
+
   supaFetch('mp_chat', {
     method: 'POST',
-    body: { room_code: mpRoomCode, player_id: isOwner ? 'OWNER' : mpPlayerId, message: msg.trim(), created_at: new Date().toISOString() }
+    body: { room_code: mpRoomCode, player_id: isOwner ? 'OWNER' : mpPlayerId, message: trimmed, created_at: new Date().toISOString() }
   }).catch(() => {});
 }
 
