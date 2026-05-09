@@ -191,10 +191,10 @@ const BLOCKS = {
   21: { name: 'Corruption Grass', color: '#8844aa', solid: true, hp: 2, top: true },
   22: { name: 'Ebonstone', color: '#442255', solid: true, hp: 5 },
   23: { name: 'Chest', color: '#aa7744', solid: true, hp: 4, special: 'chest' },
-  24: { name: 'Water', color: '#4488cc88', solid: false, hp: 1, liquid: true, drop: 24 },
-  25: { name: 'Lava', color: '#cc440088', solid: false, hp: 1, liquid: true, damage: 2, drop: 45 },
-  26: { name: 'Hellstone', color: '#cc2222', solid: true, hp: 8, drop: 25 },
-  27: { name: 'Obsidian', color: '#222244', solid: true, hp: 6, drop: 25 },
+  24: { name: 'Water', color: '#4488cc88', solid: false, hp: 1, liquid: true },
+  25: { name: 'Lava', color: '#cc440088', solid: false, hp: 1, liquid: true, damage: 2 },
+  26: { name: 'Hellstone', color: '#cc2222', solid: true, hp: 8, drop: 46 },
+  27: { name: 'Obsidian', color: '#222244', solid: true, hp: 6, drop: 27 },
   61: { name: 'Diamond Ore', color: '#44aaff', solid: true, hp: 10, drop: 61 },
   28: { name: 'Wood Platform', color: '#aa7744', solid: false, hp: 2, platform: true },
   29: { name: 'Door', color: '#886644', solid: false, hp: 3, special: 'door' },
@@ -1445,7 +1445,17 @@ function mineBlock(tx, ty) {
   const b = getBlock(tx, ty);
   if (b === 0) return;
   const block = BLOCKS[b];
+
+  // Bucket collects liquids
   const tool = player.hotbar[player.selected];
+  if ((b === 24 || b === 25) && tool && tool.id === 45) {
+    setBlock(tx, ty, 0);
+    spawnParticle(tx * TILE + TILE/2, ty * TILE + TILE/2, block.color);
+    SFX.mine();
+    return;
+  }
+  if (block.liquid) return;
+
   let power = 1;
   if (tool) {
     const ttype = ITEMS[tool.id]?.tool;
@@ -1533,6 +1543,16 @@ function placeBlock(tx, ty) {
   }
 
   if ((!BLOCKS[slot.id]?.solid && slot.id !== 4 && slot.id !== 10 && slot.id !== 14 && slot.id !== 24 && slot.id !== 28 && slot.id !== 29 && slot.id !== 30)) return;
+
+  // Bucket places water
+  if (slot.id === 45) {
+    if (b === 0) {
+      setBlock(tx, ty, 24);
+      SFX.place();
+    }
+    return;
+  }
+
   const placeId = slot.id === 4 ? 31 : slot.id;
   if (b !== 0) return;
   const px = Math.floor((player.x + player.w/2) / TILE);
