@@ -947,20 +947,46 @@ function updateEntities() {
       }
       
       e.vx *= 0.9; e.vy += 0.35;
+      
+      // X movement with proper edge collision
       e.x += e.vx;
-      let etx = Math.floor((e.x + e.w/2) / TILE);
-      if (isSolid(etx, Math.floor(e.y / TILE)) || isSolid(etx, Math.floor((e.y + e.h - 1) / TILE))) {
-        e.x = (etx + (e.vx > 0 ? -0.6 : 0.6)) * TILE - e.w/2;
-        e.vx = 0; e.dir *= -1;
+      const topY = Math.floor(e.y / TILE);
+      const botY = Math.floor((e.y + e.h - 1) / TILE);
+      const leadX = e.vx > 0 ? Math.floor((e.x + e.w) / TILE) : Math.floor(e.x / TILE);
+      if (isSolid(leadX, topY) || isSolid(leadX, botY)) {
+        // Try step up
+        if (!isSolid(leadX, topY - 1)) {
+          e.y = (topY - 1) * TILE;
+        } else {
+          e.x = e.vx > 0 ? leadX * TILE - e.w - 0.1 : (leadX + 1) * TILE + 0.1;
+          e.vx = 0;
+          e.dir *= -1;
+        }
       }
+      
+      // Y movement with proper edge collision
       e.y += e.vy;
-      etx = Math.floor((e.x + e.w/2) / TILE);
-      const ety = Math.floor((e.y + e.h) / TILE);
-      if (isSolid(etx, ety) || isSolid(Math.floor(e.x / TILE), ety)) {
-        if (e.vy > 0) { e.y = ety * TILE - e.h; e.onGround = true; }
-        else { e.y = (ety + 1) * TILE; }
-        e.vy = 0;
-      } else { e.onGround = false; }
+      const leftX2 = Math.floor(e.x / TILE);
+      const rightX2 = Math.floor((e.x + e.w - 1) / TILE);
+      const botTile = Math.floor((e.y + e.h) / TILE);
+      const topTile = Math.floor(e.y / TILE);
+      if (e.vy > 0) {
+        if (isSolid(leftX2, botTile) || isSolid(rightX2, botTile)) {
+          e.y = botTile * TILE - e.h - 0.1;
+          e.vy = 0;
+          e.onGround = true;
+        } else {
+          e.onGround = false;
+        }
+      } else if (e.vy < 0) {
+        if (isSolid(leftX2, topTile) || isSolid(rightX2, topTile)) {
+          e.y = (topTile + 1) * TILE + 0.1;
+          e.vy = 0;
+        }
+        e.onGround = false;
+      } else {
+        e.onGround = isSolid(leftX2, botTile) || isSolid(rightX2, botTile);
+      }
       
       if (edist < 20 && player.hp > 0 && gameMode !== 'creative') {
         const def = getArmorDef();
@@ -1021,20 +1047,46 @@ function updateEntities() {
       }
       e.vx += e.dir * 0.04;
       e.vx *= 0.9; e.vy += 0.35;
+      
+      // X movement with proper edge collision
       e.x += e.vx;
-      let etx = Math.floor((e.x + e.w/2) / TILE);
-      if (isSolid(etx, Math.floor(e.y / TILE)) || isSolid(etx, Math.floor((e.y + e.h - 1) / TILE))) {
-        e.x = (etx + (e.vx > 0 ? -0.6 : 0.6)) * TILE - e.w/2;
-        e.vx = 0; e.dir *= -1;
+      const vTopY = Math.floor(e.y / TILE);
+      const vBotY = Math.floor((e.y + e.h - 1) / TILE);
+      const vLeadX = e.vx > 0 ? Math.floor((e.x + e.w) / TILE) : Math.floor(e.x / TILE);
+      if (isSolid(vLeadX, vTopY) || isSolid(vLeadX, vBotY)) {
+        // Try step up
+        if (!isSolid(vLeadX, vTopY - 1)) {
+          e.y = (vTopY - 1) * TILE;
+        } else {
+          e.x = e.vx > 0 ? vLeadX * TILE - e.w - 0.1 : (vLeadX + 1) * TILE + 0.1;
+          e.vx = 0;
+          e.dir *= -1;
+        }
       }
+      
+      // Y movement with proper edge collision
       e.y += e.vy;
-      etx = Math.floor((e.x + e.w/2) / TILE);
-      const ety = Math.floor((e.y + e.h) / TILE);
-      if (isSolid(etx, ety) || isSolid(Math.floor(e.x / TILE), ety)) {
-        if (e.vy > 0) { e.y = ety * TILE - e.h; e.onGround = true; }
-        else { e.y = (ety + 1) * TILE; }
-        e.vy = 0;
-      } else { e.onGround = false; }
+      const vLeftX = Math.floor(e.x / TILE);
+      const vRightX = Math.floor((e.x + e.w - 1) / TILE);
+      const vBotTile = Math.floor((e.y + e.h) / TILE);
+      const vTopTile = Math.floor(e.y / TILE);
+      if (e.vy > 0) {
+        if (isSolid(vLeftX, vBotTile) || isSolid(vRightX, vBotTile)) {
+          e.y = vBotTile * TILE - e.h - 0.1;
+          e.vy = 0;
+          e.onGround = true;
+        } else {
+          e.onGround = false;
+        }
+      } else if (e.vy < 0) {
+        if (isSolid(vLeftX, vTopTile) || isSolid(vRightX, vTopTile)) {
+          e.y = (vTopTile + 1) * TILE + 0.1;
+          e.vy = 0;
+        }
+        e.onGround = false;
+      } else {
+        e.onGround = isSolid(vLeftX, vBotTile) || isSolid(vRightX, vBotTile);
+      }
       if (e.homeX !== undefined && (e.x < e.homeX - 20 || e.x > e.homeX + e.homeW + 20)) {
         e.dir = e.x < e.homeX ? 1 : -1;
       }
