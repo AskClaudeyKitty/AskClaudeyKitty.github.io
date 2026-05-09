@@ -634,7 +634,8 @@ function startCampaignLevel(level) {
     shockTimer: 0,
     inWater: false,
     shield: false,
-    testBot: testBotMode
+    testBot: testBotMode,
+    isBot: true
   });
   
   turn = 0;
@@ -919,7 +920,7 @@ function initTanks() {
     x: testBotMode ? W / 2 : W - 160 + Math.random() * 80, angle: 135, hp: botHp2, maxHp: botHp2, color: '#e55',
     name: testBotMode ? 'TEST BOT' : 'BOT(' + b.name + ')', weapon: 0, fuel: b.fuel, maxFuel: b.fuel, type: b,
     ammo: b.weapons.map(w => w.ammo === -1 ? -1 : 1),
-    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false, testBot: testBotMode
+    bonusWeapon: null, bonusAmmo: 0, shockTimer: 0, inWater: false, shield: false, testBot: testBotMode, isBot: true
   });
 }
 
