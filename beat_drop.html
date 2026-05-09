@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Beat Drop</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+  body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui, sans-serif; overflow: hidden; }
+  #game-container { position: relative; }
+  canvas { border: 3px solid #333; background: #050510; display: block; }
+  #ui { position: absolute; top: 10px; left: 0; right: 0; text-align: center; color: #fff; font-size: 14px; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  #ui span { margin: 0 12px; }
+  #msg { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); color: #fff; font-size: 32px; font-weight: bold; text-align: center; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.2s; }
+  #msg.show { opacity: 1; }
+  #mobile-controls { display: none; position: absolute; bottom: 0; left: 0; right: 0; height: 120px; }
+  .mobile-lane { position: absolute; top: 0; bottom: 0; width: 25%; border: 1px solid rgba(255,255,255,0.05); }
+  .mobile-lane:active { background: rgba(255,255,255,0.1); }
+  @media (max-width: 768px) { canvas { max-width: 100vw; max-height: 70vh; } }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="c" width="400" height="600"></canvas>
+  <div id="ui">
+    <span id="score">Score: 0</span>
+    <span id="combo">Combo: 0</span>
+    <span id="accuracy">Acc: 100%</span>
+  </div>
+  <div id="msg"></div>
+  <div id="mobile-controls">
+    <div class="mobile-lane" data-lane="0" style="left:0%"></div>
+    <div class="mobile-lane" data-lane="1" style="left:25%"></div>
+    <div class="mobile-lane" data-lane="2" style="left:50%"></div>
+    <div class="mobile-lane" data-lane="3" style="left:75%"></div>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Audio context
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playTone(freq, duration, type, vol, when) {
+  if (!audioCtx) return;
+  const t = when || audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol || 0.15, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + duration);
+}
+
+function playKick(when) {
+  if (!audioCtx) return;
+  const t = when || audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.frequency.setValueAtTime(150, t);
+  osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+  gain.gain.setValueAtTime(0.5, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+
+function playSnare(when) {
+  if (!audioCtx) return;
+  const t = when || audioCtx.currentTime;
+  const bufSize = audioCtx.sampleRate * 0.1;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 1000;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.2, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  src.start(t);
+}
+
+function playHiHat(when) {
+  if (!audioCtx) return;
+  const t = when || audioCtx.currentTime;
+  const bufSize = audioCtx.sampleRate * 0.05;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 8000;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.1, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  src.start(t);
+}
+
+// Game state
+let state = 'menu'; // menu, playing, results
+let score = 0, combo = 0, maxCombo = 0;
+let perfects = 0, goods = 0, misses = 0;
+let songTime = 0;
+let selectedSong = 0;
+let selectedDiff = 1;
+
+// Lanes
+const LANES = 4;
+const LANE_W = W / LANES;
+const LANE_KEYS = ['d', 'f', 'j', 'k'];
+const LANE_COLORS = ['#ff006e', '#8338ec', '#3a86ff', '#00f5d4'];
+const HIT_Y = H - 80;
+const SPAWN_Y = -50;
+const NOTE_SPEED = 400; // pixels per second
+
+// Notes
+let notes = [];
+let hitEffects = [];
+let particles = [];
+
+// Songs (beat patterns: [time, lane])
+const SONGS = [
+  {
+    name: 'Neon Pulse',
+    bpm: 120,
+    duration: 30,
+    notes: generatePattern(120, 30, 1)
+  },
+  {
+    name: 'Cyber Rush',
+    bpm: 140,
+    duration: 45,
+    notes: generatePattern(140, 45, 2)
+  },
+  {
+    name: 'Hyper Drive',
+    bpm: 160,
+    duration: 60,
+    notes: generatePattern(160, 60, 3)
+  }
+];
+
+function generatePattern(bpm, duration, diff) {
+  const beats = [];
+  const beatTime = 60 / bpm;
+  const totalBeats = Math.floor(duration / beatTime);
+  
+  for (let i = 0; i < totalBeats; i++) {
+    const t = i * beatTime;
+    
+    // Basic beat: kick on 1, snare on 3
+    if (i % 4 === 0) {
+      const hold = (diff >= 1 && Math.random() < 0.25) ? beatTime * (1.2 + Math.random() * 0.8) : 0;
+      beats.push([t, 0, hold]);
+      if (diff >= 2 && Math.random() < 0.3) beats.push([t, 2, 0]);
+    }
+    if (i % 4 === 2) {
+      const hold = (diff >= 2 && Math.random() < 0.3) ? beatTime * (1.2 + Math.random() * 0.8) : 0;
+      beats.push([t, 1, hold]);
+      if (diff >= 2) beats.push([t, 3, 0]);
+    }
+    
+    // Hi-hats on off-beats
+    if (i % 2 === 1 && diff >= 1) {
+      beats.push([t, 2, 0]);
+    }
+    
+    // Extra fills
+    if (diff >= 2 && i % 8 === 7) {
+      beats.push([t, 0, 0]);
+      beats.push([t + beatTime/2, 1, 0]);
+      beats.push([t + beatTime, 2, 0]);
+      beats.push([t + beatTime*1.5, 3, 0]);
+    }
+    
+    // Random extras for hard
+    if (diff >= 3 && Math.random() < 0.15) {
+      const lane = Math.floor(Math.random() * 4);
+      beats.push([t + beatTime/2, lane, 0]);
+    }
+  }
+  
+  return beats.sort((a, b) => a[0] - b[0]);
+}
+
+// Audio scheduler
+let nextNoteTime = 0;
+let nextBeatIndex = 0;
+
+function scheduleAudio() {
+  if (!audioCtx || state !== 'playing') return;
+  const lookahead = 0.1;
+  const song = SONGS[selectedSong];
+  
+  while (nextNoteTime < audioCtx.currentTime + lookahead) {
+    const beatTime = 60 / song.bpm;
+    
+    // Drum track
+    if (nextBeatIndex % 4 === 0) playKick(nextNoteTime);
+    if (nextBeatIndex % 4 === 2) playSnare(nextNoteTime);
+    if (nextBeatIndex % 2 === 1) playHiHat(nextNoteTime);
+    
+    // Bass line
+    const bassNotes = [65, 65, 73, 65, 82, 82, 73, 87];
+    const note = bassNotes[nextBeatIndex % bassNotes.length];
+    playTone(note, 0.15, 'triangle', 0.08, nextNoteTime);
+    
+    nextNoteTime += beatTime;
+    nextBeatIndex++;
+    
+    if (nextBeatIndex * beatTime >= song.duration) {
+      setTimeout(() => endSong(), song.duration * 1000 - songTime * 1000);
+      break;
+    }
+  }
+}
+
+function startSong() {
+  initAudio();
+  const song = SONGS[selectedSong];
+  notes = song.notes.map(([t, l, h]) => ({ time: t, lane: l, hold: h || 0, hit: false, missed: false, holding: false, released: false }));
+  score = 0; combo = 0; maxCombo = 0;
+  perfects = 0; goods = 0; misses = 0;
+  songTime = 0;
+  nextNoteTime = audioCtx.currentTime + 0.5;
+  nextBeatIndex = 0;
+  hitEffects = [];
+  particles = [];
+  state = 'playing';
+  document.getElementById('ui').style.display = 'block';
+}
+
+function endSong() {
+  state = 'results';
+  document.getElementById('ui').style.display = 'none';
+}
+
+function showMsg(text) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = text ? 'show' : '';
+}
+
+// Input
+const keysDown = {};
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (!keysDown[k]) {
+    keysDown[k] = true;
+    const lane = LANE_KEYS.indexOf(k);
+    if (lane >= 0) hitLane(lane);
+  }
+  if (e.code === 'Space' && (state === 'menu' || state === 'results')) {
+    startSong();
+  }
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  keysDown[k] = false;
+  const lane = LANE_KEYS.indexOf(k);
+  if (lane >= 0) releaseLane(lane);
+});
+
+function releaseLane(lane) {
+  if (state !== 'playing') return;
+  for (const n of notes) {
+    if (n.lane !== lane || !n.holding || n.released) continue;
+    n.released = true;
+    const tailY = SPAWN_Y + (songTime - (n.time + n.hold)) * NOTE_SPEED;
+    const dist = Math.abs(tailY - HIT_Y);
+    if (dist < 50) {
+      n.hit = true;
+      score += 50 * Math.min(4, 1 + Math.floor(combo / 10) * 0.5);
+      spawnHitEffect(lane, 'PERFECT', '#ff0');
+      playTone(800, 0.1, 'sine', 0.1);
+    } else {
+      n.missed = true;
+      combo = 0;
+      misses++;
+      spawnHitEffect(lane, 'MISS', '#f00');
+    }
+  }
+}
+
+// Mobile touch
+const isMobile = 'ontouchstart' in window;
+if (isMobile) {
+  document.getElementById('mobile-controls').style.display = 'block';
+}
+document.querySelectorAll('.mobile-lane').forEach(el => {
+  const lane = parseInt(el.dataset.lane);
+  el.addEventListener('touchstart', e => { e.preventDefault(); hitLane(lane); });
+  el.addEventListener('touchend', e => { e.preventDefault(); releaseLane(lane); });
+});
+
+function hitLane(lane) {
+  if (state !== 'playing') return;
+  
+  // Ignore if already holding in this lane
+  for (const n of notes) {
+    if (n.lane === lane && n.holding && !n.released) return;
+  }
+  
+  let best = null, bestDist = Infinity;
+  for (const n of notes) {
+    if (n.hit || n.missed || n.lane !== lane) continue;
+    const noteY = SPAWN_Y + (songTime - n.time) * NOTE_SPEED;
+    const dist = Math.abs(noteY - HIT_Y);
+    if (dist < bestDist && dist < 80) {
+      bestDist = dist;
+      best = n;
+    }
+  }
+  
+  if (best) {
+    if (bestDist < 20) {
+      if (best.hold > 0) {
+        best.holding = true;
+        combo++;
+        perfects++;
+        score += 50;
+        spawnHitEffect(lane, 'HOLD', '#ff0');
+      } else {
+        best.hit = true;
+        combo++;
+        perfects++;
+        score += 100 * Math.min(4, 1 + Math.floor(combo / 10) * 0.5);
+        spawnHitEffect(lane, 'PERFECT', '#ff0');
+        playTone(800, 0.1, 'sine', 0.1);
+      }
+    } else if (bestDist < 50) {
+      if (best.hold > 0) {
+        best.holding = true;
+        combo++;
+        goods++;
+        score += 25;
+        spawnHitEffect(lane, 'HOLD', '#0f0');
+      } else {
+        best.hit = true;
+        combo++;
+        goods++;
+        score += 50 * Math.min(4, 1 + Math.floor(combo / 10) * 0.5);
+        spawnHitEffect(lane, 'GOOD', '#0f0');
+        playTone(600, 0.1, 'sine', 0.08);
+      }
+    }
+    if (combo > maxCombo) maxCombo = combo;
+  } else {
+    combo = 0;
+    spawnHitEffect(lane, 'MISS', '#f00');
+  }
+}
+
+function spawnHitEffect(lane, text, color) {
+  hitEffects.push({
+    x: lane * LANE_W + LANE_W/2,
+    y: HIT_Y - 30,
+    text, color,
+    life: 30,
+    vy: -2
+  });
+  
+  // Particles
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: lane * LANE_W + LANE_W/2,
+      y: HIT_Y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 1) * 6,
+      life: 20 + Math.random() * 15,
+      color,
+      size: 3 + Math.random() * 3
+    });
+  }
+}
+
+function update(dt) {
+  if (state === 'playing') {
+    songTime += dt;
+    scheduleAudio();
+    
+    // Check misses
+    for (const n of notes) {
+      if (n.hit || n.missed) continue;
+      const noteY = SPAWN_Y + (songTime - n.time) * NOTE_SPEED;
+      if (noteY > HIT_Y + 60 && !n.holding) {
+        n.missed = true;
+        combo = 0;
+        misses++;
+        spawnHitEffect(n.lane, 'MISS', '#f00');
+      }
+    }
+    
+    // Auto-complete held notes
+    for (const n of notes) {
+      if (!n.holding || n.hit || n.missed || n.released) continue;
+      const tailY = SPAWN_Y + (songTime - (n.time + n.hold)) * NOTE_SPEED;
+      if (tailY > HIT_Y + 20) {
+        n.hit = true;
+        score += 50 * Math.min(4, 1 + Math.floor(combo / 10) * 0.5);
+        spawnHitEffect(n.lane, 'PERFECT', '#ff0');
+      }
+    }
+    
+    // Update effects
+    hitEffects = hitEffects.filter(e => {
+      e.y += e.vy;
+      e.life--;
+      return e.life > 0;
+    });
+    
+    particles = particles.filter(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.2;
+      p.life--;
+      return p.life > 0;
+    });
+    
+    // Update UI
+    const total = perfects + goods + misses;
+    const acc = total > 0 ? Math.round((perfects + goods * 0.5) / total * 100) : 100;
+    document.getElementById('score').textContent = 'Score: ' + Math.floor(score);
+    document.getElementById('combo').textContent = 'Combo: ' + combo;
+    document.getElementById('accuracy').textContent = 'Acc: ' + acc + '%';
+  }
+}
+
+function draw() {
+  // Background
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Lane lines
+  for (let i = 0; i <= LANES; i++) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(i * LANE_W, 0);
+    ctx.lineTo(i * LANE_W, H);
+    ctx.stroke();
+  }
+  
+  // Hit line
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, HIT_Y);
+  ctx.lineTo(W, HIT_Y);
+  ctx.stroke();
+  
+  // Active hold indicators
+  if (state === 'playing') {
+    for (const n of notes) {
+      if (!n.holding || n.hit || n.missed) continue;
+      ctx.fillStyle = LANE_COLORS[n.lane] + '66';
+      ctx.fillRect(n.lane * LANE_W + 4, HIT_Y - 6, LANE_W - 8, 12);
+    }
+  }
+  
+  // Lane glow on key press
+  if (state === 'playing') {
+    for (let i = 0; i < LANES; i++) {
+      if (keysDown[LANE_KEYS[i]]) {
+        ctx.fillStyle = LANE_COLORS[i] + '22';
+        ctx.fillRect(i * LANE_W, 0, LANE_W, H);
+      }
+    }
+  }
+  
+  // Notes
+  if (state === 'playing') {
+    for (const n of notes) {
+      if (n.hit || n.missed) continue;
+      const y = SPAWN_Y + (songTime - n.time) * NOTE_SPEED;
+      const tailY = n.hold > 0 ? SPAWN_Y + (songTime - (n.time + n.hold)) * NOTE_SPEED : y;
+      const headY = n.holding && n.hold > 0 ? Math.max(y, HIT_Y) : y;
+      const visibleTop = n.hold > 0 ? Math.min(headY, H + 50) : y;
+      const visibleBottom = n.hold > 0 ? Math.max(tailY, -50) : y;
+      if (visibleBottom < -50 || visibleTop > H + 50) continue;
+      
+      const x = n.lane * LANE_W;
+      const w = LANE_W - 4;
+      
+      if (n.hold > 0) {
+        // Hold tail
+        const holdH = Math.max(0, headY - tailY);
+        ctx.fillStyle = LANE_COLORS[n.lane] + '66';
+        ctx.fillRect(x + 8, tailY, w - 16, holdH);
+        
+        // Hold head
+        ctx.fillStyle = LANE_COLORS[n.lane];
+        ctx.shadowColor = LANE_COLORS[n.lane];
+        ctx.shadowBlur = 10;
+        ctx.fillRect(x + 2, headY - 12, w, 24);
+        ctx.shadowBlur = 0;
+        
+        // Inner
+        ctx.fillStyle = n.holding ? '#fff' : '#aaa';
+        ctx.fillRect(x + 6, headY - 8, w - 12, 16);
+        
+        // Tail cap
+        ctx.fillStyle = LANE_COLORS[n.lane];
+        ctx.fillRect(x + 4, tailY - 6, w - 8, 12);
+      } else {
+        // Tap note
+        ctx.fillStyle = LANE_COLORS[n.lane];
+        ctx.shadowColor = LANE_COLORS[n.lane];
+        ctx.shadowBlur = 10;
+        ctx.fillRect(x + 2, y - 12, w, 24);
+        ctx.shadowBlur = 0;
+        
+        // Inner
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 6, y - 8, w - 12, 16);
+      }
+    }
+  }
+  
+  // Hit effects
+  if (state === 'playing') {
+    for (const e of hitEffects) {
+      ctx.fillStyle = e.color;
+      ctx.font = 'bold 16px system-ui';
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = e.life / 30;
+      ctx.fillText(e.text, e.x, e.y);
+      ctx.globalAlpha = 1;
+    }
+  }
+  
+  // Particles
+  if (state === 'playing') {
+    for (const p of particles) {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life / 35;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  
+  // Key labels
+  if (state === 'playing') {
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < LANES; i++) {
+      ctx.fillText(LANE_KEYS[i].toUpperCase(), i * LANE_W + LANE_W/2, H - 20);
+    }
+  }
+  
+  // Menu
+  if (state === 'menu') {
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 36px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('BEAT DROP', W/2, 120);
+    
+    ctx.font = '16px system-ui';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Hit the notes when they cross the line!', W/2, 160);
+    
+    // Song select
+    for (let i = 0; i < SONGS.length; i++) {
+      const y = 220 + i * 50;
+      const sel = i === selectedSong;
+      ctx.fillStyle = sel ? '#4af' : '#333';
+      ctx.fillRect(W/2 - 120, y - 20, 240, 40);
+      ctx.fillStyle = sel ? '#fff' : '#aaa';
+      ctx.font = '16px system-ui';
+      ctx.fillText(SONGS[i].name + ' (' + SONGS[i].bpm + ' BPM)', W/2, y + 5);
+    }
+    
+    ctx.fillStyle = '#4af';
+    ctx.font = 'bold 18px system-ui';
+    ctx.fillText('SPACE or Click to start', W/2, 420);
+    ctx.fillStyle = '#666';
+    ctx.font = '12px system-ui';
+    ctx.fillText('Keys: D F J K', W/2, 450);
+  }
+  
+  // Results
+  if (state === 'results') {
+    ctx.fillStyle = 'rgba(0,0,0,0.95)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Complete!', W/2, 180);
+    
+    ctx.font = '18px system-ui';
+    ctx.fillStyle = '#aaa';
+    const total = perfects + goods + misses;
+    const acc = total > 0 ? Math.round((perfects + goods * 0.5) / total * 100) : 100;
+    ctx.fillText('Score: ' + Math.floor(score), W/2, 230);
+    ctx.fillText('Max Combo: ' + maxCombo, W/2, 260);
+    ctx.fillText('Accuracy: ' + acc + '%', W/2, 290);
+    ctx.fillText('Perfect: ' + perfects + ' | Good: ' + goods + ' | Miss: ' + misses, W/2, 320);
+    
+    // Rank
+    let rank = 'F';
+    if (acc >= 95) rank = 'S';
+    else if (acc >= 90) rank = 'A';
+    else if (acc >= 80) rank = 'B';
+    else if (acc >= 70) rank = 'C';
+    else if (acc >= 60) rank = 'D';
+    
+    ctx.fillStyle = acc >= 90 ? '#ff0' : acc >= 70 ? '#0f0' : '#f44';
+    ctx.font = 'bold 48px system-ui';
+    ctx.fillText('Rank ' + rank, W/2, 380);
+    
+    ctx.fillStyle = '#4af';
+    ctx.font = '16px system-ui';
+    ctx.fillText('SPACE or Click to play again', W/2, 440);
+  }
+}
+
+// Menu navigation
+window.addEventListener('keydown', e => {
+  if (state === 'menu') {
+    if (e.key === 'ArrowUp') {
+      selectedSong = (selectedSong - 1 + SONGS.length) % SONGS.length;
+      e.preventDefault();
+    }
+    if (e.key === 'ArrowDown') {
+      selectedSong = (selectedSong + 1) % SONGS.length;
+      e.preventDefault();
+    }
+  }
+});
+
+canvas.addEventListener('click', e => {
+  if (state === 'menu') {
+    const rect = canvas.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    for (let i = 0; i < SONGS.length; i++) {
+      const sy = 220 + i * 50;
+      if (y >= sy - 20 && y <= sy + 20) {
+        selectedSong = i;
+        startSong();
+        return;
+      }
+    }
+    startSong();
+  } else if (state === 'results') {
+    startSong();
+  }
+});
+
+// Main loop
+let lastTime = 0;
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  
+  update(dt);
+  draw();
+  
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -594,22 +594,25 @@ function startCampaignLevel(level) {
   
   // Init player tank
   const p = tankTypes[menuSelection];
+  const playerHp = Math.round(p.hp * (1 + (level / 200)));
+  const playerFuel = Math.round(p.fuel * (1 - (level / 300)));
   Object.assign(tanks[0], {
     x: 80 + Math.random() * 80,
     angle: 45,
-    hp: config.playerHp,
-    maxHp: config.playerHp,
+    hp: p.name === 'Invincible' ? 1 : playerHp,
+    maxHp: playerHp,
     weapon: 0,
-    fuel: config.playerFuel,
-    maxFuel: config.playerFuel,
-    type: p, ammo: p.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 50)))),
+    fuel: Math.max(30, playerFuel),
+    maxFuel: Math.max(30, playerFuel),
+    type: p,
+    ammo: p.weapons.map(w => w.ammo === -1 ? -1 : Math.max(1, Math.floor(w.ammo * (1 + level / 50)))),
     bonusWeapon: null,
     bonusAmmo: 0,
     shockTimer: 0,
     inWater: false,
-    shield: false,
-    infiniteShield: false,
-    type: p,
+    shield: p.infiniteShield ? true : false,
+    infiniteShield: p.infiniteShield || false,
+    vampireShield: p.vampireShield || false,
     color: p.color,
     name: 'PLAYER',
     boosted: false,
