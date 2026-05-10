@@ -2832,6 +2832,16 @@ function drawAimUI() {
   }
   }
 
+  // Shot count label
+  const totalShots = tripleOffsets.length * shotCount;
+  if (totalShots > 1) {
+    ctx.fillStyle = sniperMode ? '#4f4' : '#f4a';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    const label = sniperMode ? 'SNIPER ×' + totalShots : '×' + totalShots;
+    ctx.fillText(label, lastSx, lastSy - 18);
+  }
+
   // Power bar at top
   ctx.fillStyle = '#222'; ctx.fillRect(W / 2 - 100, 10, 200, 16);
   ctx.strokeStyle = '#555'; ctx.strokeRect(W / 2 - 100, 10, 200, 16);
