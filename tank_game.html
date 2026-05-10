@@ -1687,7 +1687,7 @@ function botShoot() {
         const rad = angle * Math.PI / 180;
         let sx = bot.x, sy = terrainAt(bot.x) - 20;
         let vx = Math.cos(rad) * power * (yeetMode ? 10 : 1), vy = -Math.sin(rad) * power * (yeetMode ? 10 : 1);
-        for (let step = 0; step < 300; step++) {
+        for (let step = 0; step < (yeetMode ? 3000 : 300); step++) {
           if (windEnabled) vx += windStrength;
           sx += vx; vy += grav; sy += vy;
           if (sx <= 0 && vx < 0) { sx = 1; vx = -vx * 0.8; }
@@ -1711,7 +1711,7 @@ function botShoot() {
     const rad = bestAngle * Math.PI / 180;
     let tx = bot.x, ty = terrainAt(bot.x) - 20;
     let tvx = Math.cos(rad) * bestPower * (yeetMode ? 10 : 1), tvy = -Math.sin(rad) * bestPower * (yeetMode ? 10 : 1);
-    for (let step = 0; step < 300; step++) {
+    for (let step = 0; step < (yeetMode ? 3000 : 300); step++) {
       tx += tvx; tvy += grav; ty += tvy;
       if (tx <= 0 && tvx < 0) { tx = 1; tvx = -tvx * 0.8; }
       if (tx >= W && tvx > 0) { tx = W - 1; tvx = -tvx * 0.8; }
@@ -2816,7 +2816,7 @@ function drawAimUI() {
       vx *= slowFactor;
       vy *= slowFactor;
     }
-    for (let step = 0; step < (isBoomerangTraj ? 400 : 300); step++) {
+    for (let step = 0; step < (isBoomerangTraj ? 400 : (yeetMode ? 3000 : 300)); step++) {
       if (isBoomerangTraj) {
         boomFrame++;
         const dx = tank.x - sx, dy = (tankY - 20) - sy;
