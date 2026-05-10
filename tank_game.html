@@ -1674,7 +1674,7 @@ function botShoot() {
   if (botAim_frame === 1) {
     const bot = tanks[1];
     const target = tanks[0];
-    const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
+    const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity);
     const available = [];
     for (let i = 0; i < bot.type.weapons.length; i++) {
       if (bot.ammo[i] !== 0) available.push(i);
@@ -1772,7 +1772,7 @@ function impactDamage(px, py, w, p) {
 // ========== UPDATE ==========
 function update() {
   if (state !== 'game') return;
-  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
+  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity);
   const tank = tanks[turn];
 
   if ((!projectiles.length || testBotMode) && !gameOver) {
@@ -2760,7 +2760,7 @@ function drawTank(t, tx, ty, scale) {
 function drawAimUI() {
   if (turn !== 0 || projectiles.length || gameOver || !dragging) return;
   const tank = tanks[0];
-  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
+  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity);
   const rad = tank.angle * Math.PI / 180;
   const power = dragPower;
   const tankY = terrainAt(tank.x);
