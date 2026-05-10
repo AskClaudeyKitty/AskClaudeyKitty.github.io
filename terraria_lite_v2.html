@@ -376,6 +376,13 @@ const TARGET_FPS = 60;
 const FIXED_DT = 1 / TARGET_FPS;
 let lastTime = 0;
 let accumulator = 0;
+let autoSaveTimer = 0;
+let lastSaveTime = 0;
+let showSaveIndicator = 0;
+
+let weather = 'clear'; // clear, rain, snow, sandstorm
+let weatherTimer = 0;
+let weatherIntensity = 0;
 
 const chests = new Map();
 let regenTimer = 0;
@@ -1151,6 +1158,57 @@ function updateRegen() {
   }
 }
 
+function updateWeather() {
+  weatherTimer++;
+  // Change weather every 5-10 minutes (18000-36000 ticks)
+  if (weatherTimer > 18000 + Math.random() * 18000) {
+    weatherTimer = 0;
+    const biome = getBiome(Math.floor(player.x / TILE));
+    const r = Math.random();
+    if (biome === 'snow') {
+      weather = r < 0.4 ? 'snow' : 'clear';
+    } else if (biome === 'desert') {
+      weather = r < 0.3 ? 'sandstorm' : 'clear';
+    } else if (biome === 'corruption') {
+      weather = r < 0.5 ? 'rain' : 'clear';
+    } else {
+      weather = r < 0.35 ? 'rain' : 'clear';
+    }
+  }
+  // Fade in/out
+  if (weather !== 'clear' && weatherIntensity < 1) weatherIntensity += 0.01;
+  if (weather === 'clear' && weatherIntensity > 0) weatherIntensity -= 0.01;
+  weatherIntensity = Math.max(0, Math.min(1, weatherIntensity));
+}
+
+function drawWeather() {
+  if (weatherIntensity <= 0) return;
+  const alpha = weatherIntensity;
+  const t = Date.now();
+  if (weather === 'rain') {
+    ctx.fillStyle = `rgba(100,150,200,${0.3 * alpha})`;
+    for (let i = 0; i < 100; i++) {
+      const rx = ((i * 137 + t * 0.5) % W);
+      const ry = ((i * 89 + t) % H);
+      ctx.fillRect(rx, ry, 1, 5);
+    }
+  } else if (weather === 'snow') {
+    ctx.fillStyle = `rgba(255,255,255,${0.6 * alpha})`;
+    for (let i = 0; i < 60; i++) {
+      const sx = ((i * 137 + t * 0.2) % W);
+      const sy = ((i * 89 + t * 0.3) % H);
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+  } else if (weather === 'sandstorm') {
+    ctx.fillStyle = `rgba(200,180,100,${0.4 * alpha})`;
+    for (let i = 0; i < 80; i++) {
+      const sx = ((i * 137 + t * 0.8) % W);
+      const sy = ((i * 89 + t * 0.4) % H);
+      ctx.fillRect(sx, sy, 3, 1);
+    }
+  }
+}
+
 function shootArrow() {
   const slot = player.hotbar[player.selected];
   if (!slot || slot.id !== 37) return;
@@ -1698,6 +1756,8 @@ function draw() {
     }
   }
 
+  drawWeather();
+
   ctx.save();
   ctx.translate(-Math.floor(camX), -Math.floor(camY));
   
@@ -1818,7 +1878,15 @@ function draw() {
     ctx.fillStyle = 'rgba(0,0,20,0.4)';
     ctx.fillRect(0, 0, W, H);
   }
-  
+
+  // Save indicator
+  if (showSaveIndicator > 0) {
+    ctx.fillStyle = `rgba(74,138,42,${showSaveIndicator / 120})`;
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('SAVED', W - 8, H - 8);
+  }
+
   const hpFill = document.getElementById('hp-fill');
   if (hpFill) hpFill.style.width = (player.hp / player.maxHp * 100) + '%';
   const timeEl = document.getElementById('time');
@@ -1932,6 +2000,7 @@ function gameLoop(now) {
     updateLight();
     updateSpawning();
     updateRegen();
+    updateWeather();
     if (mouseDown && !keys['Shift']) {
       const t = getMouseTile();
       mineBlock(t.x, t.y);
@@ -1939,6 +2008,14 @@ function gameLoop(now) {
     if (player.swing > 0) player.swing--;
     accumulator -= FIXED_DT;
   }
+  // Auto-save every 30 seconds
+  autoSaveTimer += dt;
+  if (autoSaveTimer >= 30) {
+    autoSaveTimer = 0;
+    saveWorldData();
+    showSaveIndicator = 120; // 2 seconds at 60fps
+  }
+  if (showSaveIndicator > 0) showSaveIndicator--;
   draw();
   requestAnimationFrame(gameLoop);
 }
@@ -2301,13 +2378,14 @@ let mpLastBlockCheck = new Date(0).toISOString();
 function startMpBlockSync() {
   if (!mpRoomCode) return;
   mpBlockInterval = setInterval(() => {
+    const checkTime = new Date().toISOString();
     supaFetch('mp_blocks', { query: `?room_code=eq.${mpRoomCode}&updated_at=gt.${encodeURIComponent(mpLastBlockCheck)}&select=x,y,block_id,updated_at` })
       .then(data => {
         if (!Array.isArray(data)) return;
         for (const b of data) {
           world[b.y * WORLD_W + b.x] = b.block_id;
-          if (b.updated_at > mpLastBlockCheck) mpLastBlockCheck = b.updated_at;
         }
+        mpLastBlockCheck = checkTime;
       }).catch(() => {});
   }, 300);
 }
