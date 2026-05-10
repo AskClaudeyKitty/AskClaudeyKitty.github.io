@@ -918,7 +918,7 @@ function checkAmmoRefill(tank) {
 // ========== TANK INIT ==========
 function initTanks() {
   const p = tankTypes[menuSelection];
-  const botPool = tankTypes.filter(t => !t.locked);
+  const botPool = tankTypes.filter(t => !t.locked && !t.unlockCode);
   const b = botPool[Math.floor(Math.random() * botPool.length)];
   const playerHp2 = testBotMode ? 999999 : p.hp;
   const playerFuel2 = testBotMode ? 999999 : p.fuel;
@@ -1439,7 +1439,7 @@ function resetGame() {
   startMusic();
   currentMap = Math.floor(Math.random() * maps.length);
   const p = tanks[0].type;
-  const botPool = tankTypes.filter(t => !t.locked);
+  const botPool = tankTypes.filter(t => !t.locked && !t.unlockCode);
   const b = botPool[Math.floor(Math.random() * botPool.length)];
   const playerHp2 = testBotMode ? 999999 : p.hp;
   const playerFuel2 = testBotMode ? 999999 : p.fuel;
@@ -2200,8 +2200,8 @@ function update() {
         continue;
       }
 
-      // Cluster: spawn fragments on impact (recursive for Cluster tank)
-      const maxClusterGen = 3;
+      // Cluster: spawn fragments on impact (recursive — infinite for Cluster tank)
+      const maxClusterGen = p.weaponData && p.weaponData.name && p.weaponData.name.includes('Cluster') ? 999 : 3;
       if (w.behavior === 'cluster' && (!p.isFragment || (p.clusterGen || 0) < maxClusterGen)) {
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
