@@ -517,6 +517,11 @@ let clusterLuckEnabled = false; // All weapons have cluster effect
 let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
 let lowGravityEnabled = false; // All maps use Moon gravity
 let noTerrainEnabled = false; // Flat ground, no terrain variation
+let yeetMode = false; // 10x velocity, 0.1x gravity
+
+// Turn timer
+let turnTimer = null;
+let turnTimerStart = 0;
 
 // Test Panel (unlocked with code 146)
 let testPanelOpen = false;
@@ -1065,11 +1070,11 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= r2X2 + r2W2 + r2Gap2 && m.x <= r2X2 + r2W2 * 2 + r2Gap2) { testBotMode = !testBotMode; }
       if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
     }
-    // Row 3: Locked Mechanics (code 146) - 7 buttons
+    // Row 3: Locked Mechanics (code 146) - 8 buttons
     if (m.y >= 460 && m.y <= 485) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 42, r3Gap2 = 3, r3Total2 = r3W2 * 7 + r3Gap2 * 6;
+        const r3W2 = 36, r3Gap2 = 3, r3Total2 = r3W2 * 8 + r3Gap2 * 7;
         const r3X2 = W / 2 - r3Total2 / 2;
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
         if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
@@ -1078,6 +1083,7 @@ canvas.addEventListener('mousedown', e => {
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 4 && m.x <= r3X2 + (r3W2 + r3Gap2) * 4 + r3W2) noTerrainEnabled = !noTerrainEnabled;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 5 && m.x <= r3X2 + (r3W2 + r3Gap2) * 5 + r3W2) tenxMode = !tenxMode;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 6 && m.x <= r3X2 + (r3W2 + r3Gap2) * 6 + r3W2) sniperMode = !sniperMode;
+        if (m.x >= r3X2 + (r3W2 + r3Gap2) * 7 && m.x <= r3X2 + (r3W2 + r3Gap2) * 7 + r3W2) yeetMode = !yeetMode;
       }
     }
     return;
@@ -1510,6 +1516,7 @@ function fireWeapon(tank, holdTime, directPower) {
       const angleOff = sniperMode ? 0 : (i - (w.count - 1) / 2) * w.spread + tOff;
       const rad = (tank.angle + angleOff) * Math.PI / 180;
       const speedMult = w.behavior === 'boomerang' ? 2.5 : 1;
+      const yeetMult = yeetMode ? 10 : 1;
       // Cluster Luck: add cluster behavior to all weapons
       let weaponData = w;
       if (clusterLuckEnabled && w.behavior !== 'cluster') {
@@ -1517,8 +1524,8 @@ function fireWeapon(tank, holdTime, directPower) {
       }
       projectiles.push({
         x: tank.x, y: terrainAt(tank.x) - 20,
-        vx: Math.cos(rad) * power * speedMult,
-        vy: -Math.sin(rad) * power * speedMult,
+        vx: Math.cos(rad) * power * speedMult * yeetMult,
+        vy: -Math.sin(rad) * power * speedMult * yeetMult,
         owner: turn,
         weaponData: weaponData,
         dmgBonus,
@@ -1667,7 +1674,7 @@ function botShoot() {
   if (botAim_frame === 1) {
     const bot = tanks[1];
     const target = tanks[0];
-    const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
+    const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
     const available = [];
     for (let i = 0; i < bot.type.weapons.length; i++) {
       if (bot.ammo[i] !== 0) available.push(i);
@@ -1765,7 +1772,7 @@ function impactDamage(px, py, w, p) {
 // ========== UPDATE ==========
 function update() {
   if (state !== 'game') return;
-  const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
+  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
   const tank = tanks[turn];
 
   if ((!projectiles.length || testBotMode) && !gameOver) {
@@ -1887,7 +1894,7 @@ function update() {
     const isBoomerang = w.behavior === 'boomerang';
     if (windEnabled) p.vx += windStrength;
     p.x += p.vx;
-    if (!isHoming && !isBoomerang) p.vy += grav;
+    if (!isHoming && !isBoomerang) p.vy += grav * (yeetMode ? 0.1 : 1);
     p.y += p.vy;
 
     // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
@@ -2554,11 +2561,26 @@ function update() {
     }
   }
 
-  // Turn switch
+  // Turn timer: 20 seconds per turn
+  if (state === 'game' && !gameOver && (!projectiles.length || testBotMode)) {
+    if (!turnTimer) { turnTimer = Date.now(); turnTimerStart = Date.now(); }
+    const elapsed = (Date.now() - turnTimerStart) / 1000;
+    if (elapsed >= 20) {
+      // Auto-fire for player, skip bot
+      if (turn === 0) {
+        const hasAmmo = (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) ? (tanks[0].bonusAmmo > 0) : tanks[0].ammo[tanks[0].weapon] > 0;
+        if (hasAmmo) fireWeapon(tanks[0], null, 12);
+      }
+      turnTimer = null;
+    }
+  } else {
+    turnTimer = null;
+  }
   if (lastProjCount > 0 && projectiles.length === 0 && !gameOver) {
     checkWin();
     if (!gameOver) {
       turn = 1 - turn;
+      turnTimer = null;
       if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4;
       tanks[turn].fuel = Math.min(tanks[turn].fuel + 20, tanks[turn].maxFuel);
       botDelay = 0;
@@ -2571,7 +2593,24 @@ function update() {
   }
   lastProjCount = projectiles.length;
 
-  // Lava damage (volcano)
+  // Turn timer bar
+  if (state === 'game' && !gameOver && turnTimer && (!projectiles.length || testBotMode) && turn === 0) {
+    const elapsed = (Date.now() - turnTimerStart) / 1000;
+    const pct = Math.min(1, elapsed / 20);
+    const barW = 200, barH = 6;
+    const barX = W / 2 - barW / 2, barY = 10;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = pct > 0.75 ? '#f44' : pct > 0.5 ? '#fa4' : '#4f4';
+    ctx.fillRect(barX, barY, barW * (1 - pct), barH);
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.ceil(20 - elapsed) + 's', W / 2, barY + barH + 12);
+  }
   if (maps[currentMap].lava) {
     for (const t of tanks) {
       if (terrainAt(t.x) > H * 0.78) {
@@ -2721,7 +2760,7 @@ function drawTank(t, tx, ty, scale) {
 function drawAimUI() {
   if (turn !== 0 || projectiles.length || gameOver || !dragging) return;
   const tank = tanks[0];
-  const grav = lowGravityEnabled ? 0.15 : maps[currentMap].gravity;
+  const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity) * (yeetMode ? 0.1 : 1);
   const rad = tank.angle * Math.PI / 180;
   const power = dragPower;
   const tankY = terrainAt(tank.x);
@@ -3081,9 +3120,9 @@ function drawMenu() {
   ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
   ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 447);
 
-  // Row 3: Locked Mechanics (code 146) - 7 buttons
+  // Row 3: Locked Mechanics (code 146) - 8 buttons
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 42, r3Gap = 3, r3Total = r3W * 7 + r3Gap * 6;
+  const r3W = 36, r3Gap = 3, r3Total = r3W * 8 + r3Gap * 7;
   const r3X = W / 2 - r3Total / 2;
 
   // Row 3 background panel
@@ -3155,6 +3194,15 @@ function drawMenu() {
   ctx.fillStyle = is146Unlocked ? (sniperMode ? '#4f4' : '#888') : '#444';
   ctx.font = '8px monospace';
   ctx.fillText(is146Unlocked ? 'SNIPER' : 'LOCKED', r3X + (r3W + r3Gap) * 6 + r3W / 2, 477);
+
+  // Yeet toggle
+  ctx.fillStyle = is146Unlocked ? (yeetMode ? '#f84' : '#333') : '#222';
+  ctx.fillRect(r3X + (r3W + r3Gap) * 7, 460, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (yeetMode ? '#fa4' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 7, 460, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (yeetMode ? '#fa4' : '#888') : '#444';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? 'YEET' : 'LOCKED', r3X + (r3W + r3Gap) * 7 + r3W / 2, 477);
 
   // Wins + version
   ctx.fillStyle = '#555';
