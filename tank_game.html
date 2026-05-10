@@ -1494,7 +1494,7 @@ function fireWeapon(tank, holdTime, directPower) {
     }
     spawnFloatingText(tank.x, terrainAt(tank.x) - 65, w.name + '!', w.color);
   }
-  const tripleOffsets = tripleMode ? [-4, 0, 4] : (tenxMode ? Array.from({length:10},(_,i)=>(i-4.5)*2) : [0]);
+  const tripleOffsets = tripleMode && tenxMode ? (()=>{const o=[];for(let t=-4;t<=4;t+=4)for(let x=0;x<10;x++)o.push(t+(x-4.5)*2);return o;})() : tripleMode ? [-4,0,4] : tenxMode ? Array.from({length:10},(_,i)=>(i-4.5)*2) : [0];
   for (const tOff of tripleOffsets) {
     for (let i = 0; i < w.count; i++) {
       const angleOff = (i - (w.count - 1) / 2) * w.spread + tOff;
@@ -2736,7 +2736,7 @@ function drawAimUI() {
   const canBounce = true; // all weapons bounce
   const shotCount = wCheck ? (wCheck.count || 1) : 1;
   const shotSpread = wCheck ? (wCheck.spread || 0) : 0;
-  const tripleOffsets = tripleMode ? [-4, 0, 4] : [0];
+  const tripleOffsets = tripleMode && tenxMode ? (()=>{const o=[];for(let t=-4;t<=4;t+=4)for(let x=0;x<10;x++)o.push(t+(x-4.5)*2);return o;})() : tripleMode ? [-4,0,4] : tenxMode ? Array.from({length:10},(_,i)=>(i-4.5)*2) : [0];
   let lastSx = 0, lastSy = 0;
 
   for (const tOff of tripleOffsets) {
