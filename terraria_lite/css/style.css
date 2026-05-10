@@ -1,0 +1,33 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: monospace; overflow: hidden; }
+#game-container { position: relative; }
+canvas { border: 2px solid #444; cursor: crosshair; image-rendering: pixelated; }
+
+/* Top Left UI */
+#ui { position: absolute; top: 5px; left: 5px; color: #fff; font-size: 12px; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+#hp-bar { width: 200px; height: 20px; background: #333; border: 2px solid #555; margin-bottom: 4px; position: relative; }
+#hp-fill { height: 100%; width: 100%; background: linear-gradient(180deg, #f44, #a00); transition: width 0.2s; }
+#stats { font-size: 11px; color: #ccc; }
+
+/* Top Center Hotbar */
+#hotbar { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; pointer-events: none; }
+.slot { width: 44px; height: 44px; background: rgba(0,0,0,0.6); border: 2px solid #888; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; position: relative; }
+.slot.active { border-color: #ff4; background: rgba(255,255,0,0.2); }
+.slot .count { position: absolute; bottom: 1px; right: 3px; font-size: 10px; color: #ccc; }
+
+/* Inventory Panel (Terraria style) */
+#inventory-panel { position: absolute; top: 5px; right: 5px; width: 280px; background: rgba(20,20,30,0.92); border: 2px solid #666; display: none; flex-direction: column; }
+#inv-header { background: #333; padding: 6px 10px; font-size: 14px; color: #ff4; border-bottom: 1px solid #555; display: flex; justify-content: space-between; align-items: center; }
+#inv-close { cursor: pointer; color: #f44; font-weight: bold; }
+#inv-close:hover { color: #f88; }
+#inv-content { display: flex; padding: 8px; gap: 8px; }
+#inv-grid { display: grid; grid-template-columns: repeat(5, 44px); gap: 4px; }
+.inv-slot { width: 44px; height: 44px; background: rgba(0,0,0,0.5); border: 2px solid #666; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; position: relative; cursor: pointer; }
+.inv-slot:hover { border-color: #aaa; }
+.inv-slot .count { position: absolute; bottom: 1px; right: 3px; font-size: 10px; color: #ccc; }
+#inv-crafting { flex: 1; }
+#inv-crafting h4 { color: #ff4; font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid #555; padding-bottom: 2px; }
+.recipe { padding: 3px 0; cursor: pointer; font-size: 11px; color: #ccc; }
+.recipe:hover { color: #ff4; }
+
+#msg { position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%); color: #ff4; font-size: 14px; text-shadow: 1px 1px 0 #000; pointer-events: none; opacity: 0; transition: opacity 0.3s; }

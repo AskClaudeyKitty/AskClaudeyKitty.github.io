@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraria Lite</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game-container">
+  <canvas id="c" width="960" height="540"></canvas>
+
+  <!-- Top Left: Health & Status -->
+  <div id="ui">
+    <div id="hp-bar"><div id="hp-fill"></div></div>
+    <div id="stats">
+      <span id="time">Day</span> | Depth: <span id="depth">0</span>m
+    </div>
+  </div>
+
+  <!-- Top Center: Hotbar -->
+  <div id="hotbar"></div>
+
+  <!-- Inventory Panel (Terraria style) -->
+  <div id="inventory-panel">
+    <div id="inv-header">Inventory <span id="inv-close">X</span></div>
+    <div id="inv-content">
+      <div id="inv-grid"></div>
+      <div id="inv-crafting">
+        <h4>Crafting</h4>
+        <div id="inv-recipes"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="msg"></div>
+</div>
+<script src="js/constants.js"></script>
+<script src="js/world.js"></script>
+<script src="js/player.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/crafting.js"></script>
+<script src="js/input.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
