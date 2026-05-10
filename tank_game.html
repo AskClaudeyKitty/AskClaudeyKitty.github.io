@@ -1686,7 +1686,7 @@ function botShoot() {
       for (let angle = 5; angle <= 175; angle += 2) {
         const rad = angle * Math.PI / 180;
         let sx = bot.x, sy = terrainAt(bot.x) - 20;
-        let vx = Math.cos(rad) * power, vy = -Math.sin(rad) * power;
+        let vx = Math.cos(rad) * power * (yeetMode ? 10 : 1), vy = -Math.sin(rad) * power * (yeetMode ? 10 : 1);
         for (let step = 0; step < 300; step++) {
           if (windEnabled) vx += windStrength;
           sx += vx; vy += grav; sy += vy;
@@ -1710,7 +1710,7 @@ function botShoot() {
     botTrajectory = [];
     const rad = bestAngle * Math.PI / 180;
     let tx = bot.x, ty = terrainAt(bot.x) - 20;
-    let tvx = Math.cos(rad) * bestPower, tvy = -Math.sin(rad) * bestPower;
+    let tvx = Math.cos(rad) * bestPower * (yeetMode ? 10 : 1), tvy = -Math.sin(rad) * bestPower * (yeetMode ? 10 : 1);
     for (let step = 0; step < 300; step++) {
       tx += tvx; tvy += grav; ty += tvy;
       if (tx <= 0 && tvx < 0) { tx = 1; tvx = -tvx * 0.8; }
@@ -1894,7 +1894,7 @@ function update() {
     const isBoomerang = w.behavior === 'boomerang';
     if (windEnabled) p.vx += windStrength;
     p.x += p.vx;
-    if (!isHoming && !isBoomerang) p.vy += grav * (yeetMode ? 0.1 : 1);
+    if (!isHoming && !isBoomerang) p.vy += grav;
     p.y += p.vy;
 
     // Ricochet off left/right walls (skip for boomerangs - they wrap/phase through)
@@ -2799,7 +2799,7 @@ function drawAimUI() {
     const angleOff = sniperMode ? 0 : (shot - (shotCount - 1) / 2) * shotSpread + tOff;
     const shotRad = (tank.angle + angleOff) * Math.PI / 180;
     let sx = tank.x, sy = tankY - 20;
-    let vx = Math.cos(shotRad) * power, vy = -Math.sin(shotRad) * power;
+    let vx = Math.cos(shotRad) * power * (yeetMode ? 10 : 1), vy = -Math.sin(shotRad) * power * (yeetMode ? 10 : 1);
     const alpha = shotCount === 1 ? 0.4 : 0.3;
     ctx.setLineDash([5, 8]);
     ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
