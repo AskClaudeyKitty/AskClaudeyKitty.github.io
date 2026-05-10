@@ -2833,7 +2833,8 @@ function drawAimUI() {
   }
 
   // Shot count label
-  const totalShots = tripleOffsets.length * shotCount;
+  const trueOffsets = tripleMode && tenxMode ? 30 : tripleMode ? 3 : tenxMode ? 10 : 1;
+  const totalShots = sniperMode ? trueOffsets * shotCount : tripleOffsets.length * shotCount;
   if (totalShots > 1) {
     ctx.fillStyle = sniperMode ? '#4f4' : '#f4a';
     ctx.font = 'bold 12px monospace';
