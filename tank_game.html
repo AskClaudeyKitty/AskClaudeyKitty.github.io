@@ -289,6 +289,7 @@ const maps = [
   { name: 'Snow',    sky1: '#1a2a3a', sky2: '#2a3a4a', ground: '#c8ccd0', groundLine: '#dde0e4', baseY: 0.55, roughness: 3, gravity: 0.3, lava: true, boosts: ['Frost'], terrainType: 'normal' },
   { name: 'Moon',    sky1: '#000005', sky2: '#0a0a15', ground: '#555560', groundLine: '#666670', baseY: 0.5,  roughness: 4, gravity: 0.15, lava: true, boosts: ['Atomic', 'Electro', 'Thermonuclear'], terrainType: 'rock' },
   { name: 'Volcano', sky1: '#1a0500', sky2: '#3a1000', ground: '#3a2a2a', groundLine: '#5a3a3a', baseY: 0.5,  roughness: 5, gravity: 0.3, lava: true, boosts: ['Blaze', 'Solar', 'Hades'], terrainType: 'rock' },
+  { name: 'Acid Factory', sky1: '#0a1a00', sky2: '#1a2a00', ground: '#2a4a1a', groundLine: '#4a8a2a', baseY: 0.55, roughness: 4, gravity: 0.3, lava: true, boosts: ['Toxic', 'Anubis'], terrainType: 'acid' },
 ];
 let currentMap = 0; // randomized on game start
 
@@ -518,6 +519,7 @@ let vampireShieldEnabled = false; // Shields heal 200% of blocked damage
 let lowGravityEnabled = false; // All maps use Moon gravity
 let noTerrainEnabled = false; // Flat ground, no terrain variation
 let yeetMode = false; // 10x velocity, 0.1x gravity
+let armageddonEnabled = false; // 25% chance per second for meteor shower
 
 // Turn timer
 let turnTimer = null;
@@ -1070,11 +1072,11 @@ canvas.addEventListener('mousedown', e => {
       if (m.x >= r2X2 + r2W2 + r2Gap2 && m.x <= r2X2 + r2W2 * 2 + r2Gap2) { testBotMode = !testBotMode; }
       if (m.x >= r2X2 + (r2W2 + r2Gap2) * 2 && m.x <= r2X2 + (r2W2 + r2Gap2) * 2 + r2W2) { windEnabled = !windEnabled; if (windEnabled) windStrength = (Math.random() - 0.5) * 0.4; }
     }
-    // Row 3: Locked Mechanics (code 146) - 8 buttons
+    // Row 3: Locked Mechanics (code 146) - 9 buttons
     if (m.y >= 460 && m.y <= 485) {
       const is146Unlocked = unlockedCodes.includes('146');
       if (is146Unlocked) {
-        const r3W2 = 36, r3Gap2 = 3, r3Total2 = r3W2 * 8 + r3Gap2 * 7;
+        const r3W2 = 32, r3Gap2 = 2, r3Total2 = r3W2 * 9 + r3Gap2 * 8;
         const r3X2 = W / 2 - r3Total2 / 2;
         if (m.x >= r3X2 && m.x <= r3X2 + r3W2) shieldBoxEnabled = !shieldBoxEnabled;
         if (m.x >= r3X2 + r3W2 + r3Gap2 && m.x <= r3X2 + r3W2 * 2 + r3Gap2) clusterLuckEnabled = !clusterLuckEnabled;
@@ -1084,6 +1086,7 @@ canvas.addEventListener('mousedown', e => {
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 5 && m.x <= r3X2 + (r3W2 + r3Gap2) * 5 + r3W2) tenxMode = !tenxMode;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 6 && m.x <= r3X2 + (r3W2 + r3Gap2) * 6 + r3W2) sniperMode = !sniperMode;
         if (m.x >= r3X2 + (r3W2 + r3Gap2) * 7 && m.x <= r3X2 + (r3W2 + r3Gap2) * 7 + r3W2) yeetMode = !yeetMode;
+        if (m.x >= r3X2 + (r3W2 + r3Gap2) * 8 && m.x <= r3X2 + (r3W2 + r3Gap2) * 8 + r3W2) armageddonEnabled = !armageddonEnabled;
       }
     }
     return;
@@ -1762,7 +1765,7 @@ function impactDamage(px, py, w, p) {
       }
       const dmg = Math.round(Math.max(0, (w.radius + 20 - dist)) * w.dmgMult * (p.dmgBonus || 1));
       t.hp -= dmg;
-      if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, p.owner === 0 && tanks[p.owner].name === 'Yes' ? 'YES' : '-' + dmg, '#f44'); SFX.hit(); }
+      if (dmg > 0) { spawnFloatingText(t.x + (Math.random()-0.5)*20, terrainAt(t.x) - 55, p.owner >= 0 && p.owner === 0 && tanks[p.owner].name === 'Yes' ? 'YES' : '-' + dmg, '#f44'); SFX.hit(); }
       if (w.effect === 'shock' && dmg > 0) t.shockTimer = 300;
       if (t.hp <= 0 && !gameOver) { t.hp = 0; checkWin(); }
     }
@@ -1822,7 +1825,7 @@ function update() {
     const w = p.weaponData;
 
     // Homing: curve toward enemy
-    if (w.behavior === 'homing' && !p.isFragment) {
+    if (w.behavior === 'homing' && !p.isFragment && p.owner >= 0) {
       const enemy = tanks[1 - p.owner];
       const tx = enemy.x;
       const ty = terrainAt(enemy.x) - 15;
@@ -1906,7 +1909,7 @@ function update() {
     // Check direct hit on enemy tank (not the one who fired, unless rebound)
     let hitTank = false;
     for (let ti = 0; ti < tanks.length; ti++) {
-      if (ti === p.owner && !p.isFragment && !p.isRebound) continue; // don't hit yourself (unless rebound)
+      if (ti === p.owner && !p.isFragment && !p.isRebound && p.owner >= 0) continue; // don't hit yourself (unless rebound)
       const t = tanks[ti];
       const ty = terrainAt(t.x);
       const dx = p.x - t.x;
@@ -2561,7 +2564,23 @@ function update() {
     }
   }
 
-  // Turn timer: 20 seconds per turn
+  // Armageddon: 25% chance per second for meteor shower
+  if (armageddonEnabled && state === 'game' && !gameOver && Math.random() < 0.25 / 60) {
+    const mx = 50 + Math.random() * (W - 100);
+    const my = -20;
+    const mrad = (45 + Math.random() * 45) * Math.PI / 180;
+    const mpow = 8 + Math.random() * 6;
+    projectiles.push({
+      x: mx, y: my,
+      vx: Math.cos(mrad) * mpow,
+      vy: Math.sin(mrad) * mpow,
+      owner: -1,
+      weaponData: { name: 'Meteor', color: '#f80', radius: 25, dmgMult: 1.5, count: 1, spread: 0, behavior: 'meteor' },
+      dmgBonus: 0,
+      clusterGen: 0
+    });
+    spawnFloatingText(mx, 30, 'METEOR!', '#f80');
+  }
   if (state === 'game' && !gameOver && (!projectiles.length || testBotMode)) {
     if (!turnTimer) { turnTimer = Date.now(); turnTimerStart = Date.now(); }
     const elapsed = (Date.now() - turnTimerStart) / 1000;
@@ -3120,9 +3139,9 @@ function drawMenu() {
   ctx.fillStyle = windEnabled ? '#8f8' : '#888'; ctx.font = '10px monospace';
   ctx.fillText(windEnabled ? 'WIND: ON' : 'WIND: OFF', r2X + (r2W + r2Gap) * 2 + r2W / 2, 447);
 
-  // Row 3: Locked Mechanics (code 146) - 8 buttons
+  // Row 3: Locked Mechanics (code 146) - 9 buttons
   const is146Unlocked = unlockedCodes.includes('146');
-  const r3W = 36, r3Gap = 3, r3Total = r3W * 8 + r3Gap * 7;
+  const r3W = 32, r3Gap = 2, r3Total = r3W * 9 + r3Gap * 8;
   const r3X = W / 2 - r3Total / 2;
 
   // Row 3 background panel
@@ -3203,6 +3222,15 @@ function drawMenu() {
   ctx.fillStyle = is146Unlocked ? (yeetMode ? '#fa4' : '#888') : '#444';
   ctx.font = '8px monospace';
   ctx.fillText(is146Unlocked ? 'YEET' : 'LOCKED', r3X + (r3W + r3Gap) * 7 + r3W / 2, 477);
+
+  // Armageddon toggle
+  ctx.fillStyle = is146Unlocked ? (armageddonEnabled ? '#f44' : '#333') : '#222';
+  ctx.fillRect(r3X + (r3W + r3Gap) * 8, 460, r3W, 25);
+  ctx.strokeStyle = is146Unlocked ? (armageddonEnabled ? '#f88' : '#555') : '#333'; ctx.lineWidth = 1;
+  ctx.strokeRect(r3X + (r3W + r3Gap) * 8, 460, r3W, 25);
+  ctx.fillStyle = is146Unlocked ? (armageddonEnabled ? '#f88' : '#888') : '#444';
+  ctx.font = '8px monospace';
+  ctx.fillText(is146Unlocked ? 'ARMA' : 'LOCKED', r3X + (r3W + r3Gap) * 8 + r3W / 2, 477);
 
   // Wins + version
   ctx.fillStyle = '#555';
@@ -3497,7 +3525,25 @@ function drawGame() {
   ctx.fillStyle = m.ground; ctx.fill();
   ctx.strokeStyle = m.groundLine; ctx.lineWidth = 2; ctx.stroke();
 
-  // Ricochet walls
+  // Acid terrain overlay
+  if (m.terrainType === 'acid') {
+    ctx.fillStyle = 'rgba(80, 255, 40, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x++) ctx.lineTo(x, terrain[x]);
+    ctx.lineTo(W, H); ctx.closePath();
+    ctx.fill();
+    // Bubbles
+    const t = Date.now() / 300;
+    ctx.fillStyle = 'rgba(120, 255, 80, 0.4)';
+    for (let i = 0; i < 20; i++) {
+      const bx = (i * 137.5 + t * 20) % W;
+      const by = terrainAt(bx) - 5 - Math.sin(t + i) * 8;
+      ctx.beginPath();
+      ctx.arc(bx, by, 2 + Math.sin(t + i * 2) * 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   const wallAlpha = 0.3 + Math.sin(Date.now() / 500) * 0.1;
   ctx.fillStyle = `rgba(150,150,255,${wallAlpha})`;
   ctx.fillRect(0, 0, 3, H);
