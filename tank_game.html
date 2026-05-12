@@ -525,6 +525,11 @@ let armageddonEnabled = false; // 25% chance per second for meteor shower
 let turnTimer = null;
 let turnTimerStart = 0;
 
+// Helper: count only player-fired projectiles (not meteors)
+function hasPlayerProjectiles() {
+  return projectiles.some(p => p.owner >= 0);
+}
+
 // Test Panel (unlocked with code 146)
 let testPanelOpen = false;
 let testPanelScroll = 0;
@@ -1194,7 +1199,7 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
   if (state !== 'game' || gameOver) return;
-  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
+  if (!testBotMode && (turn !== 0 || hasPlayerProjectiles())) return;
 
   const selY = H - 63;
   const slotW = 55;
@@ -1315,7 +1320,7 @@ let fireQueued = false;
 
 function triggerFire() {
   if (state !== 'game') return;
-  if ((turn === 0 || testBotMode) && (!projectiles.length || testBotMode) && !gameOver) {
+  if ((turn === 0 || testBotMode) && (!hasPlayerProjectiles() || testBotMode) && !gameOver) {
     if (dragPower > 1) {
       fireWeapon(tanks[0], null, dragPower);
       dragging = false;
@@ -1398,7 +1403,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (e.key === 'm') { state = 'select'; selectScroll = 0; campaignMode = false; document.getElementById('info').style.display = 'none'; stopMusic(); gameOver = false; projectiles = []; updateControlsVisibility(); return; }
-  if (!testBotMode && (turn !== 0 || projectiles.length || gameOver)) return;
+  if (!testBotMode && (turn !== 0 || hasPlayerProjectiles() || gameOver)) return;
   if (gameOver) return;
   if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key) - 1;
@@ -1778,7 +1783,7 @@ function update() {
   const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity);
   const tank = tanks[turn];
 
-  if ((!projectiles.length || testBotMode) && !gameOver) {
+  if ((!hasPlayerProjectiles() || testBotMode) && !gameOver) {
     if (turn === 0 || testBotMode) {
       let spd = tank.type.speed;
       let onIce = false, inWater = false;
@@ -1953,6 +1958,28 @@ function update() {
     const outOfBounds = p.y > H + 50;
 
     if (hitGround) {
+      // Meteor: destroy terrain, spawn lava + fire, then disappear
+      if (w.behavior === 'meteor') {
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, w, p);
+        // Destroy terrain crater
+        for (let tx = Math.max(0, Math.floor(p.x - w.radius)); tx < Math.min(W, Math.ceil(p.x + w.radius)); tx++) {
+          const d = Math.abs(tx - p.x);
+          if (d < w.radius) {
+            terrain[tx] += Math.sqrt(Math.max(0, w.radius * w.radius - d * d)) * 0.6;
+            terrain[tx] = Math.min(terrain[tx], H - 5);
+          }
+        }
+        // Spawn lava hazard
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'lava', life: 600, dmg: 0.8 });
+        // Spawn fire hazard
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'fire', life: 300, dmg: 0.4 });
+        shakeTime = 10; shakeAmount = 8;
+        SFX.explode(60);
+        projectiles.splice(i, 1);
+        continue;
+      }
+
       // Ground Zero: initial shot spawns one nuke orb from sky
       if (w.behavior === 'groundzero') {
         // Initial hit does 3 damage
@@ -2581,7 +2608,7 @@ function update() {
     });
     spawnFloatingText(mx, 30, 'METEOR!', '#f80');
   }
-  if (state === 'game' && !gameOver && (!projectiles.length || testBotMode)) {
+  if (state === 'game' && !gameOver && (!hasPlayerProjectiles() || testBotMode)) {
     if (!turnTimer) { turnTimer = Date.now(); turnTimerStart = Date.now(); }
     const elapsed = (Date.now() - turnTimerStart) / 1000;
     if (elapsed >= 20) {
@@ -2595,7 +2622,7 @@ function update() {
   } else {
     turnTimer = null;
   }
-  if (lastProjCount > 0 && projectiles.length === 0 && !gameOver) {
+  if (lastProjCount > 0 && !hasPlayerProjectiles() && !gameOver) {
     checkWin();
     if (!gameOver) {
       turn = 1 - turn;
@@ -2610,10 +2637,10 @@ function update() {
       if (turnCount % 4 === 0) spawnCrate();
     }
   }
-  lastProjCount = projectiles.length;
+  lastProjCount = hasPlayerProjectiles() ? 1 : 0;
 
   // Turn timer bar
-  if (state === 'game' && !gameOver && turnTimer && (!projectiles.length || testBotMode) && turn === 0) {
+  if (state === 'game' && !gameOver && turnTimer && (!hasPlayerProjectiles() || testBotMode) && turn === 0) {
     const elapsed = (Date.now() - turnTimerStart) / 1000;
     const pct = Math.min(1, elapsed / 20);
     const barW = 200, barH = 6;
@@ -2777,7 +2804,7 @@ function drawTank(t, tx, ty, scale) {
 }
 
 function drawAimUI() {
-  if (turn !== 0 || projectiles.length || gameOver || !dragging) return;
+  if (turn !== 0 || hasPlayerProjectiles() || gameOver || !dragging) return;
   const tank = tanks[0];
   const grav = (lowGravityEnabled ? 0.15 : maps[currentMap].gravity);
   const rad = tank.angle * Math.PI / 180;
@@ -3872,7 +3899,7 @@ function drawGame() {
   drawAimUI();
 
   // Bot trajectory preview (when bot is aiming)
-  if (turn === 1 && botTrajectory.length > 0 && !projectiles.length && !gameOver) {
+  if (turn === 1 && botTrajectory.length > 0 && !hasPlayerProjectiles() && !gameOver) {
     ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
@@ -4429,7 +4456,7 @@ canvas.addEventListener('touchstart', e => {
 
   if (state !== 'game' || gameOver) return;
   e.preventDefault();
-  if (!testBotMode && (turn !== 0 || projectiles.length)) return;
+  if (!testBotMode && (turn !== 0 || hasPlayerProjectiles())) return;
 
   // Check ammo for drag
   if (tanks[0].bonusWeapon && tanks[0].weapon >= tanks[0].type.weapons.length) {
