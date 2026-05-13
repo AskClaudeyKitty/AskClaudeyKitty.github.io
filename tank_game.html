@@ -1839,30 +1839,6 @@ function update() {
     const p = projectiles[i];
     const w = p.weaponData;
 
-    // Gravity Well: pull nearby tanks and projectiles toward impact point
-    if (w.behavior === 'gravityWell' && !p.isFragment) {
-      const pullRadius = w.radius * 3;
-      const strength = 0.3;
-      for (const t of tanks) {
-        const dx = p.x - t.x;
-        const dy = p.y - (terrainAt(t.x) - 10);
-        const dist = Math.hypot(dx, dy);
-        if (dist > 10 && dist < pullRadius) {
-          t.x += (dx / dist) * strength * (pullRadius - dist) / pullRadius;
-        }
-      }
-      for (const pp of projectiles) {
-        if (pp === p || pp.isFragment) continue;
-        const dx = p.x - pp.x;
-        const dy = p.y - pp.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist > 10 && dist < pullRadius) {
-          pp.vx += (dx / dist) * strength * 0.5 * (pullRadius - dist) / pullRadius;
-          pp.vy += (dy / dist) * strength * 0.5 * (pullRadius - dist) / pullRadius;
-        }
-      }
-    }
-
     // Homing: curve toward enemy
     if (w.behavior === 'homing' && !p.isFragment && p.owner >= 0) {
       const enemy = tanks[1 - p.owner];
@@ -2235,6 +2211,15 @@ function update() {
         continue;
       }
 
+      // Gravity Well: explode on impact, spawn persistent gravity hazard
+      if (w.behavior === 'gravityWell') {
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, w, p);
+        hazards.push({ x: p.x, y: p.y, radius: w.radius * 2, type: 'gravity', life: 600, dmg: 0 });
+        projectiles.splice(i, 1);
+        continue;
+      }
+
       // Split: fragments scatter on impact
       if (w.behavior === 'split' && !p.isFragment) {
         createExplosion(p.x, p.y, w);
@@ -2595,6 +2580,13 @@ function update() {
     for (const t of tanks) {
       const dist = Math.abs(t.x - h.x);
       if (dist < h.radius) {
+        // Gravity: pull tanks toward center
+        if (h.type === 'gravity') {
+          const pullStrength = 0.4;
+          const dx = h.x - t.x;
+          t.x += (dx / Math.max(1, Math.abs(dx))) * pullStrength * (1 - dist / h.radius);
+          t.x = Math.max(15, Math.min(W - 15, t.x));
+        }
         // Water hazard: no movement, just swaying
         if (h.type === 'water') {
           t.inWater = true;
@@ -3858,6 +3850,21 @@ function drawGame() {
       ctx.fillStyle = `rgba(255,200,0,${alpha * 0.5 + Math.sin(t * 3) * 0.1})`;
       ctx.beginPath();
       ctx.ellipse(h.x, gy + 2, h.radius * 0.5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (h.type === 'gravity') {
+      // Purple gravity well with pulsing rings
+      const pulse = Math.sin(t * 2) * 0.2;
+      ctx.strokeStyle = `rgba(160,0,255,${alpha * 0.6 + pulse * 0.1})`;
+      ctx.lineWidth = 2;
+      for (let r = 1; r <= 3; r++) {
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.radius * r / 3 + Math.sin(t * 3 + r) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // Center glow
+      ctx.fillStyle = `rgba(100,0,200,${alpha * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
       ctx.fill();
     }
   }
