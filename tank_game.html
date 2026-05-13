@@ -290,6 +290,8 @@ const maps = [
   { name: 'Moon',    sky1: '#000005', sky2: '#0a0a15', ground: '#555560', groundLine: '#666670', baseY: 0.5,  roughness: 4, gravity: 0.15, lava: true, boosts: ['Atomic', 'Electro', 'Thermonuclear'], terrainType: 'rock' },
   { name: 'Volcano', sky1: '#1a0500', sky2: '#3a1000', ground: '#3a2a2a', groundLine: '#5a3a3a', baseY: 0.5,  roughness: 5, gravity: 0.3, lava: true, boosts: ['Blaze', 'Solar', 'Hades'], terrainType: 'rock' },
   { name: 'Acid Factory', sky1: '#0a1a00', sky2: '#1a2a00', ground: '#2a4a1a', groundLine: '#4a8a2a', baseY: 0.55, roughness: 4, gravity: 0.3, lava: true, boosts: ['Toxic', 'Anubis'], terrainType: 'acid' },
+  { name: 'Mirror Lake', sky1: '#0a1525', sky2: '#1a2535', ground: '#2a4a5a', groundLine: '#3a6a7a', baseY: 0.5, roughness: 2, gravity: 0.3, lava: false, boosts: ['Frost', 'Electro'], terrainType: 'water' },
+  { name: 'Jungle', sky1: '#051a05', sky2: '#0a2a0a', ground: '#1a4a1a', groundLine: '#2a6a2a', baseY: 0.45, roughness: 6, gravity: 0.3, lava: true, boosts: ['Toxic', 'Solar'], terrainType: 'jungle' },
 ];
 let currentMap = 0; // randomized on game start
 
@@ -435,6 +437,14 @@ const tankTypes = [
       { name: 'Double Arc',  color: '#fa0', radius: 16, dmgMult: 6.0, count: 2, spread: 3, icon: '))', ammo: 3, behavior: 'boomerang' },
       { name: 'Heavy Throw', color: '#f60', radius: 30, dmgMult: 10.0, count: 1, spread: 0, icon: '()', ammo: 2, behavior: 'boomerang' },
       { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
+    ]},
+  // GRAVITY — shots pull enemies toward impact
+  { name: 'Gravity', color: '#a0f', bodyW: 30, bodyH: 11, barrelLen: 26, barrelW: 5, hp: 850, speed: 1.1, fuel: 100, desc: 'Gravity wells', locked: true, unlockCode: '146',
+    weapons: [
+      { name: 'Pull', color: '#a0f', radius: 20, dmgMult: 3.0, count: 1, spread: 0, icon: 'o', ammo: 1, behavior: 'gravityWell' },
+      { name: 'Heavy Pull', color: '#80f', radius: 30, dmgMult: 4.5, count: 1, spread: 0, icon: 'O', ammo: 2, behavior: 'gravityWell' },
+      { name: 'Cluster Pull', color: '#c0f', radius: 16, dmgMult: 2.5, count: 3, spread: 4, icon: 'ooo', ammo: 3, behavior: 'gravityWell' },
+      { name: 'Black Hole', color: '#40f', radius: 50, dmgMult: 6.0, count: 1, spread: 0, icon: '(*)', ammo: 1, behavior: 'gravityWell' },
     ]},
   // INVINCIBLE — starts at 1 HP, max 1M HP, infinite shield, gains HP through vampire shields
   { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1000000, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
@@ -1493,7 +1503,7 @@ function fireWeapon(tank, holdTime, directPower) {
   const power = tank.isBot ? tank._botPower : (directPower || (5 + (holdTime || 0) * 12));
   // Sound
   const wCheck = tank.weapon === 4 ? tank.bonusWeapon : tank.type.weapons[tank.weapon];
-  if (wCheck && (wCheck.behavior === 'drill' || wCheck.behavior === 'drillRain' || wCheck.behavior === 'rain')) SFX.shootBig();
+  if (wCheck && (wCheck.behavior === 'drill' || wCheck.behavior === 'drillRain' || wCheck.behavior === 'rain' || wCheck.behavior === 'gravityWell')) SFX.shootBig();
   else SFX.shoot();
   let w;
   if (tank.weapon === 4 && tank.bonusWeapon) {
@@ -1829,6 +1839,30 @@ function update() {
     const p = projectiles[i];
     const w = p.weaponData;
 
+    // Gravity Well: pull nearby tanks and projectiles toward impact point
+    if (w.behavior === 'gravityWell' && !p.isFragment) {
+      const pullRadius = w.radius * 3;
+      const strength = 0.3;
+      for (const t of tanks) {
+        const dx = p.x - t.x;
+        const dy = p.y - (terrainAt(t.x) - 10);
+        const dist = Math.hypot(dx, dy);
+        if (dist > 10 && dist < pullRadius) {
+          t.x += (dx / dist) * strength * (pullRadius - dist) / pullRadius;
+        }
+      }
+      for (const pp of projectiles) {
+        if (pp === p || pp.isFragment) continue;
+        const dx = p.x - pp.x;
+        const dy = p.y - pp.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 10 && dist < pullRadius) {
+          pp.vx += (dx / dist) * strength * 0.5 * (pullRadius - dist) / pullRadius;
+          pp.vy += (dy / dist) * strength * 0.5 * (pullRadius - dist) / pullRadius;
+        }
+      }
+    }
+
     // Homing: curve toward enemy
     if (w.behavior === 'homing' && !p.isFragment && p.owner >= 0) {
       const enemy = tanks[1 - p.owner];
@@ -1951,6 +1985,20 @@ function update() {
       createExplosion(p.x, p.y, w);
       impactDamage(p.x, p.y, w, p);
       projectiles.splice(i, 1);
+      continue;
+    }
+
+    // Water bounce for Mirror Lake
+    if (m.name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
+      p.vy = -p.vy * 0.7;
+      p.y = H * 0.64;
+      continue;
+    }
+
+    // Water bounce for Mirror Lake
+    if (m.name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
+      p.vy = -p.vy * 0.7;
+      p.y = H * 0.64;
       continue;
     }
 
