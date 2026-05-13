@@ -1989,14 +1989,7 @@ function update() {
     }
 
     // Water bounce for Mirror Lake
-    if (m.name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
-      p.vy = -p.vy * 0.7;
-      p.y = H * 0.64;
-      continue;
-    }
-
-    // Water bounce for Mirror Lake
-    if (m.name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
+    if (maps[currentMap].name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
       p.vy = -p.vy * 0.7;
       p.y = H * 0.64;
       continue;
