@@ -2215,7 +2215,9 @@ function update() {
       if (w.behavior === 'gravityWell') {
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
-        hazards.push({ x: p.x, y: p.y, radius: w.radius * 2, type: 'gravity', life: 600, dmg: 0 });
+        const hx = p.x;
+        const hy = terrainAt(hx);
+        hazards.push({ x: hx, y: hy, radius: w.radius * 2, type: 'gravity', life: 600, dmg: 0 });
         projectiles.splice(i, 1);
         continue;
       }
@@ -2582,9 +2584,10 @@ function update() {
       if (dist < h.radius) {
         // Gravity: pull tanks toward center
         if (h.type === 'gravity') {
-          const pullStrength = 0.4;
+          const pullStrength = 0.15;
           const dx = h.x - t.x;
-          t.x += (dx / Math.max(1, Math.abs(dx))) * pullStrength * (1 - dist / h.radius);
+          const distFactor = Math.max(0, 1 - dist / h.radius);
+          t.x += Math.sign(dx) * pullStrength * distFactor;
           t.x = Math.max(15, Math.min(W - 15, t.x));
         }
         // Water hazard: no movement, just swaying
@@ -3853,18 +3856,19 @@ function drawGame() {
       ctx.fill();
     } else if (h.type === 'gravity') {
       // Purple gravity well with pulsing rings
+      const gy = terrainAt(h.x);
       const pulse = Math.sin(t * 2) * 0.2;
       ctx.strokeStyle = `rgba(160,0,255,${alpha * 0.6 + pulse * 0.1})`;
       ctx.lineWidth = 2;
       for (let r = 1; r <= 3; r++) {
         ctx.beginPath();
-        ctx.arc(h.x, h.y, h.radius * r / 3 + Math.sin(t * 3 + r) * 3, 0, Math.PI * 2);
+        ctx.arc(h.x, gy, h.radius * r / 3 + Math.sin(t * 3 + r) * 3, 0, Math.PI * 2);
         ctx.stroke();
       }
       // Center glow
       ctx.fillStyle = `rgba(100,0,200,${alpha * 0.4})`;
       ctx.beginPath();
-      ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
+      ctx.arc(h.x, gy, 6, 0, Math.PI * 2);
       ctx.fill();
     }
   }
