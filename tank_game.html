@@ -1966,9 +1966,13 @@ function update() {
 
     // Water bounce for Mirror Lake
     if (maps[currentMap].name === 'Mirror Lake' && p.y >= H * 0.65 && p.vy > 0) {
-      p.vy = -p.vy * 0.7;
-      p.y = H * 0.64;
-      continue;
+      if (!p.waterBounce) p.waterBounce = 0;
+      if (p.waterBounce < 3) {
+        p.waterBounce++;
+        p.vy = -p.vy * 0.7;
+        p.y = H * 0.64;
+        continue;
+      }
     }
 
     const hitGround = w.behavior === 'boomerang' ? false : ((p.x >= 0 && p.x < W && p.y >= terrainAt(p.x)) || hitTank);
