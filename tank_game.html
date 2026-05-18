@@ -2180,7 +2180,7 @@ function update() {
             projectiles.push({ x: rx, y: -10 - Math.random() * 40, vx: (Math.random()-0.5) * 0.3, vy: 3 + Math.random() * 3, owner: p.owner, weaponData: { ...w, radius: 25, behavior: null, dmgMult: w.dmgMult * 0.3, effect: w.effect }, dmgBonus: p.dmgBonus, isFragment: true });
           }
           // Gravity field on every bounce
-          hazards.push({ x: p.x, y: terrainAt(p.x), radius: w.radius * 1.5, pullRadius: w.radius * 4.5, type: 'gravity', life: 400, dmg: 2 });
+          hazards.push({ x: p.x, y: terrainAt(p.x), radius: w.radius * 1.5, pullRadius: w.radius * 4.5, type: 'gravity', life: 400, dmg: 1 });
           shakeTime = 25; shakeAmount = dr / 4;
         }
         // Spawn hazards on every bounce
@@ -2223,7 +2223,7 @@ function update() {
         impactDamage(p.x, p.y, w, p);
         const hx = p.x;
         const hy = terrainAt(hx);
-        hazards.push({ x: hx, y: hy, radius: w.radius * 2, pullRadius: w.radius * 6, type: 'gravity', life: 600, dmg: 2 });
+        hazards.push({ x: hx, y: hy, radius: w.radius * 2, pullRadius: w.radius * 6, type: 'gravity', life: 600, dmg: 1 });
         projectiles.splice(i, 1);
         continue;
       }
