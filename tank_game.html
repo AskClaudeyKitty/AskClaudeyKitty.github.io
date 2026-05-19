@@ -2211,6 +2211,7 @@ function update() {
           hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.0, type: 'mud', life: 1200, dmg: 0 });
           hazards.push({ x: p.x, y: p.y, radius: w.radius * 0.8, type: 'acid', life: 1800, dmg: 1.35 });
           hazards.push({ x: p.x, y: p.y, radius: w.radius * 1.2, type: 'acidFire', life: 400, dmg: 0.9 });
+          hazards.push({ x: p.x, y: terrainAt(p.x), radius: w.radius * 1.5, pullRadius: w.radius * 4.5, type: 'gravity', life: 400, dmg: 1 });
         }
         p.vy = -Math.abs(p.vy);
         p.y = terrainAt(p.x) - 2;
