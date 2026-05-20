@@ -2101,19 +2101,21 @@ function update() {
         continue;
       }
 
-      // Gravity Well: explode on impact, spawn persistent gravity hazard, bounce 10 times
+      // Gravity Well: explode on impact, spawn persistent gravity hazard, bounce only in chaos mode
       if (w.behavior === 'gravityWell') {
         createExplosion(p.x, p.y, w);
         impactDamage(p.x, p.y, w, p);
         const hx = p.x;
         const hy = terrainAt(hx);
         hazards.push({ x: hx, y: hy, radius: w.radius * 2, pullRadius: w.radius * 6, type: 'gravity', life: 600, dmg: 1 });
-        if (!p.bounceCount) p.bounceCount = 0;
-        if (p.bounceCount < 10) {
-          p.bounceCount++;
-          p.vy = -Math.abs(p.vy) * 0.85;
-          p.y = terrainAt(p.x) - 2;
-          continue;
+        if (chaosMode) {
+          if (!p.bounceCount) p.bounceCount = 0;
+          if (p.bounceCount < 10) {
+            p.bounceCount++;
+            p.vy = -Math.abs(p.vy) * 0.85;
+            p.y = terrainAt(p.x) - 2;
+            continue;
+          }
         }
         projectiles.splice(i, 1);
         continue;
