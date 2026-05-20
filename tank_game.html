@@ -4412,19 +4412,21 @@ function draw() {
 
 // 60 FPS cap - runs at same speed regardless of display refresh rate
 let lastTime = 0;
+let frameCount = 0;
 const TARGET_FPS = 60;
 const FRAME_TIME = 1000 / TARGET_FPS;
 
 function loop(currentTime) {
   requestAnimationFrame(loop);
-  
+
   const deltaTime = currentTime - lastTime;
-  
+
   // Only update if enough time has passed (cap at 60 FPS)
   if (deltaTime >= FRAME_TIME) {
     // Catch up if behind, but don't update more than once per frame
     lastTime = currentTime - (deltaTime % FRAME_TIME);
-    
+    frameCount++;
+
     try {
       update();
       draw();
