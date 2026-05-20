@@ -441,10 +441,10 @@ const tankTypes = [
   // GRAVITY — shots pull enemies toward impact
   { name: 'Gravity', color: '#a0f', bodyW: 30, bodyH: 11, barrelLen: 26, barrelW: 5, hp: 850, speed: 1.1, fuel: 100, desc: 'Gravity wells', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Pull', color: '#a0f', radius: 20, dmgMult: 15.0, count: 1, spread: 0, icon: 'o', ammo: 1, behavior: 'gravityWell', bouncy: 10 },
-      { name: 'Heavy Pull', color: '#80f', radius: 30, dmgMult: 25.0, count: 1, spread: 0, icon: 'O', ammo: 2, behavior: 'gravityWell', bouncy: 10 },
-      { name: 'Cluster Pull', color: '#c0f', radius: 16, dmgMult: 12.0, count: 3, spread: 4, icon: 'ooo', ammo: 3, behavior: 'gravityWell', bouncy: 10 },
-      { name: 'Black Hole', color: '#40f', radius: 50, dmgMult: 50.0, count: 1, spread: 0, icon: '(*)', ammo: 1, behavior: 'gravityWell', bouncy: 10 },
+      { name: 'Pull', color: '#a0f', radius: 20, dmgMult: 15.0, count: 1, spread: 0, icon: 'o', ammo: 1, behavior: 'gravityWell' },
+      { name: 'Heavy Pull', color: '#80f', radius: 30, dmgMult: 25.0, count: 1, spread: 0, icon: 'O', ammo: 2, behavior: 'gravityWell' },
+      { name: 'Cluster Pull', color: '#c0f', radius: 16, dmgMult: 12.0, count: 3, spread: 4, icon: 'ooo', ammo: 3, behavior: 'gravityWell' },
+      { name: 'Black Hole', color: '#40f', radius: 50, dmgMult: 50.0, count: 1, spread: 0, icon: '(*)', ammo: 1, behavior: 'gravityWell' },
     ]},
   // INVINCIBLE — starts at 1 HP, max 1M HP, infinite shield, gains HP through vampire shields
   { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1000000, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
@@ -2101,6 +2101,24 @@ function update() {
         continue;
       }
 
+      // Gravity Well: explode on impact, spawn persistent gravity hazard, bounce 10 times
+      if (w.behavior === 'gravityWell') {
+        createExplosion(p.x, p.y, w);
+        impactDamage(p.x, p.y, w, p);
+        const hx = p.x;
+        const hy = terrainAt(hx);
+        hazards.push({ x: hx, y: hy, radius: w.radius * 2, pullRadius: w.radius * 6, type: 'gravity', life: 600, dmg: 1 });
+        if (!p.bounceCount) p.bounceCount = 0;
+        if (p.bounceCount < 10) {
+          p.bounceCount++;
+          p.vy = -Math.abs(p.vy) * 0.85;
+          p.y = terrainAt(p.x) - 2;
+          continue;
+        }
+        projectiles.splice(i, 1);
+        continue;
+      }
+
       // Bounce off terrain (all weapons, up to 10 times, pass through enemies)
       if (!p.bounceCount) p.bounceCount = 0;
       const maxBounce = w.bouncy || (chaosMode ? (p.isFragment ? 4 : 10) : 0);
@@ -2218,25 +2236,6 @@ function update() {
         }
         p.vy = -Math.abs(p.vy);
         p.y = terrainAt(p.x) - 2;
-        continue;
-      }
-
-      // Gravity Well: explode on impact, spawn persistent gravity hazard, bounce if bouncy
-      if (w.behavior === 'gravityWell') {
-        createExplosion(p.x, p.y, w);
-        impactDamage(p.x, p.y, w, p);
-        const hx = p.x;
-        const hy = terrainAt(hx);
-        hazards.push({ x: hx, y: hy, radius: w.radius * 2, pullRadius: w.radius * 6, type: 'gravity', life: 600, dmg: 1 });
-        if (!p.bounceCount) p.bounceCount = 0;
-        const maxBounce = w.bouncy || 0;
-        if (p.bounceCount < maxBounce) {
-          p.bounceCount++;
-          p.vy = -Math.abs(p.vy) * 0.85;
-          p.y = terrainAt(p.x) - 2;
-          continue;
-        }
-        projectiles.splice(i, 1);
         continue;
       }
 
