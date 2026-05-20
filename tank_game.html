@@ -2630,7 +2630,7 @@ function update() {
             spawnFloatingText(t.x, terrainAt(t.x) - 55, 'SHIELD!', '#4af');
             continue;
           }
-          t.hp -= h.dmg;
+          if (h.type !== 'gravity' || frameCount % 3 === 0) t.hp -= h.dmg;
           if (Math.random() < 0.03) {
             const labels = { fire: 'BURN', radiation: 'RADIATION', lava: 'LAVA!', poison: 'POISON', ice: 'FREEZE', acid: 'ACID!', acidFire: 'ACID BURN!', hellfire: 'HELLFIRE!', mud: 'MUD', water: 'WATER' };
             const cols = { fire: '#f80', radiation: '#cf0', lava: '#f40', poison: '#4f4', ice: '#8df', acid: '#0ff', acidFire: '#4fa', hellfire: '#c4f', mud: '#a85', water: '#4af' };
