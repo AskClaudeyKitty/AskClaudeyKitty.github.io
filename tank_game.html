@@ -439,12 +439,12 @@ const tankTypes = [
       { name: 'Buzzsaw',     color: '#ff0', radius: 12, dmgMult: 4.0, count: 1, spread: 0, icon: '*', ammo: 1, behavior: 'boomerang', buzzsaw: true },
     ]},
   // GRAVITY — shots pull enemies toward impact
-  { name: 'Gravity', color: '#a0f', bodyW: 30, bodyH: 11, barrelLen: 26, barrelW: 5, hp: 850, speed: 1.1, fuel: 100, desc: 'Gravity wells', locked: true, unlockCode: '146',
+  { name: 'Gravity', color: '#a0f', bodyW: 30, bodyH: 11, barrelLen: 26, barrelW: 5, hp: 66666, speed: 1.1, fuel: 100, desc: 'Gravity wells', locked: true, unlockCode: '146',
     weapons: [
-      { name: 'Pull', color: '#a0f', radius: 20, dmgMult: 15.0, count: 1, spread: 0, icon: 'o', ammo: 1, behavior: 'gravityWell' },
-      { name: 'Heavy Pull', color: '#80f', radius: 30, dmgMult: 25.0, count: 1, spread: 0, icon: 'O', ammo: 2, behavior: 'gravityWell' },
-      { name: 'Cluster Pull', color: '#c0f', radius: 16, dmgMult: 12.0, count: 3, spread: 4, icon: 'ooo', ammo: 3, behavior: 'gravityWell' },
-      { name: 'Black Hole', color: '#40f', radius: 50, dmgMult: 50.0, count: 1, spread: 0, icon: '(*)', ammo: 1, behavior: 'gravityWell' },
+      { name: 'Pull', color: '#a0f', radius: 20, dmgMult: 0.5, count: 1, spread: 0, icon: 'o', ammo: 1, behavior: 'gravityWell' },
+      { name: 'Heavy Pull', color: '#80f', radius: 30, dmgMult: 1.0, count: 1, spread: 0, icon: 'O', ammo: 2, behavior: 'gravityWell' },
+      { name: 'Cluster Pull', color: '#c0f', radius: 16, dmgMult: 0.3, count: 3, spread: 4, icon: 'ooo', ammo: 3, behavior: 'gravityWell' },
+      { name: 'Black Hole', color: '#40f', radius: 50, dmgMult: 2.0, count: 1, spread: 0, icon: '(*)', ammo: 1, behavior: 'gravityWell' },
     ]},
   // INVINCIBLE — starts at 1 HP, max 1M HP, infinite shield, gains HP through vampire shields
   { name: 'Invincible', color: '#fff', bodyW: 36, bodyH: 14, barrelLen: 30, barrelW: 7, hp: 1000000, speed: 0.8, fuel: 50, desc: 'Starts at 1 HP', locked: true, unlockCode: '146',
