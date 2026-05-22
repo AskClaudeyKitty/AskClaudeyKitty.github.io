@@ -796,8 +796,13 @@ function renderUno() {
     // Discard
     const top = unoDiscard[unoDiscard.length - 1];
     const discardDiv = document.getElementById('uno-discard');
-    discardDiv.className = 'uno-card uno-' + (top.color === 'wild' ? 'wild' : top.color);
-    discardDiv.textContent = top.type;
+    if (top && top.color) {
+        discardDiv.className = 'uno-card uno-' + (top.color === 'wild' ? 'wild' : top.color);
+        discardDiv.textContent = top.type;
+    } else {
+        discardDiv.className = 'uno-card uno-wild';
+        discardDiv.textContent = '?';
+    }
     // Hand
     const handDiv = document.getElementById('uno-hand');
     handDiv.innerHTML = '';
@@ -820,6 +825,7 @@ function renderUno() {
 
 function isUnoPlayable(card) {
     const top = unoDiscard[unoDiscard.length - 1];
+    if (!top || !top.color) return false;
     if (card.color === 'wild') return true;
     if (card.color === top.color) return true;
     if (card.type === top.type) return true;
