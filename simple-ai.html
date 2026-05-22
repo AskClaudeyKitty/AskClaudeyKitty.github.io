@@ -315,6 +315,26 @@
                         "Thank you so much! You're making my circuits warm! 😊💕",
                         "Aw, you're so sweet! Thanks! 🌟",
                         "That's very kind of you to say! 😄"
+                    ],
+                    sad: [
+                        "I'm sorry to hear that. Want to talk about it? 💙",
+                        "That sounds tough. I'm here if you need to vent. 🤗",
+                        "Sending you virtual hugs. Things will get better! 💪"
+                    ],
+                    happy: [
+                        "That's wonderful to hear! 🎉",
+                        "Awesome! I'm happy for you! 😄",
+                        "Yay! That's great news! 🌟"
+                    ],
+                    angry: [
+                        "I understand you're frustrated. Take a deep breath. 🫂",
+                        "That sounds really annoying. Want to talk about it? 😤",
+                        "I get it. Sometimes things just suck. 💢"
+                    ],
+                    confused: [
+                        "Let me try to explain that better! 🤔",
+                        "I can see how that's confusing. Let me clarify! 💡",
+                        "No worries, let's break it down step by step! 📚"
                     ]
                 };
 
@@ -336,6 +356,59 @@
                     { regex: /(awesome|cool|great|amazing|you're (the )?best|good bot|nice)/i, category: 'compliment' },
                     { regex: /^(search|google|look up|find information about)/i, category: 'search' }
                 ];
+
+                // Conversation memory
+                this.memory = [];
+                this.maxMemory = 10;
+                this.lastTopic = null;
+                this.userName = null;
+                this.conversationCount = 0;
+            }
+
+            // Store conversation in memory
+            remember(userMsg, aiMsg) {
+                this.memory.push({ user: userMsg, ai: aiMsg, time: Date.now() });
+                if (this.memory.length > this.maxMemory) {
+                    this.memory.shift();
+                }
+                this.conversationCount++;
+            }
+
+            // Detect sentiment
+            detectSentiment(input) {
+                const sadWords = /(sad|depressed|upset|cry|crying|hurt|pain|lonely|miss|lost|grief|sorry|bad day|terrible|awful)/i;
+                const happyWords = /(happy|excited|great|awesome|amazing|wonderful|fantastic|love|best|good news|celebrate|yay|woohoo)/i;
+                const angryWords = /(angry|mad|furious|hate|stupid|idiot|annoying|frustrated|pissed|damn|hell|shit)/i;
+                const confusedWords = /(confused|don't understand|what do you mean|huh|wait what|not sure|clarify|explain)/i;
+
+                if (angryWords.test(input)) return 'angry';
+                if (sadWords.test(input)) return 'sad';
+                if (happyWords.test(input)) return 'happy';
+                if (confusedWords.test(input)) return 'confused';
+                return 'neutral';
+            }
+
+            // Extract potential name
+            extractName(input) {
+                const nameMatch = input.match(/(?:my name is|i am|i'm|call me)\s+([a-zA-Z]+)/i);
+                if (nameMatch && nameMatch[1]) {
+                    this.userName = nameMatch[1];
+                    return `Nice to meet you, ${this.userName}! 👋`;
+                }
+                return null;
+            }
+
+            // Check for follow-up questions
+            isFollowUp(input) {
+                const followUpWords = /^(what about|how about|and|also|what|why|how|tell me more|can you|could you|explain|elaborate)/i;
+                return followUpWords.test(input.trim()) && this.memory.length > 0;
+            }
+
+            // Get context from memory
+            getContext() {
+                if (this.memory.length === 0) return null;
+                const lastExchange = this.memory[this.memory.length - 1];
+                return lastExchange;
             }
 
             getResponse(category) {
@@ -376,14 +449,13 @@
                     }
 
                     const extract = pages[pageId].extract;
-                    return extract.split('\n\n')[0]; // Return first paragraph
+                    return extract.split('\n\n')[0];
                 } catch (e) {
                     return null;
                 }
             }
 
             async searchDuckDuckGo(query) {
-                // Use DuckDuckGo Instant Answer API
                 try {
                     const response = await fetch(
                         `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`
@@ -403,24 +475,23 @@
             }
 
             async performSearch(query) {
-                // Try Wikipedia first, then DuckDuckGo
                 let result = await this.searchWikipedia(query);
                 if (result) {
+                    this.lastTopic = query;
                     return `📚 From Wikipedia: ${result}`;
                 }
 
                 result = await this.searchDuckDuckGo(query);
                 if (result) {
+                    this.lastTopic = query;
                     return `🔍 ${result}`;
                 }
 
-                // If no results, return search link
                 return `I couldn't find specific information, but you can search here: 🔗\nhttps://duckduckgo.com/?q=${encodeURIComponent(query)}`;
             }
 
             extractSearchQuery(input) {
                 const trimmed = input.trim();
-                // Extract query after "search for", "search", "google", etc.
                 let query = trimmed
                     .replace(/^(search for|search|google|look up|find information about|tell me about|what is|what's|who is|what are)/i, '')
                     .replace(/[?!.,;]$/g, '')
@@ -431,20 +502,40 @@
             async respond(input) {
                 const trimmedInput = input.trim().toLowerCase();
 
+                // Check for name introduction
+                const nameResponse = this.extractName(input);
+                if (nameResponse) return nameResponse;
+
+                // Detect sentiment
+                const sentiment = this.detectSentiment(input);
+
+                // Check for follow-up
+                if (this.isFollowUp(input) && this.lastTopic) {
+                    const context = this.getContext();
+                    if (context && context.ai.includes('Wikipedia')) {
+                        return `Want me to search for more about ${this.lastTopic}? Or ask me something else! 🤔`;
+                    }
+                }
+
                 // Check for explicit search request
                 if (/^(search|google|look up|find)/i.test(trimmedInput)) {
                     const query = this.extractSearchQuery(input);
                     return this.performSearch(query);
                 }
 
-                // Check patterns first (before math and search)
+                // Check patterns
                 for (const pattern of this.patterns) {
                     if (pattern.regex.test(trimmedInput)) {
-                        return this.getResponse(pattern.category);
+                        const response = this.getResponse(pattern.category);
+                        // Add personalization
+                        if (this.userName && Math.random() > 0.7) {
+                            return `${response} By the way, ${this.userName}, how's your day going?`;
+                        }
+                        return response;
                     }
                 }
 
-                // Check for math (only if it has numbers)
+                // Check for math
                 if (/[0-9+\-*/]/.test(input) &&
                     (trimmedInput.includes('calculate') || trimmedInput.includes('what\'s') ||
                      (/^what is/.test(trimmedInput) && /[0-9]/.test(input)))) {
@@ -454,7 +545,7 @@
                     }
                 }
 
-                // For unknown questions, try to search the web
+                // For unknown questions, try to search
                 if (trimmedInput.includes('who') || trimmedInput.includes('what') ||
                     trimmedInput.includes('when') || trimmedInput.includes('where') ||
                     trimmedInput.includes('why') || trimmedInput.includes('how') ||
@@ -463,7 +554,17 @@
                     return this.performSearch(query);
                 }
 
-                // Default responses
+                // Sentiment-based default responses
+                if (sentiment === 'sad') return this.getResponse('sad');
+                if (sentiment === 'happy') return this.getResponse('happy');
+                if (sentiment === 'angry') return this.getResponse('angry');
+                if (sentiment === 'confused') return this.getResponse('confused');
+
+                // Context-aware defaults
+                if (this.conversationCount > 5) {
+                    return "We've been chatting for a while! What else is on your mind? 💭";
+                }
+
                 const defaultResponses = [
                     "That's interesting! Tell me more! 🤔",
                     "Hmm, I'm not sure about that. Try asking something else! 😅",
@@ -538,6 +639,10 @@
                 const response = await ai.respond(text);
                 typingIndicator.classList.remove('active');
                 addMessage(response, false);
+                
+                // Store in memory
+                ai.remember(text, response);
+                
                 userInput.disabled = false;
                 sendBtn.disabled = false;
                 userInput.focus();
