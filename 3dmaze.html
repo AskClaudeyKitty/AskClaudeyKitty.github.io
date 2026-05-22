@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Maze</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+  canvas { image-rendering: pixelated; }
+  #info { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 14px; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c" width="640" height="400"></canvas>
+<div id="info">WASD to move, Mouse to look | Find the green exit</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Maze map (1 = wall, 0 = empty, 2 = exit)
+const map = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],
+  [1,0,1,0,1,0,1,1,1,0,1,0,1,1,0,1],
+  [1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],
+  [1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],
+  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+  [1,1,1,0,1,0,1,1,1,0,1,1,1,1,0,1],
+  [1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],
+  [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+const MAP_W = map[0].length, MAP_H = map.length;
+const CELL = 64;
+
+// Player
+const player = { x: 96, y: 96, angle: 0, speed: 2, rotSpeed: 0.04 };
+const keys = {};
+let gameState = 'playing';
+
+// Fog of war for minimap
+const visited = Array.from({length: MAP_H}, () => Array(MAP_W).fill(false));
+
+// Raycasting constants
+const FOV = Math.PI / 3;
+const HALF_FOV = FOV / 2;
+const NUM_RAYS = W;
+const MAX_DEPTH = 800;
+
+// Colors
+const CEIL = '#222';
+const FLOOR = '#444';
+const WALL_COLORS = ['#666', '#555', '#444'];
+const EXIT_COLOR = '#0f0';
+
+// Input
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (gameState === 'won' && (e.key === ' ' || e.key === 'r' || e.key === 'R')) {
+    gameState = 'playing';
+    player.x = 96; player.y = 96; player.angle = 0;
+    for (let y = 0; y < MAP_H; y++) visited[y].fill(false);
+  }
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// Mouse look
+canvas.addEventListener('mousemove', e => {
+  if (document.pointerLockElement === canvas) {
+    player.angle += e.movementX * 0.002;
+  }
+});
+canvas.addEventListener('click', () => canvas.requestPointerLock());
+
+function castRay(rayAngle) {
+  let sin = Math.sin(rayAngle);
+  let cos = Math.cos(rayAngle);
+  let x = player.x;
+  let y = player.y;
+  let dx = cos * 2;
+  let dy = sin * 2;
+  let depth = 0;
+  let hit = 0;
+  let side = 0;
+
+  while (depth < MAX_DEPTH) {
+    x += dx;
+    y += dy;
+    depth += 2;
+    let mx = Math.floor(x / CELL);
+    let my = Math.floor(y / CELL);
+    if (mx < 0 || mx >= MAP_W || my < 0 || my >= MAP_H) break;
+    if (map[my][mx] > 0) {
+      hit = map[my][mx];
+      side = Math.abs(dx) > Math.abs(dy) ? 0 : 1;
+      break;
+    }
+  }
+
+  // Fix fisheye
+  let perpDist = depth * Math.cos(rayAngle - player.angle);
+  return { dist: perpDist, hit, side };
+}
+
+function update() {
+  if (gameState !== 'playing') return;
+  // Movement
+  let moveX = 0, moveY = 0;
+  if (keys['w']) { moveX += Math.cos(player.angle) * player.speed; moveY += Math.sin(player.angle) * player.speed; }
+  if (keys['s']) { moveX -= Math.cos(player.angle) * player.speed; moveY -= Math.sin(player.angle) * player.speed; }
+  if (keys['a']) { moveX += Math.cos(player.angle - Math.PI/2) * player.speed; moveY += Math.sin(player.angle - Math.PI/2) * player.speed; }
+  if (keys['d']) { moveX += Math.cos(player.angle + Math.PI/2) * player.speed; moveY += Math.sin(player.angle + Math.PI/2) * player.speed; }
+
+  // Collision
+  let newX = player.x + moveX;
+  let newY = player.y + moveY;
+  if (map[Math.floor(newY / CELL)][Math.floor(player.x / CELL)] === 0) player.y = newY;
+  if (map[Math.floor(player.y / CELL)][Math.floor(newX / CELL)] === 0) player.x = newX;
+
+  // Check exit
+  let mx = Math.floor(player.x / CELL);
+  let my = Math.floor(player.y / CELL);
+  if (map[my][mx] === 2) {
+    gameState = 'won';
+  }
+
+  // Reveal minimap fog
+  const revealRadius = 2;
+  for (let dy = -revealRadius; dy <= revealRadius; dy++) {
+    for (let dx = -revealRadius; dx <= revealRadius; dx++) {
+      const vy = my + dy, vx = mx + dx;
+      if (vy >= 0 && vy < MAP_H && vx >= 0 && vx < MAP_W) visited[vy][vx] = true;
+    }
+  }
+}
+
+function draw() {
+  // Ceiling
+  ctx.fillStyle = CEIL;
+  ctx.fillRect(0, 0, W, H/2);
+  // Floor
+  ctx.fillStyle = FLOOR;
+  ctx.fillRect(0, H/2, W, H/2);
+
+  // Cast rays
+  for (let i = 0; i < NUM_RAYS; i++) {
+    let rayAngle = player.angle - HALF_FOV + (i / NUM_RAYS) * FOV;
+    let ray = castRay(rayAngle);
+
+    if (ray.hit) {
+      let wallH = (CELL / ray.dist) * 277;
+      wallH = Math.min(wallH, H);
+      let y1 = (H - wallH) / 2;
+      let shade = Math.max(0.2, 1 - ray.dist / 600);
+      if (ray.side) shade *= 0.7;
+
+      if (ray.hit === 2) {
+        ctx.fillStyle = EXIT_COLOR;
+      } else {
+        let c = WALL_COLORS[ray.hit - 1] || WALL_COLORS[0];
+        ctx.fillStyle = c;
+      }
+      ctx.globalAlpha = shade;
+      ctx.fillRect(i, y1, 1, wallH);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Minimap (fog of war)
+  const ms = 4;
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (!visited[y][x]) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(W - MAP_W*ms - 10 + x*ms, 10 + y*ms, ms, ms);
+        continue;
+      }
+      if (map[y][x] === 1) ctx.fillStyle = '#fff';
+      else if (map[y][x] === 2) ctx.fillStyle = '#0f0';
+      else ctx.fillStyle = '#222';
+      ctx.fillRect(W - MAP_W*ms - 10 + x*ms, 10 + y*ms, ms, ms);
+    }
+  }
+  ctx.fillStyle = '#f00';
+  ctx.fillRect(W - MAP_W*ms - 10 + (player.x/CELL)*ms, 10 + (player.y/CELL)*ms, 2, 2);
+}
+
+function drawWin() {
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0f0';
+  ctx.font = 'bold 48px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ESCAPED', W / 2, H / 2 - 30);
+  ctx.fillStyle = '#888';
+  ctx.font = '18px monospace';
+  ctx.fillText('Press SPACE or R to restart', W / 2, H / 2 + 20);
+  ctx.textAlign = 'left';
+}
+
+function loop() {
+  update();
+  draw();
+  if (gameState === 'won') drawWin();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
