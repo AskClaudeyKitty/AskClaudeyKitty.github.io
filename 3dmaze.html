@@ -117,8 +117,10 @@ function update() {
   // Collision
   let newX = player.x + moveX;
   let newY = player.y + moveY;
-  if (map[Math.floor(newY / CELL)][Math.floor(player.x / CELL)] === 0) player.y = newY;
-  if (map[Math.floor(player.y / CELL)][Math.floor(newX / CELL)] === 0) player.x = newX;
+  const cellY = map[Math.floor(newY / CELL)][Math.floor(player.x / CELL)];
+  if (cellY === 0 || cellY === 2) player.y = newY;
+  const cellX = map[Math.floor(player.y / CELL)][Math.floor(newX / CELL)];
+  if (cellX === 0 || cellX === 2) player.x = newX;
 
   // Check exit
   let mx = Math.floor(player.x / CELL);
