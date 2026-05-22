@@ -205,6 +205,26 @@
             color: #667eea;
             margin-bottom: 10px;
         }
+        .feedback-btns {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .feedback-btns:hover { opacity: 1; }
+        .feedback-btn {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .feedback-btn:hover { background: #eee; }
+        .feedback-btn.liked { background: #d4edda; border-color: #28a745; }
+        .feedback-btn.disliked { background: #f8d7da; border-color: #dc3545; }
     </style>
 </head>
 <body>
@@ -363,6 +383,137 @@
                 this.lastTopic = null;
                 this.userName = null;
                 this.conversationCount = 0;
+
+                // Local Storage Learning
+                this.learnedFacts = JSON.parse(localStorage.getItem('ai_learned_facts') || '[]');
+                this.likedResponses = JSON.parse(localStorage.getItem('ai_liked_responses') || '[]');
+                this.dislikedResponses = JSON.parse(localStorage.getItem('ai_disliked_responses') || '[]');
+                this.userInterests = JSON.parse(localStorage.getItem('ai_user_interests') || '[]');
+                this.searchCache = JSON.parse(localStorage.getItem('ai_search_cache') || '{}');
+                this.responseStats = JSON.parse(localStorage.getItem('ai_response_stats') || '{}');
+            }
+
+            // Save learned data to localStorage
+            saveLearning() {
+                localStorage.setItem('ai_learned_facts', JSON.stringify(this.learnedFacts));
+                localStorage.setItem('ai_liked_responses', JSON.stringify(this.likedResponses));
+                localStorage.setItem('ai_disliked_responses', JSON.stringify(this.dislikedResponses));
+                localStorage.setItem('ai_user_interests', JSON.stringify(this.userInterests));
+                localStorage.setItem('ai_search_cache', JSON.stringify(this.searchCache));
+                localStorage.setItem('ai_response_stats', JSON.stringify(this.responseStats));
+            }
+
+            // Extract facts from user messages ("X is Y", "I like X", "My favorite X is Y")
+            extractFacts(input) {
+                const facts = [];
+                
+                // "X is Y" pattern
+                const isMatches = input.match(/([a-zA-Z\s]+)\s+is\s+([a-zA-Z0-9\s]+)/gi);
+                if (isMatches) {
+                    isMatches.forEach(match => {
+                        const parts = match.split(/\s+is\s+/i);
+                        if (parts.length === 2) {
+                            facts.push({ subject: parts[0].trim().toLowerCase(), relation: 'is', object: parts[1].trim().toLowerCase() });
+                        }
+                    });
+                }
+
+                // "I like X" / "I love X" / "I hate X"
+                const likeMatches = input.match(/i\s+(like|love|hate|enjoy|prefer)\s+([a-zA-Z0-9\s]+)/i);
+                if (likeMatches) {
+                    facts.push({ subject: 'user', relation: likeMatches[1].toLowerCase(), object: likeMatches[2].trim().toLowerCase() });
+                    // Track interests
+                    const interest = likeMatches[2].trim().toLowerCase();
+                    if (!this.userInterests.includes(interest)) {
+                        this.userInterests.push(interest);
+                        if (this.userInterests.length > 20) this.userInterests.shift();
+                    }
+                }
+
+                // "My favorite X is Y"
+                const favMatches = input.match(/my\s+favorite\s+([a-zA-Z]+)\s+is\s+([a-zA-Z0-9\s]+)/i);
+                if (favMatches) {
+                    facts.push({ subject: `user_favorite_${favMatches[1]}`, relation: 'is', object: favMatches[2].trim().toLowerCase() });
+                }
+
+                // Store new facts
+                facts.forEach(fact => {
+                    const exists = this.learnedFacts.some(f => 
+                        f.subject === fact.subject && f.relation === fact.relation && f.object === fact.object
+                    );
+                    if (!exists) {
+                        this.learnedFacts.push({ ...fact, timestamp: Date.now() });
+                        if (this.learnedFacts.length > 50) this.learnedFacts.shift();
+                    }
+                });
+
+                if (facts.length > 0) this.saveLearning();
+                return facts;
+            }
+
+            // Find relevant fact for a query
+            findRelevantFact(input) {
+                const words = input.toLowerCase().split(/\s+/);
+                for (const fact of this.learnedFacts.slice().reverse()) {
+                    if (words.some(w => fact.subject.includes(w) || fact.object.includes(w))) {
+                        return fact;
+                    }
+                }
+                return null;
+            }
+
+            // Track response feedback
+            trackFeedback(response, liked) {
+                const key = response.substring(0, 100);
+                if (liked) {
+                    if (!this.likedResponses.includes(key)) {
+                        this.likedResponses.push(key);
+                        if (this.likedResponses.length > 30) this.likedResponses.shift();
+                    }
+                    this.responseStats[key] = (this.responseStats[key] || 0) + 1;
+                } else {
+                    if (!this.dislikedResponses.includes(key)) {
+                        this.dislikedResponses.push(key);
+                        if (this.dislikedResponses.length > 30) this.dislikedResponses.shift();
+                    }
+                    this.responseStats[key] = (this.responseStats[key] || 0) - 1;
+                }
+                this.saveLearning();
+            }
+
+            // Check if response was previously liked
+            wasLiked(response) {
+                const key = response.substring(0, 100);
+                return this.likedResponses.includes(key) || (this.responseStats[key] || 0) > 0;
+            }
+
+            // Check if response was previously disliked
+            wasDisliked(response) {
+                const key = response.substring(0, 100);
+                return this.dislikedResponses.includes(key) || (this.responseStats[key] || 0) < 0;
+            }
+
+            // Get cached search result
+            getCachedSearch(query) {
+                const key = query.toLowerCase().substring(0, 50);
+                const cached = this.searchCache[key];
+                if (cached && Date.now() - cached.time < 24 * 60 * 60 * 1000) {
+                    return cached.result;
+                }
+                return null;
+            }
+
+            // Cache search result
+            cacheSearch(query, result) {
+                const key = query.toLowerCase().substring(0, 50);
+                this.searchCache[key] = { result, time: Date.now() };
+                // Keep only 20 most recent
+                const entries = Object.entries(this.searchCache);
+                if (entries.length > 20) {
+                    entries.sort((a, b) => a[1].time - b[1].time);
+                    this.searchCache = Object.fromEntries(entries.slice(-20));
+                }
+                this.saveLearning();
             }
 
             // Store conversation in memory
@@ -475,15 +626,24 @@
             }
 
             async performSearch(query) {
+                // Check cache first
+                const cached = this.getCachedSearch(query);
+                if (cached) {
+                    this.lastTopic = query;
+                    return `📚 (cached) ${cached}`;
+                }
+
                 let result = await this.searchWikipedia(query);
                 if (result) {
                     this.lastTopic = query;
+                    this.cacheSearch(query, result);
                     return `📚 From Wikipedia: ${result}`;
                 }
 
                 result = await this.searchDuckDuckGo(query);
                 if (result) {
                     this.lastTopic = query;
+                    this.cacheSearch(query, result);
                     return `🔍 ${result}`;
                 }
 
@@ -502,9 +662,22 @@
             async respond(input) {
                 const trimmedInput = input.trim().toLowerCase();
 
+                // Extract and learn facts
+                const facts = this.extractFacts(input);
+
                 // Check for name introduction
                 const nameResponse = this.extractName(input);
                 if (nameResponse) return nameResponse;
+
+                // Check for learned facts relevance
+                const relevantFact = this.findRelevantFact(input);
+                if (relevantFact && Math.random() > 0.5) {
+                    if (relevantFact.relation === 'is') {
+                        return `I remember you told me that ${relevantFact.subject} is ${relevantFact.object}! 🤓`;
+                    } else {
+                        return `I know you ${relevantFact.relation} ${relevantFact.object}! 😊`;
+                    }
+                }
 
                 // Detect sentiment
                 const sentiment = this.detectSentiment(input);
@@ -523,11 +696,19 @@
                     return this.performSearch(query);
                 }
 
-                // Check patterns
+                // Check patterns - prefer previously liked responses
                 for (const pattern of this.patterns) {
                     if (pattern.regex.test(trimmedInput)) {
-                        const response = this.getResponse(pattern.category);
-                        // Add personalization
+                        const responses = this.responses[pattern.category];
+                        // Sort by preference (liked first)
+                        const sorted = responses.slice().sort((a, b) => {
+                            const aLiked = this.wasLiked(a) ? 1 : 0;
+                            const bLiked = this.wasLiked(b) ? 1 : 0;
+                            const aDisliked = this.wasDisliked(a) ? -1 : 0;
+                            const bDisliked = this.wasDisliked(b) ? -1 : 0;
+                            return (bLiked + bDisliked) - (aLiked + aDisliked);
+                        });
+                        const response = sorted[0];
                         if (this.userName && Math.random() > 0.7) {
                             return `${response} By the way, ${this.userName}, how's your day going?`;
                         }
@@ -596,22 +777,41 @@
             messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
 
             if (isUser) {
-                // For user messages, escape HTML
                 messageDiv.textContent = text;
             } else {
-                // For AI messages, allow links and formatting
                 let htmlText = text
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-
-                // Convert URLs to links
                 htmlText = htmlText.replace(/(https?:\/\/[^\s\n<>]+)/g, '<a href="$1" target="_blank">$1</a>');
-
-                // Convert newlines to breaks
                 htmlText = htmlText.replace(/\n/g, '<br>');
-
                 messageDiv.innerHTML = htmlText;
+
+                // Add feedback buttons
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'feedback-btns';
+                
+                const likeBtn = document.createElement('button');
+                likeBtn.className = 'feedback-btn';
+                likeBtn.textContent = '👍';
+                likeBtn.onclick = () => {
+                    ai.trackFeedback(text, true);
+                    likeBtn.classList.add('liked');
+                    dislikeBtn.disabled = true;
+                };
+                
+                const dislikeBtn = document.createElement('button');
+                dislikeBtn.className = 'feedback-btn';
+                dislikeBtn.textContent = '👎';
+                dislikeBtn.onclick = () => {
+                    ai.trackFeedback(text, false);
+                    dislikeBtn.classList.add('disliked');
+                    likeBtn.disabled = true;
+                };
+                
+                feedbackDiv.appendChild(likeBtn);
+                feedbackDiv.appendChild(dislikeBtn);
+                messageDiv.appendChild(feedbackDiv);
             }
 
             chatMessages.appendChild(messageDiv);
