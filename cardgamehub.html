@@ -1245,8 +1245,9 @@ function tryMoveToTableau(targetPile) {
     }
 
     target.push(...movingCards);
+    const sourcePileIdx = solSelected.from === 'tableau' ? solSelected.pile : -1;
     solSelected = null;
-    flipTableauTop(solSelected?.from === 'tableau' ? solSelected.pile : -1);
+    flipTableauTop(sourcePileIdx);
     renderSolitaire();
     checkSolWin();
 }
@@ -1294,8 +1295,9 @@ function tryMoveToFoundation(foundIdx) {
     }
 
     target.push(...movingCards);
+    const srcPileIdx = solSelected.from === 'tableau' ? solSelected.pile : -1;
     solSelected = null;
-    flipTableauTop(solSelected?.from === 'tableau' ? solSelected.pile : -1);
+    flipTableauTop(srcPileIdx);
     renderSolitaire();
     checkSolWin();
 }
