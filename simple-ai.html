@@ -355,6 +355,13 @@
                         "Let me try to explain that better! 🤔",
                         "I can see how that's confusing. Let me clarify! 💡",
                         "No worries, let's break it down step by step! 📚"
+                    ],
+                    food: [
+                        "Food is one of life's greatest pleasures! What's your favorite cuisine? 🍕",
+                        "I can't eat, but I love hearing about delicious dishes! What are you craving? 🍔",
+                        "Cooking is such a creative art. Do you like to cook or prefer eating out? 🍝",
+                        "Tell me more about that dish! It sounds interesting. 🍜",
+                        "I'm getting hungry just thinking about it! What's the best meal you've ever had? 🌮"
                     ]
                 };
 
@@ -374,7 +381,8 @@
                     { regex: /(help|what can you do|abilities|features)/i, category: 'help' },
                     { regex: /(are you (an )?ai|are you a bot|are you human|artificial intelligence)/i, category: 'identity' },
                     { regex: /(awesome|cool|great|amazing|you're (the )?best|good bot|nice)/i, category: 'compliment' },
-                    { regex: /^(search|google|look up|find information about)/i, category: 'search' }
+                    { regex: /^(search|google|look up|find information about)/i, category: 'search' },
+                    { regex: /(food|eat|hungry|meal|cook|recipe|restaurant|pizza|burger|sushi|pasta|dessert|breakfast|lunch|dinner|snack|tasty|delicious|flavor|cuisine|kitchen)/i, category: 'food' }
                 ];
 
                 // Conversation memory
