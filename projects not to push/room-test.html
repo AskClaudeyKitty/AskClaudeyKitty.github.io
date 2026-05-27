@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #eee;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.85rem;
+            color: #aaa;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        #ui b { color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <b>WASD</b> Move <br>
+        <b>E</b> Toggle Door <br>
+        <b>Space</b> Shoot <br>
+        <b>Mouse</b> Look
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const TILE = 48;
+const WALL_H = 28;
+
+// Map: 0=floor, 1=wall, 9=player start
+// Doors are stored separately
+const map = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+// Door objects: {gx, gy, open: 0..1, target: 0 or 1}
+let doors = [
+    {gx: 4, gy: 3, open: 0, target: 0},
+    {gx: 9, gy: 1, open: 0, target: 0},
+    {gx: 14, gy: 3, open: 0, target: 0},
+    {gx: 7, gy: 7, open: 0, target: 0},
+    {gx: 12, gy: 7, open: 0, target: 0},
+    {gx: 7, gy: 11, open: 0, target: 0},
+    {gx: 12, gy: 11, open: 0, target: 0},
+    {gx: 4, gy: 15, open: 0, target: 0},
+    {gx: 14, gy: 15, open: 0, target: 0},
+];
+
+let player = { x: 0, y: 0, r: 10, angle: 0, speed: 3 };
+let keys = {};
+let mouse = { x: 0, y: 0 };
+let bullets = [];
+let npcs = [
+    { x: 2.5 * TILE + TILE/2, y: 2.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 9.5 * TILE + TILE/2, y: 2.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 16.5 * TILE + TILE/2, y: 2.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 2.5 * TILE + TILE/2, y: 9.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 9.5 * TILE + TILE/2, y: 9.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 16.5 * TILE + TILE/2, y: 9.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 2.5 * TILE + TILE/2, y: 16.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 9.5 * TILE + TILE/2, y: 16.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+    { x: 16.5 * TILE + TILE/2, y: 16.5 * TILE + TILE/2, r: 10, alive: true, color: '#ff4a4a' },
+];
+
+for (let y = 0; y < map.length; y++) {
+    for (let x = 0; x < map[y].length; x++) {
+        if (map[y][x] === 9) {
+            player.x = x * TILE + TILE/2;
+            player.y = y * TILE + TILE/2;
+            map[y][x] = 0;
+        }
+    }
+}
+
+function isWall(tx, ty) {
+    if (ty < 0 || ty >= map.length || tx < 0 || tx >= map[0].length) return true;
+    if (map[ty][tx] === 1) return true;
+    // Check if there's a closed/closing door here
+    for (const d of doors) {
+        if (d.gx === tx && d.gy === ty && d.open < 0.9) return true;
+    }
+    return false;
+}
+
+function circleCollides(cx, cy, r) {
+    const left = Math.floor((cx - r) / TILE);
+    const right = Math.floor((cx + r) / TILE);
+    const top = Math.floor((cy - r) / TILE);
+    const bottom = Math.floor((cy + r) / TILE);
+    for (let ty = top; ty <= bottom; ty++) {
+        for (let tx = left; tx <= right; tx++) {
+            if (ty >= 0 && ty < map.length && tx >= 0 && tx < map[0].length) {
+                if (isWall(tx, ty)) {
+                    const rx = tx * TILE, ry = ty * TILE;
+                    const closestX = Math.max(rx, Math.min(cx, rx + TILE));
+                    const closestY = Math.max(ry, Math.min(cy, ry + TILE));
+                    const dx = cx - closestX;
+                    const dy = cy - closestY;
+                    if (dx*dx + dy*dy < r*r) return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function update() {
+    let dx = 0, dy = 0;
+    if (keys['w'] || keys['arrowup']) dy -= player.speed;
+    if (keys['s'] || keys['arrowdown']) dy += player.speed;
+    if (keys['a'] || keys['arrowleft']) dx -= player.speed;
+    if (keys['d'] || keys['arrowright']) dx += player.speed;
+
+    if (dx !== 0 && dy !== 0) {
+        const len = Math.sqrt(dx*dx + dy*dy);
+        dx = (dx / len) * player.speed;
+        dy = (dy / len) * player.speed;
+    }
+
+    if (!circleCollides(player.x + dx, player.y, player.r)) player.x += dx;
+    if (!circleCollides(player.x, player.y + dy, player.r)) player.y += dy;
+
+    const camX = player.x - canvas.width / 2;
+    const camY = player.y - canvas.height / 2;
+    const mx = mouse.x + camX;
+    const my = mouse.y + camY;
+    player.angle = Math.atan2(my - player.y, mx - player.x);
+
+    // Animate doors
+    for (const d of doors) {
+        const diff = d.target - d.open;
+        if (Math.abs(diff) > 0.01) {
+            d.open += diff * 0.15;
+        } else {
+            d.open = d.target;
+        }
+    }
+
+    // Update bullets
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.life--;
+
+        // Check NPC hits
+        for (const npc of npcs) {
+            if (npc.alive) {
+                const dx = b.x - npc.x;
+                const dy = b.y - npc.y;
+                if (dx*dx + dy*dy < (npc.r + 3) * (npc.r + 3)) {
+                    npc.alive = false;
+                    b.life = 0;
+                    break;
+                }
+            }
+        }
+
+        // Check wall collision
+        const tx = Math.floor(b.x / TILE);
+        const ty = Math.floor(b.y / TILE);
+        if (isWall(tx, ty)) {
+            b.life = 0;
+        }
+
+        if (b.life <= 0) bullets.splice(i, 1);
+    }
+}
+
+function draw() {
+    const camX = player.x - canvas.width / 2;
+    const camY = player.y - canvas.height / 2;
+
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const startCol = Math.floor(camX / TILE);
+    const endCol = startCol + Math.ceil(canvas.width / TILE) + 1;
+    const startRow = Math.floor(camY / TILE);
+    const endRow = startRow + Math.ceil(canvas.height / TILE) + 1;
+
+    // Draw floors
+    for (let y = Math.max(0, startRow); y <= Math.min(map.length - 1, endRow); y++) {
+        for (let x = Math.max(0, startCol); x <= Math.min(map[0].length - 1, endCol); x++) {
+            const px = x * TILE - camX;
+            const py = y * TILE - camY;
+            ctx.fillStyle = ((x + y) % 2 === 0) ? '#3a3a3a' : '#333333';
+            ctx.fillRect(px, py, TILE, TILE);
+        }
+    }
+
+    // Collect all renderable objects and sort by depth (back to front)
+    const objects = [];
+
+    // Walls
+    for (let y = Math.max(0, startRow); y <= Math.min(map.length - 1, endRow); y++) {
+        for (let x = Math.max(0, startCol); x <= Math.min(map[0].length - 1, endCol); x++) {
+            if (map[y][x] === 1) {
+                objects.push({ type: 'wall', x: x * TILE, y: y * TILE, sortY: y * TILE + TILE });
+            }
+        }
+    }
+
+    // Doors
+    for (const d of doors) {
+        if (d.gx >= startCol && d.gx <= endCol && d.gy >= startRow && d.gy <= endRow) {
+            objects.push({ type: 'door', door: d, x: d.gx * TILE, y: d.gy * TILE, sortY: d.gy * TILE + TILE });
+        }
+    }
+
+    // NPCs
+    for (const npc of npcs) {
+        if (npc.alive) {
+            objects.push({ type: 'npc', x: npc.x, y: npc.y, sortY: npc.y + npc.r, npc: npc });
+        }
+    }
+
+    // Player
+    objects.push({ type: 'player', x: player.x, y: player.y, sortY: player.y + player.r });
+
+    // Bullets
+    for (const b of bullets) {
+        objects.push({ type: 'bullet', x: b.x, y: b.y, sortY: b.y });
+    }
+
+    // Sort back-to-front (lower sortY drawn first)
+    objects.sort((a, b) => a.sortY - b.sortY);
+
+    // Draw in order
+    for (const obj of objects) {
+        if (obj.type === 'wall') {
+            const px = obj.x - camX;
+            const py = obj.y - camY;
+            ctx.fillStyle = '#555';
+            ctx.fillRect(px, py - WALL_H, TILE, TILE + WALL_H);
+            ctx.fillStyle = '#666';
+            ctx.fillRect(px, py - WALL_H, TILE, TILE);
+            ctx.fillStyle = '#444';
+            ctx.fillRect(px, py, TILE, WALL_H);
+        } else if (obj.type === 'door') {
+            const d = obj.door;
+            const px = obj.x - camX;
+            const py = obj.y - camY;
+            const doorW = TILE - 8;
+            const doorH = TILE + WALL_H - 8;
+            const openAmt = d.open;
+
+            // Door frame (always visible)
+            ctx.fillStyle = '#3a2a1a';
+            ctx.fillRect(px + 2, py - WALL_H + 2, TILE - 4, TILE + WALL_H - 4);
+
+            if (openAmt < 0.95) {
+                // Sliding door: panel slides left into wall
+                const slideX = openAmt * doorW * 0.85;
+                ctx.fillStyle = '#664400';
+                ctx.fillRect(px + 4 - slideX, py - WALL_H + 4, doorW, doorH);
+                ctx.fillStyle = '#775500';
+                ctx.fillRect(px + 4 - slideX, py - WALL_H + 4, doorW, TILE - 8);
+
+                // Handle
+                if (openAmt < 0.5) {
+                    ctx.fillStyle = '#aa8800';
+                    ctx.beginPath();
+                    ctx.arc(px + TILE - 10 - slideX, py + TILE/2, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Floor indicator under open door
+            if (openAmt > 0.3) {
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(px + 4, py + 4, TILE - 8, TILE - 8);
+            }
+        } else if (obj.type === 'npc') {
+            const npc = obj.npc;
+            const px = obj.x - camX;
+            const py = obj.y - camY;
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(px, py + 6, npc.r, npc.r * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Body
+            ctx.fillStyle = npc.color;
+            ctx.beginPath();
+            ctx.arc(px, py, npc.r, 0, Math.PI * 2);
+            ctx.fill();
+            // Head
+            ctx.fillStyle = '#ff8888';
+            ctx.beginPath();
+            ctx.arc(px, py - 4, npc.r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (obj.type === 'bullet') {
+            const px = obj.x - camX;
+            const py = obj.y - camY;
+            ctx.fillStyle = '#ffdd44';
+            ctx.beginPath();
+            ctx.arc(px, py, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (obj.type === 'player') {
+            const px = obj.x - camX;
+            const py = obj.y - camY;
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(px, py + 6, player.r, player.r * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Body
+            ctx.fillStyle = '#4a9eff';
+            ctx.beginPath();
+            ctx.arc(px, py, player.r, 0, Math.PI * 2);
+            ctx.fill();
+            // Direction
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + Math.cos(player.angle) * 16, py + Math.sin(player.angle) * 16);
+            ctx.stroke();
+            // Head
+            ctx.fillStyle = '#7ab8ff';
+            ctx.beginPath();
+            ctx.arc(px, py - 4, player.r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'e') toggleDoor();
+    if (e.key === ' ' || e.code === 'Space') shoot();
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+function toggleDoor() {
+    const tx = Math.floor(player.x / TILE);
+    const ty = Math.floor(player.y / TILE);
+    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+    for (const [dx, dy] of dirs) {
+        const nx = tx + dx, ny = ty + dy;
+        for (const d of doors) {
+            if (d.gx === nx && d.gy === ny) {
+                d.target = d.target === 0 ? 1 : 0;
+                return;
+            }
+        }
+    }
+}
+
+function shoot() {
+    const speed = 8;
+    bullets.push({
+        x: player.x + Math.cos(player.angle) * 14,
+        y: player.y + Math.sin(player.angle) * 14,
+        vx: Math.cos(player.angle) * speed,
+        vy: Math.sin(player.angle) * speed,
+        life: 60
+    });
+}
+
+loop();
+</script>
+</body>
+</html>

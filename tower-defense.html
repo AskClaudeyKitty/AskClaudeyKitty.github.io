@@ -314,32 +314,6 @@ const canvas = document.getElementById('canvas');
             const y = touch.clientY - rect.top;
             handleCanvasInput(x, y);
         }, { passive: false });
-                    selectedPlacedTower = i;
-                    if (!gameRunning) draw();
-                    return;
-                }
-            }
-
-            // Deselect
-            selectedPlacedTower = null;
-            if (!gameRunning) draw();
-
-            // Place tower — not allowed on path
-            if (isOnPath(x, y)) return;
-            const info    = towerTypes[selectedTower];
-            const diffMod = difficultyModifiers[selectedDifficulty];
-            const cost    = Math.floor(info.cost * diffMod.costMod);
-            if (!freeTowers && gold < cost) return;
-
-            towers.push({
-                x, y, type: selectedTower, ...info,
-                cooldown: 0, angle: 0, level: 1,
-                totalCost: cost, targetPriority: 'first'
-            });
-            if (!freeTowers) gold -= cost;
-            updateDisplay();
-            if (!gameRunning) draw();
-        });
 
         function isOnPath(x, y) {
             for (let i = 0; i < currentPath.length - 1; i++) {
