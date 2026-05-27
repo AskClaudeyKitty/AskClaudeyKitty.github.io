@@ -305,14 +305,15 @@ function castRay(rayAngle) {
   let depth = 0;
   let hit = 0;
   let side = 0;
+  let mx = 0, my = 0;
 
   while (depth < MAX_DEPTH) {
     x += dx;
     y += dy;
     depth += 2;
 
-    let mx = Math.floor(x / CELL);
-    let my = Math.floor(y / CELL);
+    mx = Math.floor(x / CELL);
+    my = Math.floor(y / CELL);
     if (mx < 0 || mx >= MAP_W || my < 0 || my >= MAP_H) break;
     if (map[my][mx] > 0) {
       hit = map[my][mx];
