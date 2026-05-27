@@ -855,11 +855,8 @@
             async respond(input) {
                 // Spell correction
                 const { text: correctedInput, corrected } = this.correctSpelling(input);
-                if (corrected) {
-                    // We still respond to the corrected version but could mention it
-                }
 
-                const workingInput = corrected;
+                const workingInput = correctedInput;
                 const trimmedInput = workingInput.trim().toLowerCase();
                 const expandedInput = this.expandSynonyms(trimmedInput);
 
