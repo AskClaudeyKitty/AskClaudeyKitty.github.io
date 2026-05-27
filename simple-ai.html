@@ -384,6 +384,10 @@
                 this.userName = null;
                 this.conversationCount = 0;
 
+                // Conversation state machine
+                this.state = 'greeting'; // greeting, chatting, searching, farewell
+                this.states = ['greeting', 'chatting', 'searching', 'farewell'];
+
                 // Local Storage Learning
                 this.learnedFacts = JSON.parse(localStorage.getItem('ai_learned_facts') || '[]');
                 this.likedResponses = JSON.parse(localStorage.getItem('ai_liked_responses') || '[]');
@@ -391,6 +395,53 @@
                 this.userInterests = JSON.parse(localStorage.getItem('ai_user_interests') || '[]');
                 this.searchCache = JSON.parse(localStorage.getItem('ai_search_cache') || '{}');
                 this.responseStats = JSON.parse(localStorage.getItem('ai_response_stats') || '{}');
+
+                // Synonym expansion for better matching
+                this.synonyms = {
+                    hello: ['hi', 'hey', 'greetings', 'howdy', 'yo', 'sup', 'hiya'],
+                    bye: ['goodbye', 'see ya', 'farewell', 'exit', 'quit', 'later', 'cya'],
+                    thanks: ['thank', 'thx', 'appreciate', 'grateful', 'cheers'],
+                    joke: ['joke', 'funny', 'laugh', 'humor', 'hilarious', 'comedy'],
+                    search: ['search', 'google', 'look up', 'find', 'lookup', 'query'],
+                    help: ['help', 'assist', 'support', 'aid', 'what can you do', 'abilities']
+                };
+
+                // Common typos and corrections
+                this.spellCorrections = {
+                    teh: 'the', 'thier': 'their', 'recieve': 'receive', 'adress': 'address',
+                    'occured': 'occurred', 'seperate': 'separate', 'definately': 'definitely',
+                    'wierd': 'weird', 'belive': 'believe', 'freind': 'friend', 'becuase': 'because',
+                    'accomodate': 'accommodate', 'acheive': 'achieve', 'accross': 'across',
+                    'agressive': 'aggressive', 'apparantly': 'apparently', 'aquire': 'acquire',
+                    'begining': 'beginning', 'beleive': 'believe', 'buisness': 'business',
+                    'calender': 'calendar', 'carreer': 'career', 'cemetary': 'cemetery',
+                    'changable': 'changeable', 'collectable': 'collectible', 'collegue': 'colleague',
+                    'comming': 'coming', 'commited': 'committed', 'completly': 'completely',
+                    'concious': 'conscious', 'curiousity': 'curiosity', 'definate': 'definite',
+                    'desireable': 'desirable', 'dilemna': 'dilemma', 'dissapoint': 'disappoint',
+                    'ecstacy': 'ecstasy', 'embarass': 'embarrass', 'enviroment': 'environment',
+                    'equipement': 'equipment', 'existance': 'existence', 'experiance': 'experience',
+                    'farenheit': 'fahrenheit', 'foriegn': 'foreign', 'freindly': 'friendly',
+                    'goverment': 'government', 'grammer': 'grammar', 'harrass': 'harass',
+                    'hieght': 'height', 'hipocrit': 'hypocrite', 'humerous': 'humorous',
+                    'imediately': 'immediately', 'independant': 'independent', 'interupt': 'interrupt',
+                    'irresistable': 'irresistible', 'knowlege': 'knowledge', 'liason': 'liaison',
+                    'libary': 'library', 'lightening': 'lightning', 'loose': 'lose',
+                    'maintainance': 'maintenance', 'managment': 'management', 'millenium': 'millennium',
+                    'mischevious': 'mischievous', 'mispell': 'misspell', 'neccessary': 'necessary',
+                    'noticable': 'noticeable', 'occassion': 'occasion', 'occurance': 'occurrence',
+                    'paralell': 'parallel', 'peice': 'piece', 'persistant': 'persistent',
+                    'posession': 'possession', 'prefered': 'preferred', 'presense': 'presence',
+                    'priviledge': 'privilege', 'proffesional': 'professional', 'pronounciation': 'pronunciation',
+                    'publically': 'publicly', 'recomend': 'recommend', 'refering': 'referring',
+                    'relevent': 'relevant', 'religous': 'religious', 'repetion': 'repetition',
+                    'restaraunt': 'restaurant', 'rythm': 'rhythm', 'sieze': 'seize',
+                    'similiar': 'similar', 'sincerly': 'sincerely', 'speach': 'speech',
+                    'stratagy': 'strategy', 'sucessful': 'successful', 'supercede': 'supersede',
+                    'suprise': 'surprise', 'tommorow': 'tomorrow', 'truely': 'truly',
+                    'unneccesary': 'unnecessary', 'untill': 'until', 'weild': 'wield',
+                    'wierd': 'weird', 'whereever': 'wherever', 'writting': 'writing'
+                };
             }
 
             // Save learned data to localStorage
@@ -541,17 +592,149 @@
 
             // Extract potential name
             extractName(input) {
-                const nameMatch = input.match(/(?:my name is|i am|i'm|call me)\s+([a-zA-Z]+)/i);
-                if (nameMatch && nameMatch[1]) {
-                    this.userName = nameMatch[1];
-                    return `Nice to meet you, ${this.userName}! 👋`;
+                const lowerInput = input.toLowerCase();
+
+                // Reject explicit negations like "my name is not john" or "i am not sad"
+                if (/(not my name|my name is not|my name isn't|i am not|i'm not|call me not)/i.test(input)) {
+                    return null;
                 }
-                return null;
+
+                const nameMatch = input.match(/(?:my name is|i am|i'm|call me)\s+([a-zA-Z]+)/i);
+                if (!nameMatch || !nameMatch[1]) return null;
+
+                const captured = nameMatch[1].toLowerCase();
+
+                // Blacklist of words that are clearly not names (emotions, states, common words)
+                const nonNames = new Set([
+                    // emotions
+                    'sad', 'happy', 'angry', 'mad', 'upset', 'excited', 'bored', 'tired', 'sleepy',
+                    'hungry', 'thirsty', 'sick', 'ill', 'fine', 'okay', 'ok', 'good', 'bad', 'great',
+                    'awesome', 'terrible', 'worried', 'scared', 'afraid', 'lonely', 'depressed',
+                    'anxious', 'nervous', 'confused', 'frustrated', 'disappointed', 'surprised',
+                    'shocked', 'embarrassed', 'jealous', 'proud', 'ashamed', 'guilty', 'hopeful',
+                    'relieved', 'satisfied', 'content', 'peaceful', 'calm', 'relaxed', 'stressed',
+                    'overwhelmed', 'annoyed', 'irritated', 'furious', 'delighted', 'joyful',
+                    'cheerful', 'miserable', 'gloomy', 'heartbroken', 'devastated', 'ecstatic',
+                    // states/actions
+                    'busy', 'free', 'available', 'ready', 'done', 'finished', 'started', 'going',
+                    'coming', 'leaving', 'staying', 'waiting', 'feeling', 'thinking', 'dreaming',
+                    'hoping', 'wondering', 'guessing', 'assuming', 'believing', 'knowing',
+                    'learning', 'trying', 'working', 'studying', 'reading', 'writing', 'speaking',
+                    'talking', 'listening', 'watching', 'seeing', 'hearing', 'eating', 'drinking',
+                    'running', 'walking', 'sitting', 'standing', 'lying', 'sleeping', 'waking',
+                    'getting', 'becoming', 'seeming', 'appearing', 'acting', 'behaving', 'dying',
+                    'living', 'dead', 'alive', 'born', 'here', 'there', 'home', 'away',
+                    // common adjectives
+                    'big', 'small', 'tall', 'short', 'old', 'young', 'new', 'rich', 'poor',
+                    'fat', 'skinny', 'thin', 'heavy', 'light', 'fast', 'slow', 'hot', 'cold',
+                    'warm', 'cool', 'hard', 'soft', 'strong', 'weak', 'smart', 'stupid',
+                    'intelligent', 'dumb', 'clever', 'foolish', 'wise', 'silly', 'serious',
+                    'funny', 'boring', 'interesting', 'dangerous', 'safe', 'healthy', 'unhealthy',
+                    'well', 'fit', 'sure', 'certain', 'positive', 'negative', 'neutral',
+                    'real', 'fake', 'true', 'false', 'right', 'wrong', 'correct', 'incorrect',
+                    'normal', 'abnormal', 'special', 'ordinary', 'single', 'married', 'divorced',
+                    // determiners/pronouns/articles
+                    'the', 'a', 'an', 'this', 'that', 'these', 'those', 'my', 'your', 'his',
+                    'her', 'its', 'our', 'their', 'what', 'which', 'who', 'someone', 'everyone',
+                    'anyone', 'nobody', 'somebody', 'everybody', 'anybody', 'nothing', 'something',
+                    'everything', 'anything', 'all', 'each', 'every', 'both', 'either', 'neither',
+                    'one', 'two', 'three', 'four', 'five', 'first', 'second', 'third', 'last',
+                    'next', 'other', 'another', 'same', 'different', 'such', 'only', 'own',
+                    // misc common words
+                    'not', 'no', 'never', 'always', 'sometimes', 'often', 'rarely', 'usually',
+                    'now', 'then', 'today', 'tomorrow', 'yesterday', 'soon', 'later', 'very',
+                    'really', 'quite', 'pretty', 'too', 'so', 'just', 'even', 'also', 'already',
+                    'yet', 'still', 'back', 'around', 'about', 'against', 'among', 'between',
+                    'through', 'across', 'behind', 'beside', 'beyond', 'inside', 'outside',
+                    'within', 'without', 'into', 'onto', 'upon', 'off', 'out', 'up', 'down',
+                    'over', 'under', 'again', 'further', 'once', 'when', 'where', 'why', 'how',
+                    'any', 'some', 'many', 'much', 'few', 'more', 'most', 'less', 'least',
+                    'none', 'part', 'half', 'whole', 'full', 'empty'
+                ]);
+
+                if (nonNames.has(captured)) {
+                    return null;
+                }
+
+                // Check if "not" or "no" appears between the trigger phrase and the captured word
+                const triggerMatch = input.match(/(my name is|i am|i'm|call me)/i);
+                if (triggerMatch) {
+                    const afterTrigger = lowerInput.substring(triggerMatch.index + triggerMatch[0].length);
+                    const beforeCaptured = afterTrigger.substring(0, afterTrigger.indexOf(captured));
+                    if (/\b(not|no|never|nobody|nothing|nowhere)\b/.test(beforeCaptured)) {
+                        return null;
+                    }
+                }
+
+                this.userName = nameMatch[1];
+                return `Nice to meet you, ${this.userName}! 👋`;
+            }
+
+            // Simple spell correction
+            correctSpelling(input) {
+                const words = input.split(/\s+/);
+                let corrected = false;
+                const result = words.map(word => {
+                    const clean = word.toLowerCase().replace(/[^a-z]/g, '');
+                    if (this.spellCorrections[clean]) {
+                        corrected = true;
+                        // Preserve punctuation
+                        const prefix = word.match(/^[^a-z]*/i)?.[0] || '';
+                        const suffix = word.match(/[^a-z]*$/i)?.[0] || '';
+                        return prefix + this.spellCorrections[clean] + suffix;
+                    }
+                    return word;
+                }).join(' ');
+                return { text: result, corrected };
+            }
+
+            // Expand synonyms in input for better matching
+            expandSynonyms(input) {
+                const lower = input.toLowerCase();
+                let expanded = lower;
+                for (const [key, variants] of Object.entries(this.synonyms)) {
+                    for (const variant of variants) {
+                        if (lower.includes(variant)) {
+                            expanded += ' ' + key;
+                            break;
+                        }
+                    }
+                }
+                return expanded;
+            }
+
+            // Extract main topic/entity from input
+            extractTopic(input) {
+                const lower = input.toLowerCase();
+                // Remove common question words and stop words
+                const stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+                    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+                    'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used',
+                    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into',
+                    'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under',
+                    'and', 'but', 'or', 'yet', 'so', 'if', 'because', 'although', 'though', 'while',
+                    'where', 'when', 'that', 'which', 'who', 'whom', 'whose', 'what', 'how', 'why',
+                    'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+                    'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
+                    'mine', 'yours', 'hers', 'ours', 'theirs', 'myself', 'yourself', 'himself',
+                    'herself', 'itself', 'ourselves', 'yourselves', 'themselves', 'am', 'about',
+                    'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
+                    'no', 'nor', 'not', 'only', 'own', 'same', 'than', 'too', 'very', 'just',
+                    'now', 'then', 'here', 'there', 'once', 'again', 'also', 'back', 'still',
+                    'already', 'yet', 'even', 'ever', 'never', 'always', 'often', 'sometimes',
+                    'usually', 'really', 'quite', 'pretty', 'too', 'so', 'up', 'down', 'out',
+                    'off', 'over', 'under', 'again', 'further', 'once']);
+
+                const words = lower.replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+                if (words.length === 0) return null;
+
+                // Return the longest word as likely the most specific topic
+                return words.sort((a, b) => b.length - a.length)[0];
             }
 
             // Check for follow-up questions
             isFollowUp(input) {
-                const followUpWords = /^(what about|how about|and|also|what|why|how|tell me more|can you|could you|explain|elaborate)/i;
+                const followUpWords = /^(what about|how about|and|also|what|why|how|tell me more|can you|could you|explain|elaborate|more about|details on|go on)/i;
                 return followUpWords.test(input.trim()) && this.memory.length > 0;
             }
 
@@ -560,6 +743,16 @@
                 if (this.memory.length === 0) return null;
                 const lastExchange = this.memory[this.memory.length - 1];
                 return lastExchange;
+            }
+
+            // Get recent topics from memory
+            getRecentTopics() {
+                const topics = [];
+                for (let i = this.memory.length - 1; i >= Math.max(0, this.memory.length - 3); i--) {
+                    const topic = this.extractTopic(this.memory[i].user);
+                    if (topic && !topics.includes(topic)) topics.push(topic);
+                }
+                return topics;
             }
 
             getResponse(category) {
@@ -660,18 +853,30 @@
             }
 
             async respond(input) {
-                const trimmedInput = input.trim().toLowerCase();
+                // Spell correction
+                const { text: correctedInput, corrected } = this.correctSpelling(input);
+                if (corrected) {
+                    // We still respond to the corrected version but could mention it
+                }
+
+                const workingInput = corrected;
+                const trimmedInput = workingInput.trim().toLowerCase();
+                const expandedInput = this.expandSynonyms(trimmedInput);
 
                 // Extract and learn facts
-                const facts = this.extractFacts(input);
+                const facts = this.extractFacts(workingInput);
 
                 // Check for name introduction
-                const nameResponse = this.extractName(input);
-                if (nameResponse) return nameResponse;
+                const nameResponse = this.extractName(workingInput);
+                if (nameResponse) {
+                    this.state = 'chatting';
+                    return nameResponse;
+                }
 
                 // Check for learned facts relevance
-                const relevantFact = this.findRelevantFact(input);
-                if (relevantFact && Math.random() > 0.5) {
+                const relevantFact = this.findRelevantFact(workingInput);
+                if (relevantFact && Math.random() > 0.3) {
+                    this.state = 'chatting';
                     if (relevantFact.relation === 'is') {
                         return `I remember you told me that ${relevantFact.subject} is ${relevantFact.object}! 🤓`;
                     } else {
@@ -680,25 +885,35 @@
                 }
 
                 // Detect sentiment
-                const sentiment = this.detectSentiment(input);
+                const sentiment = this.detectSentiment(workingInput);
 
-                // Check for follow-up
-                if (this.isFollowUp(input) && this.lastTopic) {
+                // Check for follow-up with context
+                if (this.isFollowUp(workingInput) && this.lastTopic) {
                     const context = this.getContext();
-                    if (context && context.ai.includes('Wikipedia')) {
-                        return `Want me to search for more about ${this.lastTopic}? Or ask me something else! 🤔`;
+                    if (context) {
+                        // If last response was a search, search again with context
+                        if (context.ai.includes('Wikipedia') || context.ai.includes('DuckDuckGo') || context.ai.includes('🔍')) {
+                            const query = this.extractSearchQuery(workingInput + ' ' + this.lastTopic);
+                            return this.performSearch(query);
+                        }
+                        // If last response was about a topic, continue on it
+                        const recentTopics = this.getRecentTopics();
+                        if (recentTopics.length > 0) {
+                            return `Sure! What else would you like to know about ${recentTopics[0]}? Or feel free to change the subject! 💭`;
+                        }
                     }
                 }
 
                 // Check for explicit search request
-                if (/^(search|google|look up|find)/i.test(trimmedInput)) {
-                    const query = this.extractSearchQuery(input);
+                if (/^(search|google|look up|find|lookup)/i.test(trimmedInput)) {
+                    this.state = 'searching';
+                    const query = this.extractSearchQuery(workingInput);
                     return this.performSearch(query);
                 }
 
-                // Check patterns - prefer previously liked responses
+                // Check patterns with synonym-expanded input for better matching
                 for (const pattern of this.patterns) {
-                    if (pattern.regex.test(trimmedInput)) {
+                    if (pattern.regex.test(expandedInput) || pattern.regex.test(trimmedInput)) {
                         const responses = this.responses[pattern.category];
                         // Sort by preference (liked first)
                         const sorted = responses.slice().sort((a, b) => {
@@ -708,20 +923,35 @@
                             const bDisliked = this.wasDisliked(b) ? -1 : 0;
                             return (bLiked + bDisliked) - (aLiked + aDisliked);
                         });
-                        const response = sorted[0];
+                        let response = sorted[0];
+
+                        // Personalize with name
                         if (this.userName && Math.random() > 0.7) {
-                            return `${response} By the way, ${this.userName}, how's your day going?`;
+                            response = `${response} By the way, ${this.userName}, how's your day going?`;
                         }
+
+                        // Transition state
+                        if (pattern.category === 'farewells') {
+                            this.state = 'farewell';
+                        } else if (pattern.category === 'search') {
+                            this.state = 'searching';
+                        } else {
+                            this.state = 'chatting';
+                        }
+
                         return response;
                     }
                 }
 
-                // Check for math
-                if (/[0-9+\-*/]/.test(input) &&
-                    (trimmedInput.includes('calculate') || trimmedInput.includes('what\'s') ||
-                     (/^what is/.test(trimmedInput) && /[0-9]/.test(input)))) {
-                    const mathResponse = this.processMath(input);
-                    if (!mathResponse.includes('couldn\'t')) {
+                // Check for math (improved detection)
+                if (/[0-9+\-*/().^]/.test(workingInput) &&
+                    (/\d/.test(workingInput) && (trimmedInput.includes('calculate') || trimmedInput.includes('what\'s') ||
+                     trimmedInput.includes('what is') || trimmedInput.includes('compute') || trimmedInput.includes('solve') ||
+                     trimmedInput.includes('how much is') || trimmedInput.includes('equals') ||
+                     (/^[\d\s+\-*/().^]+$/.test(trimmedInput))))) {
+                    const mathResponse = this.processMath(workingInput);
+                    if (mathResponse && !mathResponse.includes('couldn\'t')) {
+                        this.state = 'chatting';
                         return mathResponse;
                     }
                 }
@@ -730,27 +960,48 @@
                 if (trimmedInput.includes('who') || trimmedInput.includes('what') ||
                     trimmedInput.includes('when') || trimmedInput.includes('where') ||
                     trimmedInput.includes('why') || trimmedInput.includes('how') ||
-                    trimmedInput.includes('tell me about')) {
-                    const query = this.extractSearchQuery(input);
+                    trimmedInput.includes('tell me about') || trimmedInput.includes('explain')) {
+                    this.state = 'searching';
+                    const query = this.extractSearchQuery(workingInput);
                     return this.performSearch(query);
                 }
 
-                // Sentiment-based default responses
-                if (sentiment === 'sad') return this.getResponse('sad');
-                if (sentiment === 'happy') return this.getResponse('happy');
-                if (sentiment === 'angry') return this.getResponse('angry');
-                if (sentiment === 'confused') return this.getResponse('confused');
+                // Sentiment-based default responses with context
+                if (sentiment === 'sad') {
+                    this.state = 'chatting';
+                    return this.getResponse('sad');
+                }
+                if (sentiment === 'happy') {
+                    this.state = 'chatting';
+                    return this.getResponse('happy');
+                }
+                if (sentiment === 'angry') {
+                    this.state = 'chatting';
+                    return this.getResponse('angry');
+                }
+                if (sentiment === 'confused') {
+                    this.state = 'chatting';
+                    return this.getResponse('confused');
+                }
 
-                // Context-aware defaults
+                // Context-aware defaults based on state
+                this.state = 'chatting';
                 if (this.conversationCount > 5) {
                     return "We've been chatting for a while! What else is on your mind? 💭";
                 }
 
+                // If we have interests, suggest one
+                if (this.userInterests.length > 0 && Math.random() > 0.7) {
+                    const interest = this.userInterests[this.userInterests.length - 1];
+                    return `You mentioned you like ${interest}! Tell me more about that, or ask me something else! 🤔`;
+                }
+
                 const defaultResponses = [
                     "That's interesting! Tell me more! 🤔",
-                    "Hmm, I'm not sure about that. Try asking something else! 😅",
-                    "I'm still learning! Could you rephrase that? 🤷",
-                    "Interesting! What else would you like to know? 💭"
+                    "Hmm, I'm not sure I understand. Could you rephrase or ask me something specific? 😅",
+                    "I'm still learning! Try asking me about a topic, or say 'search for...' to look things up! 🤷",
+                    "Interesting! What else would you like to know? 💭",
+                    "I don't have a good answer for that. Want to search the web for it? Just say 'search for...'! 🔍"
                 ];
                 return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
             }
