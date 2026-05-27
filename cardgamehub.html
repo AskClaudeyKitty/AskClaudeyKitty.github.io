@@ -363,6 +363,121 @@
         }
         #flipBtn:hover { background: #3a8eef; transform: scale(1.05); }
         #flipBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        /* Go Fish */
+        #gf-bots {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .gf-bot {
+            text-align: center;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: #252540;
+            font-size: 0.85rem;
+        }
+        .gf-bot.active { border: 2px solid #ffdd44; }
+        .gf-bot.human { border: 2px solid #4a9eff; }
+        .gf-bot-cards {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .gf-card-back-small {
+            width: 24px;
+            height: 34px;
+            border-radius: 4px;
+            background: repeating-linear-gradient(45deg, #2a2a4a, #2a2a4a 4px, #333366 4px, #333366 8px);
+            border: 1px solid #4a4a7a;
+        }
+        #gf-table {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        #gf-deck {
+            width: 70px;
+            height: 98px;
+            border-radius: 8px;
+            background: repeating-linear-gradient(45deg, #2a2a4a, #2a2a4a 6px, #333366 6px, #333366 12px);
+            border: 2px solid #4a4a7a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        #gf-hand {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 700px;
+            margin: 10px 0;
+        }
+        .gf-card {
+            width: 50px;
+            height: 70px;
+            border-radius: 6px;
+            background: #f0f0f0;
+            border: 1px solid #bbb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #1a1a2e;
+            position: relative;
+        }
+        .gf-card.red { color: #cc0000; }
+        .gf-card .rank { position: absolute; top: 2px; left: 3px; font-size: 0.55rem; font-weight: bold; }
+        .gf-card .suit { font-size: 1rem; }
+        #gf-books {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        .gf-book {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #2a2a4a;
+            border: 1px solid #4a4a7a;
+            font-size: 0.8rem;
+        }
+        #gf-ask {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .gf-ask-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        .gf-ask-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #4a9eff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .gf-ask-btn:hover { background: #3a8eef; }
+        .gf-ask-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -379,6 +494,10 @@
             <button class="game-btn" onclick="showUnoMenu()">
                 <span class="emoji">🟥</span>
                 <span>Uno</span>
+            </button>
+            <button class="game-btn" onclick="showGoFishMenu()">
+                <span class="emoji">🐟</span>
+                <span>Go Fish</span>
             </button>
             <button class="game-btn" onclick="startSolitaire()">
                 <span class="emoji">♠️</span>
@@ -434,6 +553,34 @@
         <button id="backBtn" onclick="showHub()">← Main Menu</button>
     </div>
 
+    <!-- Go Fish Menu -->
+    <div id="gf-menu" class="screen">
+        <div class="hub-label">Select players:</div>
+        <div class="game-btns">
+            <button class="game-btn" onclick="startGoFish(2)">2 Players</button>
+            <button class="game-btn" onclick="startGoFish(3)">3 Players</button>
+            <button class="game-btn" onclick="startGoFish(4)">4 Players</button>
+            <button class="game-btn" onclick="startGoFish(5)">5 Players</button>
+        </div>
+        <button id="backBtn" onclick="showHub()">← Back</button>
+    </div>
+
+    <!-- Go Fish Game -->
+    <div id="gf-game" class="screen">
+        <div id="gf-bots"></div>
+        <div id="gf-table">
+            <div style="display:flex;gap:30px;align-items:center;flex-wrap:wrap;justify-content:center;">
+                <div id="gf-deck">🂠<br><span id="gf-deck-count" style="font-size:0.7rem;">0</span></div>
+                <div id="gf-msg-box" style="text-align:center;max-width:300px;"></div>
+            </div>
+        </div>
+        <div id="msg"></div>
+        <div id="gf-books"></div>
+        <div id="gf-hand"></div>
+        <div id="gf-ask"></div>
+        <button id="backBtn" onclick="showHub()">← Main Menu</button>
+    </div>
+
     <!-- Solitaire Game -->
     <div id="sol-game" class="screen">
         <div id="sol-board">
@@ -482,6 +629,8 @@ function hideAll() {
     document.getElementById('uno-menu').classList.remove('show');
     document.getElementById('uno-game').classList.remove('show');
     document.getElementById('sol-game').classList.remove('show');
+    document.getElementById('gf-menu').classList.remove('show');
+    document.getElementById('gf-game').classList.remove('show');
 }
 function showHub() {
     hideAll();
@@ -490,6 +639,7 @@ function showHub() {
 }
 function showWarMenu() { hideAll(); document.getElementById('war-menu').classList.add('show'); }
 function showUnoMenu() { hideAll(); document.getElementById('uno-menu').classList.add('show'); }
+function showGoFishMenu() { hideAll(); document.getElementById('gf-menu').classList.add('show'); }
 
 // ===================== WAR =====================
 const SUITS = ['♠','♥','♣','♦'];
@@ -790,7 +940,23 @@ function renderUno() {
     for (const p of unoPlayers) {
         const div = document.createElement('div');
         div.className = 'uno-bot' + (p.id === unoTurn ? ' active' : '') + (p.isHuman ? ' human' : '');
-        div.textContent = `${p.name}: ${p.hand.length} cards`;
+        div.innerHTML = `<div>${p.name}</div>`;
+        const cardsDiv = document.createElement('div');
+        cardsDiv.style.display = 'flex';
+        cardsDiv.style.gap = '2px';
+        cardsDiv.style.justifyContent = 'center';
+        cardsDiv.style.marginTop = '4px';
+        cardsDiv.style.flexWrap = 'wrap';
+        for (let i = 0; i < p.hand.length; i++) {
+            const back = document.createElement('div');
+            back.style.width = '20px';
+            back.style.height = '28px';
+            back.style.borderRadius = '3px';
+            back.style.background = 'repeating-linear-gradient(45deg, #2a2a4a, #2a2a4a 4px, #333366 4px, #333366 8px)';
+            back.style.border = '1px solid #4a4a7a';
+            cardsDiv.appendChild(back);
+        }
+        div.appendChild(cardsDiv);
         botsDiv.appendChild(div);
     }
     // Discard
@@ -1029,12 +1195,281 @@ function setMsg(text) {
     document.getElementById('msg').textContent = text;
 }
 
+// ===================== GO FISH =====================
+const GF_RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const GF_SUITS = ['♠','♥','♣','♦'];
+
+function createGFDeck() {
+    const deck = [];
+    for (const suit of GF_SUITS) {
+        for (const rank of GF_RANKS) deck.push({ suit, rank });
+    }
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+}
+
+let gfPlayers = [], gfDeck = [], gfTurn = 0, gfGameOver = false, gfAnimating = false;
+let gfNumPlayers = 2;
+
+function startGoFish(count) {
+    gfNumPlayers = count;
+    hideAll();
+    document.getElementById('gf-game').classList.add('show');
+    initGoFish();
+}
+
+function initGoFish() {
+    gfDeck = createGFDeck();
+    gfPlayers = [];
+    for (let i = 0; i < gfNumPlayers; i++) {
+        gfPlayers.push({ id: i, name: i === 0 ? 'You' : `Bot ${i}`, hand: [], books: [], isHuman: i === 0 });
+    }
+    for (const p of gfPlayers) {
+        for (let j = 0; j < 5; j++) p.hand.push(gfDeck.pop());
+    }
+    for (const p of gfPlayers) checkBooks(p);
+    gfTurn = 0;
+    gfGameOver = false;
+    gfAnimating = false;
+    document.getElementById('overlay').classList.remove('show');
+    renderGoFish();
+    setMsg('Your turn! Ask a bot for a rank you have.');
+}
+
+function checkBooks(p) {
+    const counts = {};
+    for (const c of p.hand) counts[c.rank] = (counts[c.rank] || 0) + 1;
+    for (const rank in counts) {
+        if (counts[rank] === 4) {
+            p.books.push(rank);
+            p.hand = p.hand.filter(c => c.rank !== rank);
+        }
+    }
+}
+
+function renderGoFish() {
+    // Bots
+    const botsDiv = document.getElementById('gf-bots');
+    botsDiv.innerHTML = '';
+    for (const p of gfPlayers) {
+        if (p.isHuman) continue;
+        const div = document.createElement('div');
+        div.className = 'gf-bot' + (p.id === gfTurn ? ' active' : '');
+        const booksText = p.books.length > 0 ? ` | Books: ${p.books.join(', ')}` : '';
+        div.innerHTML = `<div>${p.name}${booksText}</div>`;
+        const cardsDiv = document.createElement('div');
+        cardsDiv.className = 'gf-bot-cards';
+        for (let i = 0; i < p.hand.length; i++) {
+            const back = document.createElement('div');
+            back.className = 'gf-card-back-small';
+            cardsDiv.appendChild(back);
+        }
+        div.appendChild(cardsDiv);
+        botsDiv.appendChild(div);
+    }
+    // Deck
+    const deckDiv = document.getElementById('gf-deck');
+    deckDiv.innerHTML = gfDeck.length > 0 ? '🂠<br><span style="font-size:0.7rem;">' + gfDeck.length + '</span>' : '';
+    // Books
+    const booksDiv = document.getElementById('gf-books');
+    booksDiv.innerHTML = '';
+    const human = gfPlayers[0];
+    if (human.books.length > 0) {
+        const title = document.createElement('div');
+        title.textContent = 'Your books:';
+        title.style.width = '100%';
+        title.style.textAlign = 'center';
+        title.style.fontSize = '0.8rem';
+        booksDiv.appendChild(title);
+        for (const rank of human.books) {
+            const b = document.createElement('div');
+            b.className = 'gf-book';
+            b.textContent = `4× ${rank}`;
+            booksDiv.appendChild(b);
+        }
+    }
+    // Hand
+    const handDiv = document.getElementById('gf-hand');
+    handDiv.innerHTML = '';
+    for (const card of human.hand) {
+        const div = document.createElement('div');
+        div.className = 'gf-card' + (card.suit === '♥' || card.suit === '♦' ? ' red' : '');
+        div.innerHTML = `<span class="rank">${card.rank}${card.suit}</span><span class="suit">${card.suit}</span>`;
+        handDiv.appendChild(div);
+    }
+    // Ask panel
+    const askDiv = document.getElementById('gf-ask');
+    askDiv.innerHTML = '';
+    if (human.id === gfTurn && !gfGameOver && !gfAnimating && human.hand.length > 0) {
+        const uniqueRanks = [...new Set(human.hand.map(c => c.rank))];
+        for (const rank of uniqueRanks) {
+            const row = document.createElement('div');
+            row.className = 'gf-ask-row';
+            const label = document.createElement('span');
+            label.textContent = `Ask for ${rank}s:`;
+            label.style.fontSize = '0.85rem';
+            row.appendChild(label);
+            for (const p of gfPlayers) {
+                if (p.id === human.id) continue;
+                const btn = document.createElement('button');
+                btn.className = 'gf-ask-btn';
+                btn.textContent = p.name;
+                btn.onclick = () => askGoFish(p.id, rank);
+                row.appendChild(btn);
+            }
+            askDiv.appendChild(row);
+        }
+    } else if (human.id === gfTurn && human.hand.length === 0 && gfDeck.length === 0) {
+        setMsg('Your hand is empty. Waiting for game end...');
+    }
+}
+
+function askGoFish(targetId, rank) {
+    if (gfGameOver || gfAnimating || gfPlayers[0].id !== gfTurn) return;
+    const target = gfPlayers[targetId];
+    const human = gfPlayers[0];
+    const matches = target.hand.filter(c => c.rank === rank);
+    if (matches.length > 0) {
+        target.hand = target.hand.filter(c => c.rank !== rank);
+        human.hand.push(...matches);
+        setMsg(`${target.name} had ${matches.length} ${rank}(s)! You go again.`);
+        checkBooks(human);
+        renderGoFish();
+        if (checkGFWin()) return;
+    } else {
+        setMsg(`${target.name} says "Go Fish!"`);
+        gfAnimating = true;
+        renderGoFish();
+        setTimeout(() => {
+            if (gfDeck.length > 0) {
+                const drawn = gfDeck.pop();
+                human.hand.push(drawn);
+                setMsg(`You drew ${drawn.rank}${drawn.suit}.`);
+                checkBooks(human);
+                renderGoFish();
+                if (checkGFWin()) return;
+                if (drawn.rank === rank) {
+                    setMsg(`You drew the ${rank}! You go again.`);
+                    gfAnimating = false;
+                    renderGoFish();
+                    return;
+                }
+            } else {
+                setMsg('Deck is empty!');
+            }
+            gfTurn = getNextGFPlayer();
+            gfAnimating = false;
+            renderGoFish();
+            if (!gfPlayers[gfTurn].isHuman) setTimeout(() => botGoFishTurn(), 1000);
+        }, 800);
+    }
+}
+
+function getNextGFPlayer() {
+    let next = gfTurn + 1;
+    if (next >= gfPlayers.length) next = 0;
+    return next;
+}
+
+function botGoFishTurn() {
+    if (gfGameOver) return;
+    const p = gfPlayers[gfTurn];
+    if (p.hand.length === 0) {
+        if (gfDeck.length > 0) {
+            const drawn = gfDeck.pop();
+            p.hand.push(drawn);
+            checkBooks(p);
+            setMsg(`${p.name} drew a card (empty hand).`);
+            renderGoFish();
+            if (checkGFWin()) return;
+        }
+        gfTurn = getNextGFPlayer();
+        renderGoFish();
+        if (!gfPlayers[gfTurn].isHuman) setTimeout(() => botGoFishTurn(), 1000);
+        return;
+    }
+    const rank = p.hand[Math.floor(Math.random() * p.hand.length)].rank;
+    let targets = gfPlayers.filter(x => x.id !== p.id);
+    const target = targets[Math.floor(Math.random() * targets.length)];
+    const matches = target.hand.filter(c => c.rank === rank);
+    if (matches.length > 0) {
+        target.hand = target.hand.filter(c => c.rank !== rank);
+        p.hand.push(...matches);
+        setMsg(`${p.name} asked ${target.name} for ${rank}s and got ${matches.length}!`);
+        checkBooks(p);
+        renderGoFish();
+        if (checkGFWin()) return;
+        if (!p.isHuman) setTimeout(() => botGoFishTurn(), 1000);
+    } else {
+        setMsg(`${p.name} asked ${target.name} for ${rank}s. Go Fish!`);
+        setTimeout(() => {
+            if (gfDeck.length > 0) {
+                const drawn = gfDeck.pop();
+                p.hand.push(drawn);
+                setMsg(`${p.name} drew a card.`);
+                checkBooks(p);
+                renderGoFish();
+                if (checkGFWin()) return;
+                if (drawn.rank === rank && !p.isHuman) {
+                    setTimeout(() => botGoFishTurn(), 1000);
+                    return;
+                }
+            } else {
+                setMsg('Deck is empty!');
+            }
+            gfTurn = getNextGFPlayer();
+            renderGoFish();
+            if (!gfPlayers[gfTurn].isHuman) setTimeout(() => botGoFishTurn(), 1000);
+        }, 800);
+    }
+}
+
+function checkGFWin() {
+    const totalBooks = gfPlayers.reduce((sum, p) => sum + p.books.length, 0);
+    if (totalBooks === 13) {
+        let maxBooks = -1;
+        let winners = [];
+        for (const p of gfPlayers) {
+            if (p.books.length > maxBooks) {
+                maxBooks = p.books.length;
+                winners = [p];
+            } else if (p.books.length === maxBooks) {
+                winners.push(p);
+            }
+        }
+        gfGameOver = true;
+        const title = document.getElementById('resultTitle');
+        const text = document.getElementById('resultText');
+        if (winners.length === 1 && winners[0].isHuman) {
+            title.textContent = '🏆 Victory!';
+            title.className = 'win';
+            text.textContent = `You won with ${maxBooks} books!`;
+        } else if (winners.length === 1) {
+            title.textContent = '💀 Defeat!';
+            title.className = 'lose';
+            text.textContent = `${winners[0].name} won with ${maxBooks} books!`;
+        } else {
+            title.textContent = '🤝 Draw!';
+            title.className = '';
+            title.style.color = '#ffdd44';
+            text.textContent = `Tie at ${maxBooks} books!`;
+        }
+        document.getElementById('overlay').classList.add('show');
+        return true;
+    }
+    return false;
+}
+
 // ===================== EVENTS =====================
 document.getElementById('flipBtn').addEventListener('click', flipWar);
 document.getElementById('playAgain').addEventListener('click', () => {
     if (document.getElementById('war-game').classList.contains('show')) initWar();
     else if (document.getElementById('uno-game').classList.contains('show')) initUno();
     else if (document.getElementById('sol-game').classList.contains('show')) initSolitaire();
+    else if (document.getElementById('gf-game').classList.contains('show')) initGoFish();
 });
 document.getElementById('uno-deck').addEventListener('click', drawUnoCard);
 
@@ -1148,7 +1583,14 @@ function makeSolCardEl(card, from, pileIdx, cardIdx) {
     if (from === 'waste') {
         div.onclick = (e) => { e.stopPropagation(); selectWaste(); };
     } else if (from === 'foundation') {
-        div.onclick = (e) => { e.stopPropagation(); selectFoundation(pileIdx); };
+        div.onclick = (e) => { 
+            e.stopPropagation(); 
+            if (solSelected && !(solSelected.from === 'foundation' && solSelected.pile === pileIdx)) {
+                tryMoveToFoundation(pileIdx);
+            } else {
+                selectFoundation(pileIdx); 
+            }
+        };
     } else if (from === 'tableau') {
         div.onclick = (e) => { e.stopPropagation(); selectTableau(pileIdx, cardIdx); };
     }
@@ -1171,6 +1613,10 @@ function selectWaste() {
 
 function selectFoundation(foundIdx) {
     if (solFoundations[foundIdx].length === 0) return;
+    if (solSelected && solSelected.from !== 'foundation') {
+        tryMoveToFoundation(foundIdx);
+        return;
+    }
     if (solSelected && solSelected.from === 'foundation' && solSelected.pile === foundIdx) {
         solSelected = null;
     } else {
