@@ -628,11 +628,29 @@
 
     <div class="locked-section" style="max-width: 1200px; margin: 40px auto 0; text-align: center; background: white; border: 1px solid #e0e0e0; border-radius: 16px; padding: 24px;">
         <p style="font-size: 1.1rem; font-weight: 600; color: #333; margin-bottom: 12px;">🔒 Locked Games</p>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <input id="lock-code" type="password" maxlength="4" placeholder="····" style="padding: 8px 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 8px; text-align: center; letter-spacing: 4px; width: 80px;" oninput="checkLock(this.value)">
+        <p id="lock-msg" style="color: #c00; font-size: 0.85rem; margin-top: 8px; min-height: 18px;"></p>
+        <div id="lock-links" style="display: none; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px;">
             <a href="projects%20not%20to%20push/room-test.html" style="display: inline-block; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px 20px; color: #666; text-decoration: none; font-size: 0.9rem; transition: all 0.2s;">Room Test</a>
             <a href="projects%20not%20to%20push/scary-maze.html" style="display: inline-block; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px 20px; color: #666; text-decoration: none; font-size: 0.9rem; transition: all 0.2s;">Scary Maze</a>
         </div>
     </div>
+    <script>
+    function checkLock(val) {
+        const msg = document.getElementById('lock-msg');
+        const links = document.getElementById('lock-links');
+        if (val === '0228') {
+            links.style.display = 'flex';
+            msg.textContent = '';
+        } else if (val.length >= 4) {
+            msg.textContent = 'Wrong code.';
+            links.style.display = 'none';
+        } else {
+            msg.textContent = '';
+            links.style.display = 'none';
+        }
+    }
+    </script>
 
 <script>
 // Play counter
