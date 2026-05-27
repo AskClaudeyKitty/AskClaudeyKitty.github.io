@@ -362,6 +362,69 @@
                         "Cooking is such a creative art. Do you like to cook or prefer eating out? 🍝",
                         "Tell me more about that dish! It sounds interesting. 🍜",
                         "I'm getting hungry just thinking about it! What's the best meal you've ever had? 🌮"
+                    ],
+                    sports: [
+                        "Sports are so exciting! Do you play any or just watch? ⚽",
+                        "Who's your favorite team or athlete? 🏀",
+                        "The energy in a stadium is unmatched. Ever been to a live game? 🏈",
+                        "Training for anything specific right now? 🏃",
+                        "Do you prefer team sports or solo activities? 🎾"
+                    ],
+                    music: [
+                        "Music is the universal language! What are you listening to lately? 🎵",
+                        "Who's your favorite artist or band? 🎸",
+                        "Do you play any instruments? I'd love to hear about it! 🎹",
+                        "Concerts are such a vibe. Been to any good ones? 🎤",
+                        "What genre speaks to you the most? 🎧"
+                    ],
+                    movies: [
+                        "Movies are such a great escape! What's the last one you watched? 🎬",
+                        "Do you prefer action, comedy, drama, or something else? 🍿",
+                        "Any favorite directors or actors? 🎭",
+                        "Binge-watching anything good right now? 📺",
+                        "Classic films or new releases? What's your pick? 🎥"
+                    ],
+                    games: [
+                        "Gaming is awesome! What are you playing right now? 🎮",
+                        "PC, console, or mobile? Or all of the above? 🕹️",
+                        "Single-player story games or multiplayer competitive? 🏆",
+                        "Any favorite genres? RPG, FPS, strategy, puzzle? 🧩",
+                        "Speedrun anything lately? Or just playing for fun? 🎯"
+                    ],
+                    books: [
+                        "Books are portals to other worlds! What are you reading? 📚",
+                        "Fiction or non-fiction? Or both? 📖",
+                        "Any favorite authors or genres? ✍️",
+                        "Physical books, e-books, or audiobooks? 📱",
+                        "What's a book that changed your perspective? 🌟"
+                    ],
+                    travel: [
+                        "Travel broadens the mind! Where have you been lately? ✈️",
+                        "Beach, mountains, city, or countryside? What's your ideal trip? 🏖️",
+                        "Do you prefer planning every detail or going with the flow? 🗺️",
+                        "Road trips or flights? 🚗",
+                        "What's your dream destination? 🌍"
+                    ],
+                    pets: [
+                        "Animals are the best! Do you have any pets? 🐶",
+                        "Dogs, cats, or something more exotic? 🐱",
+                        "What's your pet's name? I'd love to hear about them! 🐰",
+                        "Rescue or breeder? Both are great choices! 🐾",
+                        "If you could have any animal as a pet, what would it be? 🦜"
+                    ],
+                    tech: [
+                        "Tech moves so fast! What's your favorite gadget? 💻",
+                        "iOS or Android? Or something else entirely? 📱",
+                        "Coding, gaming, or just consuming content? 🖥️",
+                        "Excited about any upcoming tech? AI, VR, something else? 🤖",
+                        "Do you build your own setups or buy pre-built? 🔧"
+                    ],
+                    school: [
+                        "School can be tough but rewarding! How's it going? 📚",
+                        "What's your favorite subject? 🔬",
+                        "Studying for anything specific right now? 📝",
+                        "Online classes or in-person? Which do you prefer? 🏫",
+                        "Any fun projects or assignments you're working on? 🎨"
                     ]
                 };
 
@@ -382,7 +445,16 @@
                     { regex: /(are you (an )?ai|are you a bot|are you human|artificial intelligence)/i, category: 'identity' },
                     { regex: /(awesome|cool|great|amazing|you're (the )?best|good bot|nice)/i, category: 'compliment' },
                     { regex: /^(search|google|look up|find information about)/i, category: 'search' },
-                    { regex: /(food|eat|hungry|meal|cook|recipe|restaurant|pizza|burger|sushi|pasta|dessert|breakfast|lunch|dinner|snack|tasty|delicious|flavor|cuisine|kitchen)/i, category: 'food' }
+                    { regex: /(food|eat|hungry|meal|cook|recipe|restaurant|pizza|burger|sushi|pasta|dessert|breakfast|lunch|dinner|snack|tasty|delicious|flavor|cuisine|kitchen)/i, category: 'food' },
+                    { regex: /(sport|soccer|football|basketball|baseball|tennis|golf|hockey|rugby|cricket|volleyball|swimming|running|gym|workout|fitness|exercise|athlete|team|game|match|score|olympics)/i, category: 'sports' },
+                    { regex: /(music|song|album|artist|band|concert|gig|festival|listen|playlist|spotify|soundcloud|genre|rap|hip.?hop|rock|pop|jazz|classical|electronic|edm|metal|indie|country|blues|soul|funk|reggae|punk|alternative)/i, category: 'music' },
+                    { regex: /(movie|film|cinema|actor|actress|director|hollywood|netflix|hulu|disney|marvel|dc|star wars|horror|thriller|comedy|drama|action|sci.?fi|documentary|series|show|episode|season|binge|watch|streaming)/i, category: 'movies' },
+                    { regex: /(game|gaming|gamer|play|video game|videogame|console|xbox|playstation|nintendo|switch|pc game|mobile game|minecraft|fortnite|roblox|call of duty|cod|lol|valorant|overwatch|zelda|mario|pokemon|rpg|fps|mmo|speedrun|esports)/i, category: 'games' },
+                    { regex: /(book|novel|story|author|writer|reading|read|library|kindle|audiobook|fiction|non.?fiction|fantasy|sci.?fi|mystery|romance|thriller|biography|memoir|poetry|comic|manga|graphic novel|literature)/i, category: 'books' },
+                    { regex: /(travel|trip|vacation|holiday|tour|tourist|flight|airport|hotel|resort|cruise|road trip|backpacking|passport|visa|abroad|overseas|destination|country|city|beach|mountain|adventure|explore)/i, category: 'travel' },
+                    { regex: /(pet|dog|cat|puppy|kitten|animal|bird|fish|hamster|rabbit|bunny|guinea pig|reptile|snake|lizard|turtle|ferret|hedgehog|parrot|dogs|cats|vet|veterinarian|adopt|shelter)/i, category: 'pets' },
+                    { regex: /(tech|technology|computer|phone|smartphone|laptop|tablet|gadget|device|app|software|hardware|ai|artificial intelligence|robot|drone|vr|ar|virtual reality|coding|programming|developer|engineer|startup|internet|wifi|bluetooth|usb|cpu|gpu|ram|ssd)/i, category: 'tech' },
+                    { regex: /(school|college|university|student|teacher|professor|class|course|subject|homework|assignment|exam|test|quiz|study|studying|grade|gpa|graduate|degree|major|minor|campus|dorm|tuition|scholarship|academic|education|learn|learning)/i, category: 'school' }
                 ];
 
                 // Conversation memory
