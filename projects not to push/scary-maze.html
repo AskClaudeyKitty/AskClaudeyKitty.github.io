@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scary Maze</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -215,6 +216,20 @@ function initAudio() {
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
 
+// Preload sound effects
+const whisperSounds = [
+  new Audio('dragon-studio-creepy-ghost-whisper-410564.mp3'),
+  new Audio('dragon-studio-creepy-whisper-472369.mp3'),
+  new Audio('dragon-studio-ghost-whisper-351569.mp3')
+];
+const breathingSound = new Audio('freesound_community-heavy-breathing-14431.mp3');
+
+function playSound(audio, vol = 1.0) {
+  audio.volume = vol;
+  try { audio.currentTime = 0; } catch (e) {}
+  audio.play().catch(() => {});
+}
+
 function playTone(freq, duration, type='sine', vol=0.1) {
   if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
@@ -276,19 +291,17 @@ function triggerRandomEvent() {
       eventTimer = 1500;
       break;
     case 'whisper':
-      eventTimer = 1500;
-      playNoise(2.5, 0.04);
-      playTone(200 + Math.random() * 100, 2, 'sine', 0.03);
+      eventTimer = 3000;
+      const w = whisperSounds[Math.floor(Math.random() * whisperSounds.length)];
+      playSound(w, 0.6);
       break;
     case 'static_burst':
       eventTimer = 1500;
       playNoise(1.5, 0.12);
       break;
     case 'heavy_breathing':
-      eventTimer = 3000;
-      for (let i = 0; i < 5; i++) {
-        setTimeout(() => playNoise(0.4, 0.06), i * 600);
-      }
+      eventTimer = 4000;
+      playSound(breathingSound, 1.5);
       break;
   }
 }
@@ -432,6 +445,16 @@ function update(dt) {
     if (blackoutTimer <= 0) {
       isBlackout = false;
       eventActive = null;
+      // 33% chance to teleport player to random floor location
+      if (Math.random() < 0.33) {
+        let tx, ty;
+        do {
+          tx = Math.floor(Math.random() * (MAP_W - 2)) + 1;
+          ty = Math.floor(Math.random() * (MAP_H - 2)) + 1;
+        } while (map[ty][tx] !== 0);
+        player.x = (tx + 0.5) * CELL;
+        player.y = (ty + 0.5) * CELL;
+      }
     }
   }
 
@@ -563,13 +586,34 @@ function draw() {
         for (const arrow of arrows) {
           if (Math.floor(arrow.x / CELL) === ray.mx && Math.floor(arrow.y / CELL) === ray.my) {
             const arrowY = y1 + wallH * 0.4;
-            const arrowSize = Math.min(8, wallH * 0.15);
+            const arrowSize = Math.min(14, wallH * 0.22);
             if (arrowSize > 2) {
-              ctx.fillStyle = `rgba(200,50,50,${shade * 0.7})`;
-              // Simple arrow pointing right (we'll rotate based on angle)
               const arrowX = i;
-              ctx.fillRect(arrowX - 1, arrowY - 1, 3, 3);
-              ctx.fillRect(arrowX, arrowY - 1, 2, 3);
+              const a = arrow.angle;
+              const cosA = Math.cos(a);
+              const sinA = Math.sin(a);
+              // Shaft
+              const sx = arrowX - cosA * arrowSize * 0.5;
+              const sy = arrowY - sinA * arrowSize * 0.5;
+              const ex = arrowX + cosA * arrowSize * 0.5;
+              const ey = arrowY + sinA * arrowSize * 0.5;
+              // Arrowhead
+              const hx = arrowX + cosA * arrowSize * 0.5;
+              const hy = arrowY + sinA * arrowSize * 0.5;
+              const hw = arrowSize * 0.5;
+              ctx.lineWidth = Math.max(2, arrowSize * 0.2);
+              ctx.strokeStyle = `rgba(255,80,80,${shade * 0.9})`;
+              ctx.fillStyle = `rgba(255,80,80,${shade * 0.9})`;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy);
+              ctx.lineTo(ex, ey);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(hx, hy);
+              ctx.lineTo(hx - cosA * hw - sinA * hw * 0.6, hy - sinA * hw + cosA * hw * 0.6);
+              ctx.lineTo(hx - cosA * hw + sinA * hw * 0.6, hy - sinA * hw - cosA * hw * 0.6);
+              ctx.closePath();
+              ctx.fill();
             }
             break;
           }
