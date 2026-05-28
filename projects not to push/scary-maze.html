@@ -239,6 +239,7 @@ const whisperSounds = [
 const breathingSound = new Audio('freesound_community-heavy-breathing-14431.mp3');
 
 function playSound(audio, vol = 1.0) {
+  if (audio.readyState < 2) return; // not loaded enough
   audio.volume = vol;
   try { audio.currentTime = 0; } catch (e) {}
   audio.play().catch(() => {});
