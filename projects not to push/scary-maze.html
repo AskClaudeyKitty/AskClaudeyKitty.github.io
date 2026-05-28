@@ -203,8 +203,11 @@ let isFlickering = false;
 let blackoutTimer = 0;
 let isBlackout = false;
 
-// Random Events
-let eventCooldown = 0;
+// Wall shift state
+let wallShiftTimer = 0;
+let wallShiftCooldown = 15000; // first shift after 15s
+let lastPlayerAngle = 0;
+let shiftCount = 0;
 let eventActive = null;
 let eventTimer = 0;
 const eventText = document.getElementById('event-text');
@@ -428,7 +431,7 @@ function update(dt) {
     cameraSway = Math.cos(walkCycle * 0.5) * 3;
   } else {
     walkCycle = 0;
-    cameraBob *= 0.9;
+    cameraBob *= 1.8;
     cameraSway *= 0.9;
   }
 
@@ -492,6 +495,44 @@ function update(dt) {
   if (eventTimer > 0) {
     eventTimer -= dt;
     if (eventTimer <= 0 && !isBlackout) eventActive = null;
+  }
+
+  // Wall shifts — impossible geometry when you look away
+  wallShiftCooldown -= dt;
+  const angleDelta = Math.abs(player.angle - lastPlayerAngle);
+  lastPlayerAngle = player.angle;
+  if (wallShiftCooldown <= 0 && angleDelta > 0.8 && !isBlackout) {
+    // Player looked away significantly — shift a nearby wall
+    const px = Math.floor(player.x / CELL);
+    const py = Math.floor(player.y / CELL);
+    const candidates = [];
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const nx = px + dx, ny = py + dy;
+        if (nx > 0 && nx < MAP_W - 1 && ny > 0 && ny < MAP_H - 1) {
+          if (map[ny][nx] === 1) {
+            // Check if it would create a valid path (not fully enclosed)
+            const openNeighbors = [[0,1],[0,-1],[1,0],[-1,0]].filter(([odx,ody]) => map[ny+ody][nx+odx] === 0).length;
+            if (openNeighbors >= 1) candidates.push({x: nx, y: ny, open: openNeighbors});
+          } else if (map[ny][nx] === 0) {
+            // Check if closing it would trap anything
+            const wallNeighbors = [[0,1],[0,-1],[1,0],[-1,0]].filter(([odx,ody]) => map[ny+ody][nx+odx] === 1).length;
+            if (wallNeighbors >= 2) candidates.push({x: nx, y: ny, open: -1});
+          }
+        }
+      }
+    }
+    if (candidates.length > 0) {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      if (pick.open >= 0) {
+        map[pick.y][pick.x] = 0; // Open a wall
+      } else {
+        map[pick.y][pick.x] = 1; // Close a path
+      }
+      shiftCount++;
+      showEventText("The walls have shifted...");
+      wallShiftCooldown = 8000 + Math.random() * 12000; // 8-20s until next
+    }
   }
 }
 
