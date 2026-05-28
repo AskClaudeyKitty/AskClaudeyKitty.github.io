@@ -208,6 +208,9 @@ let wallShiftTimer = 0;
 let wallShiftCooldown = 15000; // first shift after 15s
 let lastPlayerAngle = 0;
 let shiftCount = 0;
+
+// Random Events
+let eventCooldown = 0;
 let eventActive = null;
 let eventTimer = 0;
 const eventText = document.getElementById('event-text');
@@ -231,6 +234,23 @@ function playSound(audio, vol = 1.0) {
   audio.volume = vol;
   try { audio.currentTime = 0; } catch (e) {}
   audio.play().catch(() => {});
+}
+
+function playRumble(duration, vol = 0.3) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(40, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + duration);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+  // Layer noise for texture
+  playNoise(duration, vol * 0.5);
 }
 
 function playTone(freq, duration, type='sine', vol=0.1) {
@@ -530,7 +550,8 @@ function update(dt) {
         map[pick.y][pick.x] = 1; // Close a path
       }
       shiftCount++;
-      showEventText("The walls have shifted...");
+      // Rumble noise
+      playRumble(1.2, 0.4);
       wallShiftCooldown = 8000 + Math.random() * 12000; // 8-20s until next
     }
   }
