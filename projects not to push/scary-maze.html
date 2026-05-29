@@ -118,6 +118,22 @@ function generateMaze(width, height) {
     }
   }
 
+  // Add fake walls — look real but you can walk through
+  const fakeWallCount = 8 + Math.floor(Math.random() * 12);
+  let placed = 0;
+  for (let attempts = 0; attempts < 200 && placed < fakeWallCount; attempts++) {
+    const rx = Math.floor(Math.random() * (width - 2)) + 1;
+    const ry = Math.floor(Math.random() * (height - 2)) + 1;
+    if (maze[ry][rx] === 1) {
+      // Must be adjacent to at least one floor so player can approach it
+      const neighbors = [[0,1],[0,-1],[1,0],[-1,0]].filter(([dx,dy]) => maze[ry+dy][rx+dx] === 0);
+      if (neighbors.length >= 1) {
+        maze[ry][rx] = 3;
+        placed++;
+      }
+    }
+  }
+
   return { maze, rooms };
 }
 
@@ -407,7 +423,7 @@ function canMoveTo(x, y) {
   const mx = Math.floor(x / CELL);
   const my = Math.floor(y / CELL);
   if (my < 0 || my >= MAP_H || mx < 0 || mx >= MAP_W) return false;
-  return map[my][mx] !== 1;
+  return map[my][mx] !== 1; // 0=floor, 2=exit, 3=fake wall (walkable)
 }
 
 // Input
@@ -656,7 +672,7 @@ function draw() {
       if (ray.hit === 2) {
         ctx.fillStyle = EXIT_COLOR;
       } else {
-        let c = WALL_COLORS[ray.hit - 1] || WALL_COLORS[0];
+        let c = WALL_COLORS[(ray.hit === 3 ? 1 : ray.hit) - 1] || WALL_COLORS[0];
         const r = parseInt(c.slice(1,3), 16) * shade;
         const g = parseInt(c.slice(3,5), 16) * shade;
         const b = parseInt(c.slice(5,7), 16) * shade;
