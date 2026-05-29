@@ -333,7 +333,7 @@ function triggerRandomEvent() {
       break;
     case 'heavy_breathing':
       eventTimer = 4000;
-      playSound(breathingSound, 1.5);
+      playSound(breathingSound, 1.0);
       break;
   }
 }
@@ -438,8 +438,8 @@ document.addEventListener('mousemove', e => {
   // Ignore huge deltas that happen on pointer lock entry
   const dx = Math.max(-50, Math.min(50, e.movementX));
   const dy = Math.max(-50, Math.min(50, e.movementY));
-  player.angle += dx * 0.002;
-  player.pitch = Math.max(-200, Math.min(200, player.pitch - dy * 0.3));
+  player.angle += dx * 0.003;
+  player.pitch = Math.max(-200, Math.min(200, player.pitch - dy * 1.0));
 });
 
 function update(dt) {
