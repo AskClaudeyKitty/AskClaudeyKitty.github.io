@@ -135,27 +135,39 @@ for (let y = 0; y < MAP_H; y++) {
   }
 }
 
-// Place arrows on walls pointing to exit
+// Place arrows on walls pointing along hallways toward the exit
 let arrows = [];
 function placeArrows() {
   arrows = [];
   for (let y = 1; y < MAP_H - 1; y++) {
     for (let x = 1; x < MAP_W - 1; x++) {
       if (map[y][x] === 1 && Math.random() < 0.08) {
-        // Check if adjacent to floor
+        // Find adjacent floor (hallway)
         const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
         for (const [dx, dy] of dirs) {
           const nx = x + dx, ny = y + dy;
           if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H && map[ny][nx] === 0) {
-            // Arrow lies flat on wall surface, pointing along the wall toward the exit
             const side = dx !== 0 ? 'x' : 'y';
             let angle;
             if (side === 'x') {
               // Vertical wall — arrow points up/down along wall
-              angle = exitPos.y > y ? Math.PI / 2 : -Math.PI / 2;
+              // Check which direction along the wall the hallway continues
+              const canGoUp = ny > 0 && map[ny-1][nx] === 0;
+              const canGoDown = ny < MAP_H-1 && map[ny+1][nx] === 0;
+              const distUp = canGoUp ? Math.abs(exitPos.y - (ny-1)) : Infinity;
+              const distDown = canGoDown ? Math.abs(exitPos.y - (ny+1)) : Infinity;
+              if (distUp < distDown) angle = -Math.PI / 2;
+              else if (distDown < distUp) angle = Math.PI / 2;
+              else angle = exitPos.y > y ? Math.PI / 2 : -Math.PI / 2;
             } else {
               // Horizontal wall — arrow points left/right along wall
-              angle = exitPos.x > x ? 0 : Math.PI;
+              const canGoRight = nx < MAP_W-1 && map[ny][nx+1] === 0;
+              const canGoLeft = nx > 0 && map[ny][nx-1] === 0;
+              const distRight = canGoRight ? Math.abs(exitPos.x - (nx+1)) : Infinity;
+              const distLeft = canGoLeft ? Math.abs(exitPos.x - (nx-1)) : Infinity;
+              if (distRight < distLeft) angle = 0;
+              else if (distLeft < distRight) angle = Math.PI;
+              else angle = exitPos.x > x ? 0 : Math.PI;
             }
             arrows.push({ x: x * CELL, y: y * CELL, angle, side });
             break;
