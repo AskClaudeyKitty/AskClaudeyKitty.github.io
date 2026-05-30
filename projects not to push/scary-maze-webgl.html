@@ -211,23 +211,24 @@ let footstepPool = [];
 let footstepIdx = 0;
 
 function ensureBuzz() {
-  if (buzzAudio) return;
+  if (buzzAudio) {
+    if (buzzAudio.paused) buzzAudio.play().catch(() => {});
+    return;
+  }
   buzzAudio = new Audio('eldadtsabary-electric-buzz-8456.mp3');
   buzzAudio.preload = 'auto';
   buzzAudio.volume = 1.0;
-  const startOnce = () => {
-    buzzAudio.currentTime = 0;
-    buzzAudio.play().catch(() => {});
-  };
-  if (buzzAudio.readyState >= 2) {
-    startOnce();
-  } else {
-    buzzAudio.addEventListener('canplay', startOnce, { once: true });
-  }
+  buzzAudio.loop = false;
+  buzzAudio.currentTime = 0;
+  buzzAudio.play().catch(() => {});
   buzzAudio.addEventListener('timeupdate', () => {
     if (buzzAudio.currentTime > 10.5) {
       buzzAudio.currentTime = 0;
     }
+  });
+  buzzAudio.addEventListener('ended', () => {
+    buzzAudio.currentTime = 0;
+    buzzAudio.play().catch(() => {});
   });
 }
 
