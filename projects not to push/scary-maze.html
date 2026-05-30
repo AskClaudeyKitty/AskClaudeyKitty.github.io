@@ -212,7 +212,6 @@ let footstepIdx = 0;
 
 function ensureBuzz() {
   if (buzzAudio) {
-    // Retry if paused (browser may have blocked initial autoplay)
     if (buzzAudio.paused) buzzAudio.play().catch(() => {});
     return;
   }
@@ -227,7 +226,6 @@ function ensureBuzz() {
       buzzAudio.currentTime = 0;
     }
   });
-  // Fallback: if ended unexpectedly, restart from 0
   buzzAudio.addEventListener('ended', () => {
     buzzAudio.currentTime = 0;
     buzzAudio.play().catch(() => {});
