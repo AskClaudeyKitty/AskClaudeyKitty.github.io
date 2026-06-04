@@ -952,7 +952,9 @@ function loop(time) {
 
   // Crowd render: same body/head/limb as player; walk when moving, arms-up cheer when at seat
   for (const c of crowd) {
-    const presence = Math.max(0, Math.min(1, (sunY + 10) / 20));
+    const presence = player.ending || player.sinking
+      ? 1
+      : Math.max(0, Math.min(1, (sunY + 10) / 20));
     if (presence < 0.05) continue;
     const atSeat = presence > 0.95;
     // Body faces court when arriving/seated; faces away when leaving
@@ -1059,8 +1061,8 @@ drawMesh(floorBuf, 36, mat4Multiply(vp, mat4Translate(0, -0.1, 0)));
 
 // Underground solid (visible when sinking)
 if (player.y < 0) {
-  // Big solid block under the player
-  const underBuf = createBuffer(createBox(20, 20, 20, 0.05, 0.05, 0.05));
+  // Big solid yellow block under the player
+  const underBuf = createBuffer(createBox(20, 20, 20, 0.85, 0.75, 0.3));
   drawMesh(underBuf, 36, mat4Multiply(vp, mat4Translate(player.x, -10.5, player.z)));
 }
 
@@ -1521,7 +1523,7 @@ if (keys["a"] && !player.ending && !player.sinking) {
 // Ending sequence: dusk, crowd approaches with head tracking, first-person, then sink
 if (player.ending && !player.sinking) {
   // Lock day cycle to dusk with sun still visible
-  dayTime = 0.62; // sun low on horizon
+  dayTime = 0.45; // sun low but above horizon
   // Force first person
   firstPerson = true;
   // Head tracking for crowd
