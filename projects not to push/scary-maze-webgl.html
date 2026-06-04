@@ -239,8 +239,17 @@ function ensureFootsteps() {
 
 function playFootstep(vol = 1.0) {
   ensureFootsteps();
+  if (vol <= 0) {
+    for (const sound of footstepPool) {
+      try { sound.pause(); sound.currentTime = 0; sound.muted = true; } catch (e) {}
+    }
+    return;
+  }
   const a = footstepPool[footstepIdx];
   footstepIdx = (footstepIdx + 1) % footstepPool.length;
+  for (const sound of footstepPool) {
+    sound.muted = false;
+  }
   a.volume = Math.max(0, Math.min(1, vol));
   try { a.currentTime = 0; } catch (e) {}
   a.play().catch(() => {});
