@@ -970,8 +970,10 @@ function loop(time) {
   // Walk swing
   const swing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
   const bob = c.moving ? Math.abs(Math.sin(c.walkPhase)) * 0.1 : 0;
-  // Head turn: face same direction as body (no player tracking)
-  const worldLook = facing;
+  // Head turn: track player if c.headTrack; else face same as body
+  const worldLook = c.headTrack
+    ? Math.atan2(player.x - c.x, player.z - c.z)
+    : facing;
   let headTurn = worldLook - facing;
   while (headTurn > Math.PI) headTurn -= 2 * Math.PI;
   while (headTurn < -Math.PI) headTurn += 2 * Math.PI;
@@ -1054,6 +1056,13 @@ if (sunY > -5) {
 
 // Floor
 drawMesh(floorBuf, 36, mat4Multiply(vp, mat4Translate(0, -0.1, 0)));
+
+// Underground solid (visible when sinking)
+if (player.y < 0) {
+  // Big solid block under the player
+  const underBuf = createBuffer(createBox(20, 20, 20, 0.05, 0.05, 0.05));
+  drawMesh(underBuf, 36, mat4Multiply(vp, mat4Translate(player.x, -10.5, player.z)));
+}
 
 // Soccer court grass
 drawMesh(
@@ -1498,12 +1507,36 @@ for (let i = pieces.length - 1; i >= 0; i--) {
     c.volume = 0.6;
     c.play().catch(() => {});
     player.goals = (player.goals || 0) + 1;
-    if (player.goals >= 10) {
-      player.sinking = true;
+    if (player.goals >= 10 && !player.ending) {
+      player.ending = true;
+      player.endingStart = performance.now();
     }
   }
 }
-// Player sinking into ground after 10 goals
+// A key also triggers ending sequence
+if (keys["a"] && !player.ending && !player.sinking) {
+  player.ending = true;
+  player.endingStart = performance.now();
+}
+// Ending sequence: dusk, crowd approaches with head tracking, first-person, then sink
+if (player.ending && !player.sinking) {
+  // Lock day cycle to dusk with sun still visible
+  dayTime = 0.62; // sun low on horizon
+  // Force first person
+  firstPerson = true;
+  // Head tracking for crowd
+  for (const c of crowd) c.headTrack = true;
+  // Pull crowd in by lerping presence
+  for (const c of crowd) {
+    c.farX = c.sx;
+    c.farZ = c.sz; // remove "far" — crowd stays at seats, looks closer
+  }
+  // After 4s, start sinking
+  if (performance.now() - player.endingStart > 4000) {
+    player.sinking = true;
+  }
+}
+// Player sinking into ground after ending
 if (player.sinking) {
   player.y -= 6 * dt;
   if (player.y < -10) {
