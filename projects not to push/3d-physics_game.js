@@ -718,12 +718,12 @@ function loop(time) {
       mz -= Math.cos(camYaw);
     }
     if (keys["a"]) {
-      mx += Math.sin(camYaw - Math.PI / 2);
-      mz += Math.cos(camYaw - Math.PI / 2);
-    }
-    if (keys["d"]) {
       mx += Math.sin(camYaw + Math.PI / 2);
       mz += Math.cos(camYaw + Math.PI / 2);
+    }
+    if (keys["d"]) {
+      mx += Math.sin(camYaw - Math.PI / 2);
+      mz += Math.cos(camYaw - Math.PI / 2);
     }
   }
   const len = Math.sqrt(mx * mx + mz * mz);
@@ -938,10 +938,11 @@ function loop(time) {
       c.farX = c.x;
       c.farZ = c.z;
     }
+    if (player.ending || player.sinking) continue; // ending loop moves them
     const presence = Math.max(0, Math.min(1, (sunY + 10) / 20));
     const prevPresence = c.lastPresence === undefined ? presence : c.lastPresence;
     c.lastPresence = presence;
-    c.leaving = presence < prevPresence; // true while presence is decreasing
+    c.leaving = presence < prevPresence;
     const prevX = c.x,
       prevZ = c.z;
     c.x = c.farX + (c.sx - c.farX) * presence;
@@ -957,10 +958,13 @@ function loop(time) {
       : Math.max(0, Math.min(1, (sunY + 10) / 20));
     if (presence < 0.05) continue;
     const atSeat = presence > 0.95;
-    // Body faces court when arriving/seated; faces away when leaving
-    const facing = c.leaving
-      ? Math.atan2(c.sx - c.x, c.sz - c.z)
-      : Math.atan2(courtCenterX - c.x, courtCenterZ - c.z);
+    // Body faces court when arriving/seated; faces player when ending
+    const facing =
+      player.ending && !player.sinking
+        ? Math.atan2(player.x - c.x, player.z - c.z)
+        : c.leaving
+        ? Math.atan2(c.sx - c.x, c.sz - c.z)
+        : Math.atan2(courtCenterX - c.x, courtCenterZ - c.z);
     const m = mat4Multiply(vp, mat4Translate(c.x, 0, c.z));
   const rot = mat4Identity();
   rot[0] = Math.cos(facing);
@@ -1515,27 +1519,37 @@ for (let i = pieces.length - 1; i >= 0; i--) {
     }
   }
 }
-// A key also triggers ending sequence
-if (keys["a"] && !player.ending && !player.sinking) {
+// T key also triggers ending sequence
+if (keys["t"] && !player.ending && !player.sinking) {
   player.ending = true;
   player.endingStart = performance.now();
 }
-// Ending sequence: dusk, crowd approaches with head tracking, first-person, then sink
+// Ending sequence: dusk, crowd approaches player, head tracking, first-person, contact triggers sink
 if (player.ending && !player.sinking) {
   // Lock day cycle to dusk with sun still visible
-  dayTime = 0.45; // sun low but above horizon
+  dayTime = 0.45;
   // Force first person
   firstPerson = true;
   // Head tracking for crowd
   for (const c of crowd) c.headTrack = true;
-  // Pull crowd in by lerping presence
+  // Move crowd toward player
   for (const c of crowd) {
-    c.farX = c.sx;
-    c.farZ = c.sz; // remove "far" — crowd stays at seats, looks closer
-  }
-  // After 4s, start sinking
-  if (performance.now() - player.endingStart > 4000) {
-    player.sinking = true;
+    const dx = player.x - c.x;
+    const dz = player.z - c.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 0.1) {
+      const speed = 3.5;
+      c.x += (dx / dist) * speed * dt;
+      c.z += (dz / dist) * speed * dt;
+      c.moving = true;
+      c.walkPhase += dt * 6;
+    } else {
+      c.moving = false;
+    }
+    // Contact: trigger sinking
+    if (dist < 1.5) {
+      player.sinking = true;
+    }
   }
 }
 // Player sinking into ground after ending
