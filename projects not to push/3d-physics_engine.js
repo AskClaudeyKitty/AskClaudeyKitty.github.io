@@ -736,14 +736,16 @@ function loop(time) {
   player.angle = camYaw;
 
   // Jump physics
-  player.vy -= 20 * dt;
-  player.y += player.vy * dt;
-  if (player.y <= 0) {
-    player.y = 0;
-    player.vy = 0;
-    player.grounded = true;
-  } else {
-    player.grounded = false;
+  if (!player.sinking) {
+    player.vy -= 20 * dt;
+    player.y += player.vy * dt;
+    if (player.y <= 0) {
+      player.y = 0;
+      player.vy = 0;
+      player.grounded = true;
+    } else {
+      player.grounded = false;
+    }
   }
 
   const newX = player.x + mx * player.speed * dt;
@@ -819,9 +821,8 @@ function loop(time) {
 
   // Sun shadow projection + stretch factor (long shadows when sun is low)
   const shadowY = 0.11;
-  // lengthFactor: longer shadows when sun is lower. Sun ranges 10..50.
-  // Modest stretch so shadow stays connected to its object.
-  const lengthFactor = sunY > 1 ? Math.max(1, 1 + (40 - sunY) / 30) : 0;
+  // lengthFactor: subtle stretch so shadow stays connected to its object.
+  const lengthFactor = sunY > 1 ? Math.max(1, 1 + (40 - sunY) / 60) : 0;
   function projectShadow(ox, oy, oz) {
     if (sunY < 2) return null;
     const dy = oy - sunY;
@@ -969,10 +970,8 @@ function loop(time) {
   // Walk swing
   const swing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
   const bob = c.moving ? Math.abs(Math.sin(c.walkPhase)) * 0.1 : 0;
-  // Head turn: track player only when seated; else face forward with body
-  const worldLook = atSeat
-    ? Math.atan2(player.x - c.x, player.z - c.z)
-    : facing;
+  // Head turn: face same direction as body (no player tracking)
+  const worldLook = facing;
   let headTurn = worldLook - facing;
   while (headTurn > Math.PI) headTurn -= 2 * Math.PI;
   while (headTurn < -Math.PI) headTurn += 2 * Math.PI;
@@ -1481,7 +1480,7 @@ for (let i = pieces.length - 1; i >= 0; i--) {
       }
     }
   }
-  // Goal scored — reset ball to center
+  // Goal scored — reset ball to center, count toward 10
   const touchedGoalZ =
     ball.z > bz + courtL - 0.05 || ball.z < bz - courtL + 0.05;
   const inGoalMouth = Math.abs(ball.x - bx) < goalW / 2 + ballRadius;
@@ -1498,6 +1497,17 @@ for (let i = pieces.length - 1; i >= 0; i--) {
     const c = cheerSound.cloneNode();
     c.volume = 0.6;
     c.play().catch(() => {});
+    player.goals = (player.goals || 0) + 1;
+    if (player.goals >= 10) {
+      player.sinking = true;
+    }
+  }
+}
+// Player sinking into ground after 10 goals
+if (player.sinking) {
+  player.y -= 6 * dt;
+  if (player.y < -10) {
+    window.location.href = 'scary-maze.html';
   }
 }
 // Render ball
