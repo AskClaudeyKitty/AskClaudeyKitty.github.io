@@ -1442,7 +1442,7 @@ if (keys["t"] && !player.ending && !player.sinking) {
   player.ending = true;
   player.endingStart = performance.now();
 }
-// Ending sequence: dusk, crowd approaches player, head tracking, first-person, contact triggers sink
+// Ending sequence: dusk, crowd approaches player, head tracking, first-person, contact or timeout triggers sink
 if (player.ending && !player.sinking) {
   // Lock day cycle to dusk with sun still visible
   dayTime = 0.45;
@@ -1468,6 +1468,10 @@ if (player.ending && !player.sinking) {
     if (dist < 1.5) {
       player.sinking = true;
     }
+  }
+  // If crowd never reaches player, force the sink after a few seconds.
+  if (performance.now() - player.endingStart > 4500) {
+    player.sinking = true;
   }
 }
 // Player sinking into ground after ending
