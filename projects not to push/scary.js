@@ -2092,9 +2092,18 @@ void main() {
       y1 = (u_resolution.y - wallH) * 0.5 + u_playerPitch + u_cameraBob;
       sideF = float(side);
       if (py < y1) {
-        // Ceiling
-        float shade = 1.0 - (py / max(1.0, u_resolution.y * 0.5)) * 0.7;
-        channel = vec3(0.05, 0.05, 0.06) * shade;
+        // Ceiling — yellow wallpaper with a hint of pattern
+        float shade = 1.0 - (py / max(1.0, u_resolution.y * 0.5)) * 0.5;
+        // Subtle horizontal stripe pattern based on the wall's screen-y position
+        float stripe = step(0.5, fract((py + u_cameraBob) / 24.0));
+        float dirt = noise(vec2(uv.x * 8.0, py / 40.0)) * 0.18;
+        vec3 base = mix(vec3(0.62, 0.50, 0.18), vec3(0.55, 0.43, 0.14), stripe);
+        base -= dirt;
+        base *= shade;
+        // Distance fog using the wall's hit distance
+        float fog = exp(-perpDist * 0.0025);
+        base *= fog;
+        channel = base;
       } else if (py > y1 + wallH) {
         // Floor
         float dy = py - u_resolution.y * 0.5;
