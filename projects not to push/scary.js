@@ -1628,23 +1628,9 @@ let mazeKeyState = {};
 let mazeGameState = "playing";
 let mazeWalkCycle = 0;
 let mazeFlashlight = true;
+let mazeSmilers = [];     // array of { x, y, alive, stare } (3D model rendered separately)
+let mazeStareTimer = 0;    // seconds the player has been looking at the smiler
 let mazeCameraBob = 0;
-let mazeHandEl = null;
-let mazeCrossEl = null;
-function mazeSetHudVisible(visible) {
-  if (!mazeHandEl) mazeHandEl = document.getElementById("fp-hand");
-  if (!mazeCrossEl) mazeCrossEl = document.getElementById("fp-cross");
-  if (mazeHandEl) mazeHandEl.style.display = visible ? "block" : "none";
-  if (mazeCrossEl) mazeCrossEl.style.display = visible ? "block" : "none";
-}
-function mazeUpdateHud() {
-  if (!mazeHandEl) return;
-  // Bob the hand in sync with the camera. Slight rotation.
-  const bobY = -mazeCameraBob * 0.4;
-  const swayX = mazeCameraSway * 0.3;
-  mazeHandEl.style.transform = `translate(${swayX}px, ${bobY}px)`;
-}
-mazeSetHudVisible(false);
 let mazeCameraSway = 0;
 let mazeIsBlackout = false;
 let mazeIsFlickering = false;
@@ -1792,6 +1778,75 @@ function mazeGenerateLights() {
   }
 }
 
+function mazeSpawnAllSmilers() {
+  mazeSmilers = [];
+  // Find every 0-cell with at least 6 open 3x3 neighbors (a "big room").
+  // Use a flood-fill to group connected big-room cells, then place one
+  // smiler at the centroid of each group.
+  const seen = Array.from({ length: MAZE_H }, () => Array(MAZE_W).fill(false));
+  const groups = [];
+  for (let y = 3; y < MAZE_H - 3; y++) {
+    for (let x = 3; x < MAZE_W - 3; x++) {
+      if (seen[y][x]) continue;
+      if (mazeMap[y][x] !== 0) continue;
+      // BFS for a room-sized open area
+      const queue = [[x, y]];
+      seen[y][x] = true;
+      const cells = [];
+      while (queue.length) {
+        const [cx, cy] = queue.shift();
+        // Only count as room if it has many open 3x3 neighbors
+        let open = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            if (mazeMap[cy + dy][cx + dx] === 0) open++;
+          }
+        }
+        if (open < 6) continue;
+        cells.push([cx, cy]);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || nx >= MAZE_W || ny < 0 || ny >= MAZE_H) continue;
+            if (seen[ny][nx]) continue;
+            if (mazeMap[ny][nx] !== 0) continue;
+            seen[ny][nx] = true;
+            queue.push([nx, ny]);
+          }
+        }
+      }
+      if (cells.length >= 4) groups.push(cells);
+    }
+  }
+  // Place one smiler per big room, at the centroid
+  for (const cells of groups) {
+    let sx = 0, sy = 0;
+    for (const [cx, cy] of cells) { sx += cx; sy += cy; }
+    sx = (sx / cells.length + 0.5) * MAZE_CELL;
+    sy = (sy / cells.length + 0.5) * MAZE_CELL;
+    mazeSmilers.push({ x: sx, y: sy, alive: true, stare: 0 });
+  }
+  // If no big rooms were found, place one smiler in a random open cell far
+  // from the player
+  if (mazeSmilers.length === 0) {
+    for (let attempts = 0; attempts < 100; attempts++) {
+      const x = 3 + Math.floor(Math.random() * (MAZE_W - 6));
+      const y = 3 + Math.floor(Math.random() * (MAZE_H - 6));
+      if (mazeMap[y][x] === 0) {
+        mazeSmilers.push({
+          x: (x + 0.5) * MAZE_CELL,
+          y: (y + 0.5) * MAZE_CELL,
+          alive: true,
+          stare: 0
+        });
+        return;
+      }
+    }
+  }
+}
+
 function mazeEnsureBuzz() {
   if (mazeBuzzAudio) {
     if (mazeBuzzAudio.paused) mazeBuzzAudio.play().catch(() => {});
@@ -1882,7 +1937,6 @@ let mazeLightmapTex = null;
 
 function activateScaryMaze() {
   mazeActive = true;
-  mazeSetHudVisible(true);
   // Initialize/resume the audio context so the buzz can start immediately
   if (!mazeAudioCtx) {
     try { mazeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
@@ -1914,6 +1968,10 @@ function activateScaryMaze() {
   mazeWallShiftCooldown = 15000;
   mazeShiftCount = 0;
   mazeLastTime = performance.now();
+  // Spawn a smiler in every big room. They are stationary and creepy.
+  mazeSmilers = [];
+  mazeStareTimer = 0;
+  mazeSpawnAllSmilers();
 
   if (mazeWhisperSounds.length === 0) {
     try {
@@ -2074,15 +2132,16 @@ void main() {
     channel += warmLight * lightGlow * 0.35;
     if (hit && py < y1) channel += warmLight * ceilingGlow * 0.4;
     if (u_flashlight > 0.5) {
-      // Real flashlight cone: depends on angular offset from the player's facing
-      // direction. Outside the cone, almost no light. Inside, falls off with distance.
+      // Real flashlight cone: angular offset from facing direction. Outside the
+      // cone, the world is dim. Inside, lit with soft range falloff.
       float angOffset = abs(rayAngleR - u_playerAngle);
-      // Cone half-angle ~0.4 rad (~23 degrees)
-      float cone = 1.0 - smoothstep(0.0, 0.5, angOffset);
-      float range = exp(-perpDist * 0.008);
+      // Wider cone (~0.7 rad) so it doesn't look like a line
+      float cone = 1.0 - smoothstep(0.0, 0.7, angOffset);
+      // Range falloff is gentle: 0.0035 so the cone is visible at the end of hallways
+      float range = exp(-perpDist * 0.0035);
       float intensity = cone * range;
-      // Mix: outside cone the lightmap contribution stays; inside cone it brightens.
-      channel = mix(channel * 0.15, channel * 1.4, intensity);
+      // Inside cone: brighten significantly. Outside: dim to almost nothing.
+      channel = mix(channel * 0.08, channel * 1.8, intensity);
     }
     col = channel;
   }
@@ -2241,8 +2300,8 @@ void main() {
     if (document.pointerLockElement !== canvas) return;
     const dx = Math.max(-50, Math.min(50, e.movementX));
     const dy = Math.max(-50, Math.min(50, e.movementY));
-    mazePlayer.angle += dx * 0.012;
-    mazePlayer.pitch -= dy * 1.2;
+    mazePlayer.angle += dx * 0.006;
+    mazePlayer.pitch -= dy * 0.6;
     mazePlayer.pitch = Math.max(-300, Math.min(300, mazePlayer.pitch));
   });
 
@@ -2393,7 +2452,6 @@ void main() {
       document.body.appendChild(note);
       // Freeze the maze: no more movement, no more events, no going back.
       mazeUpdate = function () {};
-      mazeSetHudVisible(false);
     }
   };
 }
