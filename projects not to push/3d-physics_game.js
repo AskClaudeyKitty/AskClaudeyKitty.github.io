@@ -359,20 +359,20 @@ const rooms = [];
 
 // ── Parkour platforms (floating, in-air blocks you can land on) — outside the maze ──
 const platforms = [
-  { x: 14, y: 0.6, z: 18, w: 4, h: 0.5, d: 4 },
-  { x: 20, y: 1.5, z: 18, w: 3, h: 0.5, d: 3 },
-  { x: 24, y: 2.5, z: 22, w: 3, h: 0.5, d: 3 },
-  { x: 28, y: 3.5, z: 18, w: 3, h: 0.5, d: 3 },
-  { x: 32, y: 4.5, z: 22, w: 3, h: 0.5, d: 3 },
-  { x: 36, y: 5.5, z: 18, w: 3, h: 0.5, d: 3 },
+  { x: 14, y: 0.6, z: -18, w: 4, h: 0.5, d: 4 },
+  { x: 20, y: 1.5, z: -18, w: 3, h: 0.5, d: 3 },
+  { x: 24, y: 2.5, z: -22, w: 3, h: 0.5, d: 3 },
+  { x: 28, y: 3.5, z: -18, w: 3, h: 0.5, d: 3 },
+  { x: 32, y: 4.5, z: -22, w: 3, h: 0.5, d: 3 },
+  { x: 36, y: 5.5, z: -18, w: 3, h: 0.5, d: 3 },
 ];
 const platformBuf = createBuffer(createBox(1, 1, 1, 0.2, 0.5, 0.85)); // shared unit, scale per platform
 
 // ── Breakable red blocks — outside the maze ──
 const breakables = [
-  { x: 22, y: 1.75, z: 18, alive: true },
-  { x: 26, y: 2.75, z: 22, alive: true },
-  { x: 30, y: 3.75, z: 18, alive: true },
+  { x: 22, y: 1.75, z: -18, alive: true },
+  { x: 26, y: 2.75, z: -22, alive: true },
+  { x: 30, y: 3.75, z: -18, alive: true },
 ];
 const breakableBuf = createBuffer(createBox(1, 1, 1, 0.85, 0.2, 0.2));
 
