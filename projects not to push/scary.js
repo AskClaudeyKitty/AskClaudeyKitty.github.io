@@ -2,10 +2,13 @@ const canvas = document.getElementById("c");
 const cheerSound = new Audio("assets/cheer.wav");
 cheerSound.volume = 0.6;
 cheerSound.preload = "auto";
-const RENDER_SCALE = 0.65;
+let _renderScale = 1.0;
+const RENDER_SCALE_MAZE = 0.65;
+const RENDER_SCALE_OVERWORLD = 1.0;
 function resizeCanvas() {
-  canvas.width = Math.max(320, Math.floor(window.innerWidth * RENDER_SCALE));
-  canvas.height = Math.max(240, Math.floor(window.innerHeight * RENDER_SCALE));
+  const s = _renderScale;
+  canvas.width = Math.max(320, Math.floor(window.innerWidth * s));
+  canvas.height = Math.max(240, Math.floor(window.innerHeight * s));
 }
 const gl = canvas.getContext("webgl", { antialias: true });
 resizeCanvas();
@@ -1937,6 +1940,8 @@ let mazeLightmapTex = null;
 
 function activateScaryMaze() {
   mazeActive = true;
+  _renderScale = RENDER_SCALE_MAZE;
+  resizeCanvas();
   // Initialize/resume the audio context so the buzz can start immediately
   if (!mazeAudioCtx) {
     try { mazeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
