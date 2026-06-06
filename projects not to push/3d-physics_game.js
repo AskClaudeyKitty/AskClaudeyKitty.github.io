@@ -862,6 +862,39 @@ function doKick() {
     ball.spinX = (kz * power) / ballRadius;
     ball.spinZ = (-kx * power) / ballRadius;
   }
+  // Kick spawned balls
+  for (const sb of spawnedBalls) {
+    const dx = sb.x - player.x,
+      dz = sb.z - player.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 3.5 || dist < 1e-4) continue;
+    if (Math.abs(sb.y - ballRadius) > 1.2) continue;
+    const kx = dx / dist,
+      kz = dz / dist;
+    const power = 12 + Math.random() * 4;
+    sb.vx = kx * power;
+    sb.vz = kz * power;
+    sb.vy = 4 + Math.random() * 2;
+    sb.spinX = (kz * power) / ballRadius;
+    sb.spinZ = (-kx * power) / ballRadius;
+  }
+  // Kick spawned blocks
+  for (const sblk of spawnedBlocks) {
+    const dx = sblk.x - player.x,
+      dz = sblk.z - player.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 3.5 || dist < 1e-4) continue;
+    if (Math.abs(sblk.y - 0.2) > 1.2) continue;
+    const kx = dx / dist,
+      kz = dz / dist;
+    const power = 10 + Math.random() * 4;
+    sblk.vx = kx * power + (Math.random() - 0.5) * 6;
+    sblk.vy = 10 + Math.random() * 6;
+    sblk.vz = kz * power + (Math.random() - 0.5) * 6;
+    sblk.vrx = (Math.random() - 0.5) * 15;
+    sblk.vry = (Math.random() - 0.5) * 15;
+    sblk.vrz = (Math.random() - 0.5) * 15;
+  }
   // Kick animation
   player.kickTime = 0.3;
 }
@@ -1840,12 +1873,17 @@ if (!firstPerson && !player.dead) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.z += b.vz * dt;
+    // Spin based on horizontal velocity (like main ball)
+    b.rx += b.spinX * dt;
+    b.rz += b.spinZ * dt;
     if (b.y < ballRadius) {
       b.y = ballRadius;
       if (Math.abs(b.vy) < 0.5) b.vy = 0;
       else b.vy = -b.vy * 0.7;
       b.vx *= 0.98;
       b.vz *= 0.98;
+      b.spinX *= 0.95;
+      b.spinZ *= 0.95;
     }
     dynamicObjects.push({ x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
   }
@@ -1878,11 +1916,30 @@ if (!firstPerson && !player.dead) {
     }
   }
 
-  // Render spawned balls (white sphere + black pentagon overlay)
+  // Render spawned balls (white sphere + black pentagon overlay) with spin
   for (const b of spawnedBalls) {
     const m = mat4Multiply(vp, mat4Translate(b.x, b.y, b.z));
-    drawMesh(spawnedBallWhiteBuf, 10 * 12 * 6, m);
-    drawMesh(spawnedBallBlackBuf, 4 * 10 * 6, m);
+    const cx = Math.cos(b.rx), sx = Math.sin(b.rx);
+    const cz = Math.cos(b.rz), sz = Math.sin(b.rz);
+    const rot = mat4Identity();
+    rot[0] = cz;
+    rot[1] = sz;
+    rot[4] = -sz;
+    rot[5] = cz;
+    rot[10] = 1;
+    // Combined rotation: rz then rx (z-axis ball spin, x-axis tipping)
+    const r = mat4Identity();
+    r[0] = cz;
+    r[1] = sz;
+    r[2] = 0;
+    r[4] = -sz * cx;
+    r[5] = cz * cx;
+    r[6] = sx;
+    r[8] = sz * sx;
+    r[9] = -cz * sx;
+    r[10] = cx;
+    drawMesh(spawnedBallWhiteBuf, 10 * 12 * 6, mat4Multiply(m, r));
+    drawMesh(spawnedBallBlackBuf, 4 * 10 * 6, mat4Multiply(m, r));
   }
   // Render spawned blocks as spinning colored cubes (like pieces from red blocks)
   for (const b of spawnedBlocks) {
