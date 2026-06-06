@@ -1901,11 +1901,31 @@ if (!firstPerson && !player.dead) {
       else b.vy = -b.vy * 0.5;
       b.vx *= 0.9;
       b.vz *= 0.9;
-      b.vrx *= 0.95;
-      b.vry *= 0.95;
-      b.vrz *= 0.95;
+      // Spin decays hard when on ground so block settles flat on a face
+      b.vrx *= 0.85;
+      b.vry *= 0.85;
+      b.vrz *= 0.85;
+      // Snap rotation to nearest 90° on a slow roll
+      const snapX = Math.round(b.rx / (Math.PI / 2)) * (Math.PI / 2);
+      const snapZ = Math.round(b.rz / (Math.PI / 2)) * (Math.PI / 2);
+      const blend = 0.08;
+      b.rx += (snapX - b.rx) * blend;
+      b.rz += (snapZ - b.rz) * blend;
     }
-    dynamicObjects.push({ x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
+    // Collision radius changes with rotation: largest when tilted, smaller when flat
+    // Use distance of corner from center projected on ground plane
+    const cosX = Math.abs(Math.cos(b.rx)), sinX = Math.abs(Math.sin(b.rx));
+    const cosZ = Math.abs(Math.cos(b.rz)), sinZ = Math.abs(Math.sin(b.rz));
+    const halfX = 0.2; // half-size of 0.4 cube
+    const halfZ = 0.2;
+    // Project rotated cube onto xz plane: half-extents
+    const projX = halfX * cosX + halfZ * sinX;
+    const projZ = halfZ * cosZ + halfX * sinZ;
+    const r = Math.max(projX, projZ);
+    // Y offset so block sits on ground based on rotation
+    const yOff = halfX * sinX + halfZ * sinZ;
+    if (b.y < yOff) b.y = yOff;
+    dynamicObjects.push({ x: b.x, z: b.z, r, pushable: true, ref: b });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
