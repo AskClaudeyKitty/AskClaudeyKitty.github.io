@@ -2091,13 +2091,13 @@ if (!firstPerson && !player.dead) {
   for (const b of spawnedBlocks) {
     // Find highest top surface under this block
     let supportY = blockHalf; // ground top
-    const r = 0.45; // horizontal radius to check
+    // Horizontal radius for stacking support: must overlap on xz AND other.y <= b.y + 0.4
+    // (so the other block is at-or-below this one, not above)
     for (const other of spawnedBlocks) {
       if (other === b) continue;
       const dx = other.x - b.x, dz = other.z - b.z;
-      const d2 = dx * dx + dz * dz;
-      if (d2 > r * r) continue;
-      // other block top is at other.y + blockHalf
+      if (dx * dx + dz * dz > 0.05) continue; // need xz overlap
+      if (other.y > b.y + 0.3) continue; // other is above, not a support
       const topY = other.y + blockHalf;
       if (topY > supportY) supportY = topY;
     }
