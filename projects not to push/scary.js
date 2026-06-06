@@ -2456,6 +2456,75 @@ void main() {
     gl.uniform1i(mazeRayU.pac, Math.min(mazeArrows.length, 30));
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+    // Draw 3D smilers on top of the raycast pass.
+    if (window.SmilerRenderer && mazeSmilers.length > 0) {
+      gl.enable(gl.DEPTH_TEST);
+      // Build a perspective VP from the player's view (same as a 2.5D FPS).
+      const aspect = canvas.width / canvas.height;
+      const fov = Math.PI / 3;
+      const f = 1 / Math.tan(fov / 2);
+      const near = 0.5, far = 5000;
+      const proj = new Float32Array(16);
+      proj[0] = f / aspect;
+      proj[5] = f;
+      proj[10] = (far + near) / (near - far);
+      proj[11] = -1;
+      proj[14] = (2 * far * near) / (near - far);
+      // View matrix from the player's 2D position and angle
+      const px = mazePlayer.x, pz = mazePlayer.y, py = 1.6;
+      const yaw = mazePlayer.angle;
+      const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+      // Forward vector
+      const fx = sinY, fy = 0, fz = cosY;
+      // Right
+      const rx = cosY, ry = 0, rz = -sinY;
+      // Up (world)
+      const ux = 0, uy = 1, uz = 0;
+      // Look-at center: player + forward
+      const cx = px + fx, cy = py + fy, cz = pz + fz;
+      // view = lookAt(eye, center, up)
+      // z = normalize(eye - center) (points away from look direction)
+      let zx = px - cx, zy = py - cy, zz = pz - cz;
+      const zl = Math.hypot(zx, zy, zz) || 1;
+      zx /= zl; zy /= zl; zz /= zl;
+      // x = normalize(up × z)
+      let xx = uy * zz - uz * zy;
+      let xy = uz * zx - ux * zz;
+      let xz = ux * zy - uy * zx;
+      const xl = Math.hypot(xx, xy, xz) || 1;
+      xx /= xl; xy /= xl; xz /= xl;
+      // y = z × x
+      const yx = zy * xz - zz * xy;
+      const yy = zz * xx - zx * xz;
+      const yz = zx * xy - zy * xx;
+      const view = new Float32Array(16);
+      view[0] = xx; view[4] = xy; view[8] = xz;
+      view[12] = -(xx * px + xy * py + xz * pz);
+      view[1] = yx; view[5] = yy; view[9] = yz;
+      view[13] = -(yx * px + yy * py + yz * pz);
+      view[2] = zx; view[6] = zy; view[10] = zz;
+      view[14] = -(zx * px + zy * py + zz * pz);
+      view[3] = 0; view[7] = 0; view[11] = 0; view[15] = 1;
+      // vp = proj * view
+      const vp = new Float32Array(16);
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          vp[i + j * 4] =
+            proj[i] * view[j * 4] + proj[i + 4] * view[j * 4 + 1] +
+            proj[i + 8] * view[j * 4 + 2] + proj[i + 12] * view[j * 4 + 3];
+        }
+      }
+      for (const s of mazeSmilers) {
+        if (!s.alive) continue;
+        // Skip smilers that are behind the player
+        const dx = s.x - px;
+        const dz = s.y - pz;
+        const fwd = dx * sinY + dz * cosY; // dot with forward
+        if (fwd < -1) continue;
+        window.SmilerRenderer.drawSmiler(gl, vp, s.x, s.y, px, pz, time);
+      }
+    }
+
     if (mazeGameState === "won" && !mazeGameWon) {
       mazeGameWon = true;
       player.mazeEscaped = true;

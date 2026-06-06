@@ -613,6 +613,71 @@ document.addEventListener("pointerlockchange", () => {
     camYaw = player.angle;
   }
 });
+
+// ── Goal counter HUD ──
+const goalHud = document.createElement("div");
+goalHud.id = "goal-hud";
+goalHud.style.cssText = "position:fixed;top:18px;left:50%;transform:translateX(-50%);color:#fff;font-family:monospace;font-size:22px;font-weight:bold;text-shadow:0 0 6px #000,0 2px 4px rgba(0,0,0,0.8);background:rgba(0,0,0,0.45);padding:8px 18px;border-radius:10px;letter-spacing:1px;pointer-events:none;z-index:5;border:1px solid rgba(255,255,255,0.15);";
+goalHud.textContent = "Goals: 0";
+document.body.appendChild(goalHud);
+function updateGoalHud() {
+  goalHud.textContent = "Goals: " + (player.totalGoals || 0);
+}
+// Update the HUD every frame
+const _origLoop = requestAnimationFrame;
+const goalHudInterval = setInterval(updateGoalHud, 100);
+window.addEventListener("beforeunload", () => clearInterval(goalHudInterval));
+
+// ── Inventory HUD (9 slots, hotkeys 1-9) ──
+const playerInventory = {
+  slots: [null, null, null, null, null, null, null, null, null], // 9 slots
+  selected: 0, // 0-8
+};
+const invHud = document.createElement("div");
+invHud.id = "inventory-hud";
+invHud.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:10px;pointer-events:none;z-index:5;";
+const invSlots = [];
+for (let i = 0; i < 9; i++) {
+  const slot = document.createElement("div");
+  slot.style.cssText = "width:48px;height:48px;background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:monospace;font-size:11px;transition:all 0.12s;";
+  slot.innerHTML = '<div style="font-size:18px;opacity:0.5;">·</div><div style="font-size:9px;opacity:0.5;margin-top:2px;">' + (i + 1) + '</div>';
+  invHud.appendChild(slot);
+  invSlots.push(slot);
+}
+document.body.appendChild(invHud);
+function renderInventory() {
+  for (let i = 0; i < 9; i++) {
+    const slot = invSlots[i];
+    const item = playerInventory.slots[i];
+    if (i === playerInventory.selected) {
+      slot.style.border = "2px solid #ff0";
+      slot.style.background = "rgba(255,255,0,0.18)";
+      slot.style.transform = "translateY(-4px)";
+      slot.style.boxShadow = "0 4px 12px rgba(255,255,0,0.4)";
+    } else {
+      slot.style.border = "2px solid rgba(255,255,255,0.2)";
+      slot.style.background = "rgba(255,255,255,0.07)";
+      slot.style.transform = "translateY(0)";
+      slot.style.boxShadow = "none";
+    }
+  }
+}
+renderInventory();
+const invHudInterval = setInterval(renderInventory, 100);
+window.addEventListener("beforeunload", () => clearInterval(invHudInterval));
+
+// 1-9 hotkeys to select an inventory slot
+window.addEventListener("keydown", (e) => {
+  // Don't steal hotkeys from the existing in-game key map; only handle digits.
+  if (e.repeat) return;
+  // Ignore if the user is typing into a form (none here, but future-proof)
+  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+  const k = e.key;
+  if (k >= "1" && k <= "9") {
+    playerInventory.selected = parseInt(k, 10) - 1;
+    renderInventory();
+  }
+});
 document.addEventListener("mousemove", (e) => {
   if (document.pointerLockElement === canvas) {
     camYaw -= e.movementX * 0.003;
@@ -1431,17 +1496,15 @@ for (let i = pieces.length - 1; i >= 0; i--) {
     c.volume = 0.6;
     c.play().catch(() => {});
     player.goals = (player.goals || 0) + 1;
-    if (player.goals >= 10 && !player.ending) {
-      player.ending = true;
-      player.endingStart = performance.now();
+    // Track total goals across the session (never resets).
+    player.totalGoals = (player.totalGoals || 0) + 1;
+    if (player.goals >= 10) {
+      // Reset goals instead of triggering the ending — endless play.
+      player.goals = 0;
     }
   }
 }
-// T key also triggers ending sequence
-if (keys["t"] && !player.ending && !player.sinking) {
-  player.ending = true;
-  player.endingStart = performance.now();
-}
+// T key trigger for the ending is disabled in the original 3D physics build.
 // Ending sequence: dusk, crowd approaches player, head tracking, first-person, contact or timeout triggers sink
 if (player.ending && !player.sinking) {
   // Lock day cycle to dusk with sun still visible
