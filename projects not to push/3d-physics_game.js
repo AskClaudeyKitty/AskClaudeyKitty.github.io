@@ -736,7 +736,7 @@ function useInventorySlot(idx) {
       vx: fx * 2, vy: 0, vz: fz * 2,
       rx: Math.random() * Math.PI, ry: Math.random() * Math.PI, rz: Math.random() * Math.PI,
       vrx: (Math.random() - 0.5) * 4, vry: (Math.random() - 0.5) * 4, vrz: (Math.random() - 0.5) * 4,
-      buf, color: c,
+      buf, color: c, settled: false,
     });
   } else if (idx === 2) {
     // Slot 3: spring punch — radial impulse on all dynamic objects in radius
@@ -2037,14 +2037,19 @@ if (!firstPerson && !player.dead) {
     // Collision: true OBB that rotates with the block's ry
     // (0.4 cube -> halfX=halfZ=0.2)
     if (b.y < 0.2) b.y = 0.2;
-    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: true, ref: b });
+    // Settled blocks are immovable so they don't fight incoming blocks for the same spot
+    const isSettled = b.settled === true;
+    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: !isSettled, ref: b });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
   for (const o of dynamicObjects) {
     if (o.ref) {
+      const moved = o.ref.x !== o.x || o.ref.z !== o.z;
       o.ref.x = o.x;
       o.ref.z = o.z;
+      // If a settled block was moved, un-settle it so it can re-settle naturally
+      if (moved && o.ref.settled) o.ref.settled = false;
     }
   }
 
