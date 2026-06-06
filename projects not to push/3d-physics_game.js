@@ -1062,7 +1062,8 @@ function resolveDynamicCollisions() {
       // Correct position proportional to inverse mass
       const aPush = (mb / totalM) * aShare;
       const bPush = (ma / totalM) * bShare;
-      const corrected = Math.min(overlap, 0.3);
+      // If the overlap is large (deep merge), fully resolve it so they can separate.
+      const corrected = overlap < 0.3 ? 0.3 : overlap;
       a.x -= nx * corrected * aPush;
       a.z -= nz * corrected * aPush;
       b.x += nx * corrected * bPush;
