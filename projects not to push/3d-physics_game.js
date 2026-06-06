@@ -724,13 +724,15 @@ function useInventorySlot(idx) {
       rx: 0, rz: 0, spinX: 0, spinZ: 0,
     });
   } else if (idx === 1) {
-    // Slot 2: random colored player block (head + body + arms + legs)
+    // Slot 2: colored spinning cube (like pieces that fall from red blocks)
     const c = blockColors[Math.floor(Math.random() * blockColors.length)];
-    const bufs = makePlayerBlockBufs(c[0], c[1], c[2]);
+    const buf = makePieceBuf(c[0], c[1], c[2]);
     spawnedBlocks.push({
       x: spawnX, z: spawnZ, y: 0,
       vx: fx * 2, vy: 0, vz: fz * 2,
-      bufs, color: c,
+      rx: Math.random() * Math.PI, ry: Math.random() * Math.PI, rz: Math.random() * Math.PI,
+      vrx: (Math.random() - 0.5) * 4, vry: (Math.random() - 0.5) * 4, vrz: (Math.random() - 0.5) * 4,
+      buf, color: c,
     });
   } else if (idx === 2) {
     // Slot 3: spring punch — radial impulse on all dynamic objects in radius
@@ -1852,14 +1854,20 @@ if (!firstPerson && !player.dead) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.z += b.vz * dt;
+    b.rx += b.vrx * dt;
+    b.ry += b.vry * dt;
+    b.rz += b.vrz * dt;
     if (b.y < 0) {
       b.y = 0;
       if (Math.abs(b.vy) < 0.5) b.vy = 0;
       else b.vy = -b.vy * 0.5;
       b.vx *= 0.9;
       b.vz *= 0.9;
+      b.vrx *= 0.95;
+      b.vry *= 0.95;
+      b.vrz *= 0.95;
     }
-    dynamicObjects.push({ x: b.x, z: b.z, r: 0.5, pushable: true, ref: b });
+    dynamicObjects.push({ x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
@@ -1876,17 +1884,23 @@ if (!firstPerson && !player.dead) {
     drawMesh(spawnedBallWhiteBuf, 10 * 12 * 6, m);
     drawMesh(spawnedBallBlackBuf, 4 * 10 * 6, m);
   }
-  // Render spawned blocks as mini Minecraft-style players (head + body + arms + legs)
+  // Render spawned blocks as spinning colored cubes (like pieces from red blocks)
   for (const b of spawnedBlocks) {
     const m = mat4Multiply(vp, mat4Translate(b.x, b.y, b.z));
-    drawMesh(b.bufs.body, 36, mat4Multiply(m, mat4Translate(0, 0.7, 0)));
-    drawMesh(b.bufs.head, 36, mat4Multiply(m, mat4Translate(0, 1.3, 0)));
-    drawMesh(b.bufs.eye, 36, mat4Multiply(m, mat4Translate(-0.1, 1.35, 0.21)));
-    drawMesh(b.bufs.eye, 36, mat4Multiply(m, mat4Translate(0.1, 1.35, 0.21)));
-    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(-0.3, 0.7, 0)));
-    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(0.3, 0.7, 0)));
-    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(-0.15, 0.25, 0)));
-    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(0.15, 0.25, 0)));
+    const cx = Math.cos(b.rx), sx = Math.sin(b.rx);
+    const cy = Math.cos(b.ry), sy = Math.sin(b.ry);
+    const cz = Math.cos(b.rz), sz = Math.sin(b.rz);
+    const r = mat4Identity();
+    r[0] = cy * cz;
+    r[1] = cy * sz;
+    r[2] = -sy;
+    r[4] = sx * sy * cz - cx * sz;
+    r[5] = sx * sy * sz + cx * cz;
+    r[6] = sx * cy;
+    r[8] = cx * sy * cz + sx * sz;
+    r[9] = cx * sy * sz - sx * cz;
+    r[10] = cx * cy;
+    drawMesh(b.buf, 36, mat4Multiply(m, r));
   }
 
   requestAnimationFrame(loop);
