@@ -630,17 +630,23 @@ window.addEventListener("beforeunload", () => clearInterval(goalHudInterval));
 
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
-  slots: [null, null, null, null, null, null, null, null, null], // 9 slots
+  slots: ["ball", "block", "spring", null, null, null, null, null, null], // 9 slots
   selected: 0, // 0-8
 };
 const invHud = document.createElement("div");
 invHud.id = "inventory-hud";
 invHud.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:10px;pointer-events:none;z-index:5;";
 const invSlots = [];
+const slotIcons = {
+  ball: '<div style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0%,#ddd 25%,#888 80%);box-shadow:inset -2px -2px 4px rgba(0,0,0,0.4);"></div>',
+  block: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#7af,#35c);border-radius:3px;box-shadow:inset -2px -2px 3px rgba(0,0,0,0.3);"></div>',
+  spring: '<div style="font-size:20px;line-height:1;">👊</div>',
+  _default: '<div style="font-size:18px;opacity:0.4;">·</div>',
+};
 for (let i = 0; i < 9; i++) {
   const slot = document.createElement("div");
   slot.style.cssText = "width:48px;height:48px;background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.2);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:monospace;font-size:11px;transition:all 0.12s;";
-  slot.innerHTML = '<div style="font-size:18px;opacity:0.5;">·</div><div style="font-size:9px;opacity:0.5;margin-top:2px;">' + (i + 1) + '</div>';
+  slot.innerHTML = '<div style="height:24px;display:flex;align-items:center;justify-content:center;">' + (slotIcons[playerInventory.slots[i]] || slotIcons._default) + '</div><div style="font-size:9px;opacity:0.5;margin-top:2px;">' + (i + 1) + '</div>';
   invHud.appendChild(slot);
   invSlots.push(slot);
 }
@@ -756,6 +762,39 @@ function doKick() {
 window.addEventListener("keyup", (e) => {
   keys[e.key.toLowerCase()] = false;
 });
+
+// ── Generic dynamic object collision ──
+const dynamicObjects = [];
+function regObj(x, z, r, pushable = true) {
+  dynamicObjects.push({ x, z, r, pushable });
+}
+function resolveDynamicCollisions() {
+  // Cheap O(n^2) — fine for the small object counts here.
+  for (let i = 0; i < dynamicObjects.length; i++) {
+    for (let j = i + 1; j < dynamicObjects.length; j++) {
+      const a = dynamicObjects[i];
+      const b = dynamicObjects[j];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const distSq = dx * dx + dz * dz;
+      const sumR = a.r + b.r;
+      if (distSq >= sumR * sumR) continue;
+      const dist = Math.sqrt(distSq) || 0.0001;
+      const overlap = sumR - dist;
+      const nx = dx / dist;
+      const nz = dz / dist;
+      // Decide who moves
+      let aShare = 0.5, bShare = 0.5;
+      if (a.pushable && !b.pushable) { aShare = 1; bShare = 0; }
+      else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
+      else if (!a.pushable && !b.pushable) continue;
+      a.x -= nx * overlap * aShare;
+      a.z -= nz * overlap * aShare;
+      b.x += nx * overlap * bShare;
+      b.z += nz * overlap * bShare;
+    }
+  }
+}
 
 // ── Game loop ──
 let lastTime = 0;
@@ -1647,6 +1686,25 @@ if (!firstPerson && !player.dead) {
     mat4Multiply(charMat, mat4Translate(0.15, rightLegY, rightLegZ)),
   );
 }
+  // ── Resolve dynamic object collisions ──
+  dynamicObjects.length = 0;
+  if (!player.dead) regObj(player.x, player.z, 0.4, true);
+  if (ball.y > -2) regObj(ball.x, ball.z, 0.4, true);
+  for (const c of crowd) regObj(c.x, c.z, 0.4, true);
+  for (const b of breakables) if (b.alive) regObj(b.x, b.z, 0.5, false);
+  // Wrap pieces so we can write back after resolution.
+  for (const p of pieces) {
+    dynamicObjects.push({ x: p.x, z: p.z, r: 0.2, pushable: true, ref: p });
+  }
+  resolveDynamicCollisions();
+  // Pieces: copy resolved position back to the source piece.
+  for (const o of dynamicObjects) {
+    if (o.ref) {
+      o.ref.x = o.x;
+      o.ref.z = o.z;
+    }
+  }
+
   requestAnimationFrame(loop);
 }
 
