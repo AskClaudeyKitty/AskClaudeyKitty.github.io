@@ -1045,11 +1045,39 @@ function resolveDynamicCollisions() {
       else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
       // Slop: ignore tiny overlaps to kill the warp from continuous re-push
       if (overlap < 0.01) continue;
+      // Mass: prefer explicit mass if set, else default 1
+      const ma = a.mass ?? 1;
+      const mb = b.mass ?? 1;
+      const totalM = ma + mb;
+      // Correct position proportional to inverse mass
+      const aPush = (mb / totalM) * aShare;
+      const bPush = (ma / totalM) * bShare;
       const corrected = Math.min(overlap, 0.3);
-      a.x -= nx * corrected * aShare;
-      a.z -= nz * corrected * aShare;
-      b.x += nx * corrected * bShare;
-      b.z += nz * corrected * bShare;
+      a.x -= nx * corrected * aPush;
+      a.z -= nz * corrected * aPush;
+      b.x += nx * corrected * bPush;
+      b.z += nz * corrected * bPush;
+      // Impulse: exchange momentum along normal so blocks separate naturally
+      // vRel = (vb - va) . n  (along collision normal n points a->b)
+      const va = a.ref ? { x: a.ref.vx ?? 0, z: a.ref.vz ?? 0 } : { x: 0, z: 0 };
+      const vb = b.ref ? { x: b.ref.vx ?? 0, z: b.ref.vz ?? 0 } : { x: 0, z: 0 };
+      // n is from a to b, so vb.going toward a is negative along n
+      const vRelN = (vb.x - va.x) * nx + (vb.z - va.z) * nz;
+      if (vRelN < 0) {
+        // approaching: apply elastic impulse with restitution
+        const e = 0.3; // low restitution -> blocks don't bounce much
+        const j = -(1 + e) * vRelN / (1 / ma + 1 / mb);
+        const jx = j * nx;
+        const jz = j * nz;
+        if (a.ref) {
+          a.ref.vx = (a.ref.vx ?? 0) - jx / ma;
+          a.ref.vz = (a.ref.vz ?? 0) - jz / ma;
+        }
+        if (b.ref) {
+          b.ref.vx = (b.ref.vx ?? 0) + jx / mb;
+          b.ref.vz = (b.ref.vz ?? 0) + jz / mb;
+        }
+      }
     }
   }
 }
@@ -2037,19 +2065,14 @@ if (!firstPerson && !player.dead) {
     // Collision: true OBB that rotates with the block's ry
     // (0.4 cube -> halfX=halfZ=0.2)
     if (b.y < 0.2) b.y = 0.2;
-    // Settled blocks are immovable so they don't fight incoming blocks for the same spot
-    const isSettled = b.settled === true;
-    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: !isSettled, ref: b });
+    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: true, ref: b });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
   for (const o of dynamicObjects) {
     if (o.ref) {
-      const moved = o.ref.x !== o.x || o.ref.z !== o.z;
       o.ref.x = o.x;
       o.ref.z = o.z;
-      // If a settled block was moved, un-settle it so it can re-settle naturally
-      if (moved && o.ref.settled) o.ref.settled = false;
     }
   }
 
