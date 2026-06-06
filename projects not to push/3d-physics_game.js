@@ -731,8 +731,18 @@ function useInventorySlot(idx) {
     // Slot 2: colored spinning cube (like pieces that fall from red blocks)
     const c = blockColors[Math.floor(Math.random() * blockColors.length)];
     const buf = makePieceBuf(c[0], c[1], c[2]);
+    // Find spawn y: if any block is under the spawn point, spawn on top of it
+    let spawnY = 0;
+    const blockHalf = 0.2;
+    for (const other of spawnedBlocks) {
+      const dx = other.x - spawnX, dz = other.z - spawnZ;
+      if (dx * dx + dz * dz < 0.05) {
+        const topY = other.y + blockHalf + blockHalf; // top of other + half this block
+        if (topY > spawnY) spawnY = topY;
+      }
+    }
     spawnedBlocks.push({
-      x: spawnX, z: spawnZ, y: 0,
+      x: spawnX, z: spawnZ, y: spawnY,
       vx: fx * 2, vy: 0, vz: fz * 2,
       rx: Math.random() * Math.PI, ry: Math.random() * Math.PI, rz: Math.random() * Math.PI,
       vrx: (Math.random() - 0.5) * 4, vry: (Math.random() - 0.5) * 4, vrz: (Math.random() - 0.5) * 4,
@@ -2094,10 +2104,8 @@ if (!firstPerson && !player.dead) {
     const restingY = supportY + blockHalf;
     if (b.y <= restingY + 0.05 && b.vy <= 0) {
       b.y = restingY;
-      // Only bounce if landing with real downward velocity; otherwise just stop
-      if (b.vy < -2) b.vy = -b.vy * 0.2;
-      else b.vy = 0;
-      // Friction on contact
+      // No bounce: just stop. The block then sits. vx/vz friction still applies.
+      b.vy = 0;
       b.vx *= 0.85;
       b.vz *= 0.85;
       b.vrx *= 0.7;
