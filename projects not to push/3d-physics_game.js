@@ -2093,10 +2093,10 @@ if (!firstPerson && !player.dead) {
     }
     const restingY = supportY + blockHalf;
     if (b.y <= restingY + 0.05 && b.vy <= 0) {
-      const landing = b.y;
       b.y = restingY;
-      if (Math.abs(b.vy) < 0.3) b.vy = 0;
-      else b.vy = -b.vy * 0.2; // small bounce
+      // Only bounce if landing with real downward velocity; otherwise just stop
+      if (b.vy < -2) b.vy = -b.vy * 0.2;
+      else b.vy = 0;
       // Friction on contact
       b.vx *= 0.85;
       b.vz *= 0.85;
