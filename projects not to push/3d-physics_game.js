@@ -2063,8 +2063,7 @@ if (!firstPerson && !player.dead) {
       if (b.rx === 0 && b.rz === 0 && b.ry === snapY) b.settled = true;
     }
     // Collision: true OBB that rotates with the block's ry
-    // (0.4 cube -> halfX=halfZ=0.2)
-    if (b.y < 0.2) b.y = 0.2;
+    // (0.4 cube -> halfX=halfZ=0.2). y is handled by stacking pass below.
     dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: true, ref: b });
   }
   resolveDynamicCollisions();
@@ -2073,6 +2072,39 @@ if (!firstPerson && !player.dead) {
     if (o.ref) {
       o.ref.x = o.x;
       o.ref.z = o.z;
+    }
+  }
+
+  // Y-stacking: lift each spawned block to sit on top of the nearest block
+  // (or the ground). This keeps them from visually merging on top of each other.
+  const blockHalf = 0.2; // half-size of 0.4 cube
+  for (const b of spawnedBlocks) {
+    // Find highest top surface under this block
+    let supportY = blockHalf; // ground top
+    const r = 0.45; // horizontal radius to check
+    for (const other of spawnedBlocks) {
+      if (other === b) continue;
+      const dx = other.x - b.x, dz = other.z - b.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > r * r) continue;
+      // other block top is at other.y + blockHalf
+      const topY = other.y + blockHalf;
+      if (topY > supportY) supportY = topY;
+    }
+    const restingY = supportY + blockHalf;
+    if (b.y <= restingY + 0.05 && b.vy <= 0) {
+      const landing = b.y;
+      b.y = restingY;
+      if (Math.abs(b.vy) < 0.3) b.vy = 0;
+      else b.vy = -b.vy * 0.2; // small bounce
+      // Friction on contact
+      b.vx *= 0.85;
+      b.vz *= 0.85;
+      b.vrx *= 0.7;
+      b.vrz *= 0.7;
+      b.vry *= 0.7;
+    } else if (b.y < blockHalf) {
+      b.y = blockHalf;
     }
   }
 
