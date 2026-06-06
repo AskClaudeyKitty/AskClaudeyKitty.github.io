@@ -904,29 +904,162 @@ window.addEventListener("keyup", (e) => {
 
 // ── Generic dynamic object collision ──
 const dynamicObjects = [];
+// kind: 'sphere' (uses r) or 'obb' (uses halfX/halfZ + angle)
 function regObj(x, z, r, pushable = true) {
-  dynamicObjects.push({ x, z, r, pushable });
+  dynamicObjects.push({ kind: "sphere", x, z, r, pushable });
+}
+function regObb(x, z, halfX, halfZ, angle, pushable = true) {
+  dynamicObjects.push({ kind: "obb", x, z, halfX, halfZ, angle, pushable });
+}
+// Closest point on OBB (at origin, axis-aligned) to point (px, pz)
+function obbClosest(halfX, halfZ, px, pz) {
+  return [Math.max(-halfX, Math.min(halfX, px)), Math.max(-halfZ, Math.min(halfZ, pz))];
+}
+// Project OBB corners onto an axis; returns [min, max]
+function obbProject(halfX, halfZ, angle, ax, az) {
+  // corners in local space: (+/-hx, +/-hz). Rotated by angle.
+  // rotated corner (cx, cz) = (cx*cos - cz*sin, cx*sin + cz*cos)
+  const c = Math.cos(angle), s = Math.sin(angle);
+  let min = Infinity, max = -Infinity;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const rx = sx * halfX * c - sz * halfZ * s;
+      const rz = sx * halfX * s + sz * halfZ * c;
+      const d = rx * ax + rz * az;
+      if (d < min) min = d;
+      if (d > max) max = d;
+    }
+  }
+  return [min, max];
 }
 function resolveDynamicCollisions() {
-  // Cheap O(n^2) — fine for the small object counts here.
   for (let i = 0; i < dynamicObjects.length; i++) {
     for (let j = i + 1; j < dynamicObjects.length; j++) {
       const a = dynamicObjects[i];
       const b = dynamicObjects[j];
-      const dx = b.x - a.x;
-      const dz = b.z - a.z;
-      const distSq = dx * dx + dz * dz;
-      const sumR = a.r + b.r;
-      if (distSq >= sumR * sumR) continue;
-      const dist = Math.sqrt(distSq) || 0.0001;
-      const overlap = sumR - dist;
-      const nx = dx / dist;
-      const nz = dz / dist;
-      // Decide who moves
+      // Skip pairs that aren't pushable
+      if (!a.pushable && !b.pushable) continue;
+      let nx = 0, nz = 0, overlap = 0;
+      const bothObb = a.kind === "obb" && b.kind === "obb";
+      const aSphere = a.kind === "sphere";
+      const bSphere = b.kind === "sphere";
+      if (aSphere && bSphere) {
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const distSq = dx * dx + dz * dz;
+        const sumR = a.r + b.r;
+        if (distSq >= sumR * sumR) continue;
+        const dist = Math.sqrt(distSq) || 0.0001;
+        overlap = sumR - dist;
+        nx = dx / dist;
+        nz = dz / dist;
+      } else if (bothObb) {
+        // OBB vs OBB via SAT
+        const c = Math.cos(-b.angle), s = Math.sin(-b.angle);
+        // Transform a into b's local frame
+        const dx = a.x - b.x;
+        const dz = a.z - b.z;
+        const lax = dx * c - dz * s;
+        const laz = dx * s + dz * c;
+        // a's local axes in b's frame: a's axes rotated by (a.angle - b.angle)
+        const relA = a.angle - b.angle;
+        const ca = Math.cos(relA), sa = Math.sin(relA);
+        // Test axes: b's x, b's z, a's x, a's z (in world)
+        // For SAT in 2D, separating axis = perpendicular to each edge.
+        // Simpler: test the 4 axes directly in a's local space.
+        const axes = [
+          [Math.cos(b.angle), Math.sin(b.angle)],          // b's x-axis
+          [-Math.sin(b.angle), Math.cos(b.angle)],         // b's z-axis
+          [Math.cos(a.angle), Math.sin(a.angle)],          // a's x-axis
+          [-Math.sin(a.angle), Math.cos(a.angle)],         // a's z-axis
+        ];
+        let minOverlap = Infinity;
+        let minNx = 0, minNz = 0;
+        for (const [ax, az] of axes) {
+          // Project both OBBs
+          const [a1, a2] = obbProject(a.halfX, a.halfZ, 0, ax, az);
+          const [b1, b2] = obbProject(b.halfX, b.halfZ, 0, ax, az);
+          // Center gap along this axis
+          const centerGap = (lax * ax + laz * az); // wait, a's center projected
+          // Actually a's center in b's local is (lax, laz), we need world position projection
+          const aCenter = a.x * ax + a.z * az;
+          const bCenter = b.x * ax + b.z * az;
+          const centerDist = aCenter - bCenter;
+          const overlapOnAxis = (a2 - a1) + (b2 - b1) - Math.abs(centerDist) * 0 - (a2 - a1 + b2 - b1) * 0;
+          // Simpler: total projection length
+          const projA = (a2 - a1) / 2;
+          const projB = (b2 - b1) / 2;
+          const dist = Math.abs(centerDist);
+          const o = projA + projB - dist;
+          if (o <= 0) { minOverlap = -1; break; }
+          if (o < minOverlap) {
+            minOverlap = o;
+            // Normal = axis from b to a, flipped if center is "behind"
+            minNx = centerDist > 0 ? ax : -ax;
+            minNz = centerDist > 0 ? az : -az;
+          }
+        }
+        if (minOverlap <= 0) continue;
+        overlap = minOverlap;
+        nx = minNx;
+        nz = minNz;
+      } else {
+        // Sphere vs OBB (or OBB vs sphere, just swap)
+        let sphere, obb;
+        if (aSphere) { sphere = a; obb = b; }
+        else { sphere = b; obb = a; }
+        // Transform sphere center into OBB's local frame
+        const dx = sphere.x - obb.x;
+        const dz = sphere.z - obb.z;
+        const c = Math.cos(-obb.angle), s = Math.sin(-obb.angle);
+        const lx = dx * c - dz * s;
+        const lz = dx * s + dz * c;
+        const [clx, clz] = obbClosest(obb.halfX, obb.halfZ, lx, lz);
+        // Distance in local space
+        const ddx = lx - clx;
+        const ddz = lz - clz;
+        const distSq = ddx * ddx + ddz * ddz;
+        const sumR = sphere.r;
+        if (distSq >= sumR * sumR) continue;
+        let dist = Math.sqrt(distSq);
+        // If sphere center is INSIDE the OBB, push out to nearest face
+        if (dist < 0.0001) {
+          // Find closest face
+          const dxp = obb.halfX - Math.abs(lx);
+          const dzp = obb.halfZ - Math.abs(lz);
+          if (dxp < dzp) {
+            dist = 0.0001;
+            const sx = lx >= 0 ? 1 : -1;
+            overlap = sumR + dxp;
+            // local normal (sx, 0) -> world
+            const wc = Math.cos(obb.angle), ws = Math.sin(obb.angle);
+            nx = sx * wc;
+            nz = -sx * ws;
+          } else {
+            dist = 0.0001;
+            const sz = lz >= 0 ? 1 : -1;
+            overlap = sumR + dzp;
+            const wc = Math.cos(obb.angle), ws = Math.sin(obb.angle);
+            nx = sz * ws;
+            nz = sz * wc;
+          }
+        } else {
+          overlap = sumR - dist;
+          // local normal -> world
+          const lnx = ddx / dist;
+          const lnz = ddz / dist;
+          const wc = Math.cos(obb.angle), ws = Math.sin(obb.angle);
+          nx = lnx * wc - lnz * ws;
+          nz = lnx * ws + lnz * wc;
+        }
+        // Normal must point from OBB toward sphere
+        const dxs = sphere.x - obb.x;
+        const dzs = sphere.z - obb.z;
+        if (nx * dxs + nz * dzs < 0) { nx = -nx; nz = -nz; }
+      }
       let aShare = 0.5, bShare = 0.5;
       if (a.pushable && !b.pushable) { aShare = 1; bShare = 0; }
       else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
-      else if (!a.pushable && !b.pushable) continue;
       a.x -= nx * overlap * aShare;
       a.z -= nz * overlap * aShare;
       b.x += nx * overlap * bShare;
@@ -1895,37 +2028,27 @@ if (!firstPerson && !player.dead) {
     b.rx += b.vrx * dt;
     b.ry += b.vry * dt;
     b.rz += b.vrz * dt;
-    if (b.y < 0) {
-      b.y = 0;
+    if (b.y < 0.2) {
+      b.y = 0.2;
       if (Math.abs(b.vy) < 0.5) b.vy = 0;
       else b.vy = -b.vy * 0.5;
       b.vx *= 0.9;
       b.vz *= 0.9;
-      // Spin decays hard when on ground so block settles flat on a face
-      b.vrx *= 0.85;
-      b.vry *= 0.85;
-      b.vrz *= 0.85;
-      // Snap rotation to nearest 90° on a slow roll
-      const snapX = Math.round(b.rx / (Math.PI / 2)) * (Math.PI / 2);
-      const snapZ = Math.round(b.rz / (Math.PI / 2)) * (Math.PI / 2);
-      const blend = 0.08;
-      b.rx += (snapX - b.rx) * blend;
-      b.rz += (snapZ - b.rz) * blend;
+      // Tip onto a face: dampen tilt, spin on Y, and snap Y to nearest 90°
+      b.vrx *= 0.8;
+      b.vrz *= 0.8;
+      b.vry *= 0.8;
+      // Settle rx and rz to 0 (face down)
+      b.rx += (0 - b.rx) * 0.15;
+      b.rz += (0 - b.rz) * 0.15;
+      // Snap ry to nearest 90° so the OBB aligns with cardinal directions
+      const snapY = Math.round(b.ry / (Math.PI / 2)) * (Math.PI / 2);
+      b.ry += (snapY - b.ry) * 0.2;
     }
-    // Collision radius changes with rotation: largest when tilted, smaller when flat
-    // Use distance of corner from center projected on ground plane
-    const cosX = Math.abs(Math.cos(b.rx)), sinX = Math.abs(Math.sin(b.rx));
-    const cosZ = Math.abs(Math.cos(b.rz)), sinZ = Math.abs(Math.sin(b.rz));
-    const halfX = 0.2; // half-size of 0.4 cube
-    const halfZ = 0.2;
-    // Project rotated cube onto xz plane: half-extents
-    const projX = halfX * cosX + halfZ * sinX;
-    const projZ = halfZ * cosZ + halfX * sinZ;
-    const r = Math.max(projX, projZ);
-    // Y offset so block sits on ground based on rotation
-    const yOff = halfX * sinX + halfZ * sinZ;
-    if (b.y < yOff) b.y = yOff;
-    dynamicObjects.push({ x: b.x, z: b.z, r, pushable: true, ref: b });
+    // Collision: true OBB that rotates with the block's ry
+    // (0.4 cube -> halfX=halfZ=0.2)
+    if (b.y < 0.2) b.y = 0.2;
+    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: true, ref: b });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
