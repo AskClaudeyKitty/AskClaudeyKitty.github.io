@@ -684,6 +684,107 @@ window.addEventListener("keydown", (e) => {
     renderInventory();
   }
 });
+
+// ── Inventory items (slot 1: ball, slot 2: block, slot 3: spring punch) ──
+const spawnedBalls = []; // extra soccer balls the player can drop anywhere
+const spawnedBlocks = []; // random colored blocks the player can drop
+// Reuse the main ball's white/black sphere buffers so spawned balls look
+// exactly like the field ball.
+const spawnedBallWhiteBuf = createBuffer(
+  createSphere(ballRadius, 0.95, 0.95, 0.95, 10, 12),
+);
+const spawnedBallBlackBuf = createBuffer(
+  createSphere(ballRadius * 0.98, 0.12, 0.12, 0.12, 4, 10),
+);
+// "Player block" geometry: a body cube + a head cube + two arm cubes + two leg cubes.
+function makePlayerBlockBufs(r, g, b) {
+  return {
+    body: createBuffer(createBox(0.6, 0.8, 0.4, r, g, b)),
+    head: createBuffer(createBox(0.4, 0.4, 0.4, 0.93, 0.78, 0.53)),
+    limb: createBuffer(createBox(0.18, 0.5, 0.18, r, g, b)),
+    eye: createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13)),
+  };
+}
+const blockColors = [
+  [0.9, 0.2, 0.2], [0.2, 0.7, 0.2], [0.2, 0.4, 0.9],
+  [0.9, 0.7, 0.2], [0.7, 0.2, 0.9], [0.2, 0.9, 0.9],
+  [0.95, 0.5, 0.7], [0.5, 0.95, 0.5], [0.9, 0.9, 0.3],
+];
+
+function useInventorySlot(idx) {
+  const fx = Math.sin(player.angle);
+  const fz = Math.cos(player.angle);
+  const spawnX = player.x + fx * 1.5;
+  const spawnZ = player.z + fz * 1.5;
+  if (idx === 0) {
+    // Slot 1: soccer ball anywhere
+    spawnedBalls.push({
+      x: spawnX, z: spawnZ, y: ballRadius,
+      vx: fx * 6, vy: 2, vz: fz * 6,
+      rx: 0, rz: 0, spinX: 0, spinZ: 0,
+    });
+  } else if (idx === 1) {
+    // Slot 2: random colored player block (head + body + arms + legs)
+    const c = blockColors[Math.floor(Math.random() * blockColors.length)];
+    const bufs = makePlayerBlockBufs(c[0], c[1], c[2]);
+    spawnedBlocks.push({
+      x: spawnX, z: spawnZ, y: 0,
+      vx: fx * 2, vy: 0, vz: fz * 2,
+      bufs, color: c,
+    });
+  } else if (idx === 2) {
+    // Slot 3: spring punch — radial impulse on all dynamic objects in radius
+    const radius = 8.0;
+    const power = 25.0;
+    // The main ball
+    const dx = ball.x - player.x, dz = ball.z - player.z;
+    const d = Math.hypot(dx, dz);
+    if (d < radius && d > 0.01) {
+      ball.vx += (dx / d) * power;
+      ball.vy = 6;
+      ball.vz += (dz / d) * power;
+    }
+    // Spawned balls
+    for (const b of spawnedBalls) {
+      const ddx = b.x - player.x, ddz = b.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        b.vx += (ddx / dd) * power;
+        b.vy = 6;
+        b.vz += (ddz / dd) * power;
+      }
+    }
+    // Spawned blocks
+    for (const b of spawnedBlocks) {
+      const ddx = b.x - player.x, ddz = b.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        b.vx += (ddx / dd) * power;
+        b.vy = 4;
+        b.vz += (ddz / dd) * power;
+      }
+    }
+    // Crowd members
+    for (const c of crowd) {
+      const ddx = c.x - player.x, ddz = c.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        c.x += (ddx / dd) * 1.5;
+        c.z += (ddz / dd) * 1.5;
+      }
+    }
+    // Physics pieces
+    for (const p of pieces) {
+      const ddx = p.x - player.x, ddz = p.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        p.vx += (ddx / dd) * power;
+        p.vy = 6;
+        p.vz += (ddz / dd) * power;
+      }
+    }
+  }
+}
 document.addEventListener("mousemove", (e) => {
   if (document.pointerLockElement === canvas) {
     camYaw -= e.movementX * 0.003;
@@ -719,6 +820,9 @@ window.addEventListener("keydown", (e) => {
     ball.vz = 0;
     ball.spinX = 0;
     ball.spinZ = 0;
+  }
+  if (key === "t" && !e.repeat) {
+    useInventorySlot(playerInventory.selected);
   }
   keys[key] = true;
 });
@@ -1452,6 +1556,38 @@ for (let i = pieces.length - 1; i >= 0; i--) {
     }
   }
 }
+// Player push/kick spawned balls
+for (const b of spawnedBalls) {
+  const ddx = b.x - player.x, ddz = b.z - player.z;
+  const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
+  const minD = ballRadius + 0.4;
+  if (ddist < minD && ddist > 1e-4 && Math.abs(b.y - ballRadius) < 1.5) {
+    const sp = Math.sqrt(mx * mx + mz * mz);
+    if (sp > 0.1) {
+      b.vx = mx * player.speed * 1.8;
+      b.vz = mz * player.speed * 1.8;
+    } else {
+      b.vx = (ddx / ddist) * 3;
+      b.vz = (ddz / ddist) * 3;
+    }
+  }
+}
+// Player push spawned blocks
+for (const b of spawnedBlocks) {
+  const ddx = b.x - player.x, ddz = b.z - player.z;
+  const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
+  const minD = 0.8;
+  if (ddist < minD && ddist > 1e-4 && b.y < 1.0) {
+    const sp = Math.sqrt(mx * mx + mz * mz);
+    if (sp > 0.1) {
+      b.vx = mx * player.speed * 1.2;
+      b.vz = mz * player.speed * 1.2;
+    } else {
+      b.vx = (ddx / ddist) * 2;
+      b.vz = (ddz / ddist) * 2;
+    }
+  }
+}
 // Court invisible walls (ball only) + goal nets
 {
   const bx = courtCenterX,
@@ -1696,13 +1832,61 @@ if (!firstPerson && !player.dead) {
   for (const p of pieces) {
     dynamicObjects.push({ x: p.x, z: p.z, r: 0.2, pushable: true, ref: p });
   }
+  // Spawned balls and blocks (from inventory items)
+  for (const b of spawnedBalls) {
+    b.vy -= 20 * dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.z += b.vz * dt;
+    if (b.y < ballRadius) {
+      b.y = ballRadius;
+      if (Math.abs(b.vy) < 0.5) b.vy = 0;
+      else b.vy = -b.vy * 0.7;
+      b.vx *= 0.98;
+      b.vz *= 0.98;
+    }
+    dynamicObjects.push({ x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
+  }
+  for (const b of spawnedBlocks) {
+    b.vy -= 20 * dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.z += b.vz * dt;
+    if (b.y < 0) {
+      b.y = 0;
+      if (Math.abs(b.vy) < 0.5) b.vy = 0;
+      else b.vy = -b.vy * 0.5;
+      b.vx *= 0.9;
+      b.vz *= 0.9;
+    }
+    dynamicObjects.push({ x: b.x, z: b.z, r: 0.5, pushable: true, ref: b });
+  }
   resolveDynamicCollisions();
-  // Pieces: copy resolved position back to the source piece.
+  // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
   for (const o of dynamicObjects) {
     if (o.ref) {
       o.ref.x = o.x;
       o.ref.z = o.z;
     }
+  }
+
+  // Render spawned balls (white sphere + black pentagon overlay)
+  for (const b of spawnedBalls) {
+    const m = mat4Multiply(vp, mat4Translate(b.x, b.y, b.z));
+    drawMesh(spawnedBallWhiteBuf, 10 * 12 * 6, m);
+    drawMesh(spawnedBallBlackBuf, 4 * 10 * 6, m);
+  }
+  // Render spawned blocks as mini Minecraft-style players (head + body + arms + legs)
+  for (const b of spawnedBlocks) {
+    const m = mat4Multiply(vp, mat4Translate(b.x, b.y, b.z));
+    drawMesh(b.bufs.body, 36, mat4Multiply(m, mat4Translate(0, 0.7, 0)));
+    drawMesh(b.bufs.head, 36, mat4Multiply(m, mat4Translate(0, 1.3, 0)));
+    drawMesh(b.bufs.eye, 36, mat4Multiply(m, mat4Translate(-0.1, 1.35, 0.21)));
+    drawMesh(b.bufs.eye, 36, mat4Multiply(m, mat4Translate(0.1, 1.35, 0.21)));
+    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(-0.3, 0.7, 0)));
+    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(0.3, 0.7, 0)));
+    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(-0.15, 0.25, 0)));
+    drawMesh(b.bufs.limb, 36, mat4Multiply(m, mat4Translate(0.15, 0.25, 0)));
   }
 
   requestAnimationFrame(loop);
