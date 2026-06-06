@@ -1043,10 +1043,13 @@ function resolveDynamicCollisions() {
       let aShare = 0.5, bShare = 0.5;
       if (a.pushable && !b.pushable) { aShare = 1; bShare = 0; }
       else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
-      a.x -= nx * overlap * aShare;
-      a.z -= nz * overlap * aShare;
-      b.x += nx * overlap * bShare;
-      b.z += nz * overlap * bShare;
+      // Slop: ignore tiny overlaps to kill the warp from continuous re-push
+      if (overlap < 0.01) continue;
+      const corrected = Math.min(overlap, 0.3);
+      a.x -= nx * corrected * aShare;
+      a.z -= nz * corrected * aShare;
+      b.x += nx * corrected * bShare;
+      b.z += nz * corrected * bShare;
     }
   }
 }
@@ -2013,10 +2016,9 @@ if (!firstPerson && !player.dead) {
     b.rz += b.vrz * dt;
     if (b.y < 0.2) {
       b.y = 0.2;
-      if (Math.abs(b.vy) < 0.5) b.vy = 0;
-      else b.vy = -b.vy * 0.5;
-      b.vx *= 0.9;
-      b.vz *= 0.9;
+      b.vy = 0; // hard-zero on contact stops the warp
+      b.vx *= 0.5;
+      b.vz *= 0.5;
       // Tip onto a face: dampen tilt, spin on Y, and snap Y to nearest 90°
       b.vrx *= 0.8;
       b.vrz *= 0.8;
