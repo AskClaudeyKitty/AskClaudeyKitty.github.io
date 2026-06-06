@@ -2019,16 +2019,20 @@ if (!firstPerson && !player.dead) {
       b.vy = 0; // hard-zero on contact stops the warp
       b.vx *= 0.5;
       b.vz *= 0.5;
-      // Tip onto a face: dampen tilt, spin on Y, and snap Y to nearest 90°
-      b.vrx *= 0.8;
-      b.vrz *= 0.8;
-      b.vry *= 0.8;
-      // Settle rx and rz to 0 (face down)
-      b.rx += (0 - b.rx) * 0.15;
-      b.rz += (0 - b.rz) * 0.15;
-      // Snap ry to nearest 90° so the OBB aligns with cardinal directions
+      b.vrx *= 0.6;
+      b.vrz *= 0.6;
+      b.vry *= 0.6;
+      // Settle rx and rz to 0 (face down) — hard snap if very close, no per-frame drift
+      if (Math.abs(b.rx) < 0.05) b.rx = 0;
+      else b.rx += (0 - b.rx) * 0.1;
+      if (Math.abs(b.rz) < 0.05) b.rz = 0;
+      else b.rz += (0 - b.rz) * 0.1;
+      // Snap ry to nearest 90° so the OBB aligns with cardinal directions — hard snap if close
       const snapY = Math.round(b.ry / (Math.PI / 2)) * (Math.PI / 2);
-      b.ry += (snapY - b.ry) * 0.2;
+      if (Math.abs(b.ry - snapY) < 0.05) b.ry = snapY;
+      else b.ry += (snapY - b.ry) * 0.1;
+      // Mark as fully settled if all rotations are at their snap targets
+      if (b.rx === 0 && b.rz === 0 && b.ry === snapY) b.settled = true;
     }
     // Collision: true OBB that rotates with the block's ry
     // (0.4 cube -> halfX=halfZ=0.2)
