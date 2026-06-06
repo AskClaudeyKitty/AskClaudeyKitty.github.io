@@ -605,7 +605,11 @@ canvas.addEventListener("mouseleave", () => {
   mouseOnCanvas = false;
   lastMouseX = lastMouseY = null;
 });
-canvas.addEventListener("mousedown", () => canvas.requestPointerLock());
+canvas.addEventListener("mousedown", () => {
+  if (document.hasFocus()) {
+    try { canvas.requestPointerLock(); } catch (e) { /* ignore */ }
+  }
+});
 document.addEventListener("pointerlockchange", () => {
   if (document.pointerLockElement !== canvas) {
     mouseOnCanvas = false;
@@ -915,23 +919,6 @@ function regObb(x, z, halfX, halfZ, angle, pushable = true) {
 function obbClosest(halfX, halfZ, px, pz) {
   return [Math.max(-halfX, Math.min(halfX, px)), Math.max(-halfZ, Math.min(halfZ, pz))];
 }
-// Project OBB corners onto an axis; returns [min, max]
-function obbProject(halfX, halfZ, angle, ax, az) {
-  // corners in local space: (+/-hx, +/-hz). Rotated by angle.
-  // rotated corner (cx, cz) = (cx*cos - cz*sin, cx*sin + cz*cos)
-  const c = Math.cos(angle), s = Math.sin(angle);
-  let min = Infinity, max = -Infinity;
-  for (const sx of [-1, 1]) {
-    for (const sz of [-1, 1]) {
-      const rx = sx * halfX * c - sz * halfZ * s;
-      const rz = sx * halfX * s + sz * halfZ * c;
-      const d = rx * ax + rz * az;
-      if (d < min) min = d;
-      if (d > max) max = d;
-    }
-  }
-  return [min, max];
-}
 function resolveDynamicCollisions() {
   for (let i = 0; i < dynamicObjects.length; i++) {
     for (let j = i + 1; j < dynamicObjects.length; j++) {
@@ -954,49 +941,45 @@ function resolveDynamicCollisions() {
         nx = dx / dist;
         nz = dz / dist;
       } else if (bothObb) {
-        // OBB vs OBB via SAT
-        const c = Math.cos(-b.angle), s = Math.sin(-b.angle);
-        // Transform a into b's local frame
-        const dx = a.x - b.x;
-        const dz = a.z - b.z;
-        const lax = dx * c - dz * s;
-        const laz = dx * s + dz * c;
-        // a's local axes in b's frame: a's axes rotated by (a.angle - b.angle)
-        const relA = a.angle - b.angle;
-        const ca = Math.cos(relA), sa = Math.sin(relA);
-        // Test axes: b's x, b's z, a's x, a's z (in world)
-        // For SAT in 2D, separating axis = perpendicular to each edge.
-        // Simpler: test the 4 axes directly in a's local space.
+        // OBB vs OBB via SAT in 2D
+        // Axes to test: each box's 2 edge normals
         const axes = [
-          [Math.cos(b.angle), Math.sin(b.angle)],          // b's x-axis
-          [-Math.sin(b.angle), Math.cos(b.angle)],         // b's z-axis
-          [Math.cos(a.angle), Math.sin(a.angle)],          // a's x-axis
-          [-Math.sin(a.angle), Math.cos(a.angle)],         // a's z-axis
+          [Math.cos(b.angle), Math.sin(b.angle)],
+          [-Math.sin(b.angle), Math.cos(b.angle)],
+          [Math.cos(a.angle), Math.sin(a.angle)],
+          [-Math.sin(a.angle), Math.cos(a.angle)],
         ];
+        // Helper: project rotated box corners onto axis (ax,az), return [min,max]
+        function proj(halfX, halfZ, ang, ax, az) {
+          const c = Math.cos(ang), s = Math.sin(ang);
+          let min = Infinity, max = -Infinity;
+          for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+            const rx = sx * halfX * c - sz * halfZ * s;
+            const rz = sx * halfX * s + sz * halfZ * c;
+            const d = rx * ax + rz * az;
+            if (d < min) min = d;
+            if (d > max) max = d;
+          }
+          return [min, max];
+        }
         let minOverlap = Infinity;
         let minNx = 0, minNz = 0;
         for (const [ax, az] of axes) {
-          // Project both OBBs
-          const [a1, a2] = obbProject(a.halfX, a.halfZ, 0, ax, az);
-          const [b1, b2] = obbProject(b.halfX, b.halfZ, 0, ax, az);
-          // Center gap along this axis
-          const centerGap = (lax * ax + laz * az); // wait, a's center projected
-          // Actually a's center in b's local is (lax, laz), we need world position projection
+          const [a1, a2] = proj(a.halfX, a.halfZ, a.angle, ax, az);
+          const [b1, b2] = proj(b.halfX, b.halfZ, b.angle, ax, az);
+          // Add box centers
           const aCenter = a.x * ax + a.z * az;
           const bCenter = b.x * ax + b.z * az;
-          const centerDist = aCenter - bCenter;
-          const overlapOnAxis = (a2 - a1) + (b2 - b1) - Math.abs(centerDist) * 0 - (a2 - a1 + b2 - b1) * 0;
-          // Simpler: total projection length
-          const projA = (a2 - a1) / 2;
-          const projB = (b2 - b1) / 2;
-          const dist = Math.abs(centerDist);
-          const o = projA + projB - dist;
+          const aLo = a1 + aCenter, aHi = a2 + aCenter;
+          const bLo = b1 + bCenter, bHi = b2 + bCenter;
+          // Overlap on this axis
+          const o = Math.min(aHi, bHi) - Math.max(aLo, bLo);
           if (o <= 0) { minOverlap = -1; break; }
           if (o < minOverlap) {
             minOverlap = o;
-            // Normal = axis from b to a, flipped if center is "behind"
-            minNx = centerDist > 0 ? ax : -ax;
-            minNz = centerDist > 0 ? az : -az;
+            const dir = aCenter - bCenter;
+            if (dir >= 0) { minNx = ax; minNz = az; }
+            else { minNx = -ax; minNz = -az; }
           }
         }
         if (minOverlap <= 0) continue;
@@ -1998,7 +1981,7 @@ if (!firstPerson && !player.dead) {
   for (const b of breakables) if (b.alive) regObj(b.x, b.z, 0.5, false);
   // Wrap pieces so we can write back after resolution.
   for (const p of pieces) {
-    dynamicObjects.push({ x: p.x, z: p.z, r: 0.2, pushable: true, ref: p });
+    dynamicObjects.push({ kind: "sphere", x: p.x, z: p.z, r: 0.2, pushable: true, ref: p });
   }
   // Spawned balls and blocks (from inventory items)
   for (const b of spawnedBalls) {
@@ -2018,7 +2001,7 @@ if (!firstPerson && !player.dead) {
       b.spinX *= 0.95;
       b.spinZ *= 0.95;
     }
-    dynamicObjects.push({ x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
+    dynamicObjects.push({ kind: "sphere", x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
   }
   for (const b of spawnedBlocks) {
     b.vy -= 20 * dt;
