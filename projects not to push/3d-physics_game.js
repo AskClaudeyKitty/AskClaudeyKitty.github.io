@@ -982,6 +982,24 @@ function doKick() {
     sblk.vry = (Math.random() - 0.5) * 15;
     sblk.vrz = (Math.random() - 0.5) * 15;
   }
+  // Kick loose bricks
+  for (const w of brickWalls) {
+    if (!w.alive || w.glue) continue;
+    const dx = w.x - player.x,
+      dz = w.z - player.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 3.5 || dist < 1e-4) continue;
+    if (Math.abs(w.y - 0.2) > 1.2) continue;
+    const kx = dx / dist,
+      kz = dz / dist;
+    const power = 8 + Math.random() * 4;
+    w.vx = kx * power + (Math.random() - 0.5) * 4;
+    w.vy = 6 + Math.random() * 3;
+    w.vz = kz * power + (Math.random() - 0.5) * 4;
+    w.vrx = (Math.random() - 0.5) * 10;
+    w.vry = (Math.random() - 0.5) * 10;
+    w.vrz = (Math.random() - 0.5) * 10;
+  }
   // Kick animation
   player.kickTime = 0.3;
 }
@@ -1877,6 +1895,24 @@ for (const b of spawnedBlocks) {
     } else {
       b.vx = (ddx / ddist) * 2;
       b.vz = (ddz / ddist) * 2;
+    }
+  }
+}
+// Player push loose (unglued) bricks
+for (const w of brickWalls) {
+  if (!w.alive) continue;
+  if (w.glue) continue; // glued bricks are immovable walls
+  const ddx = w.x - player.x, ddz = w.z - player.z;
+  const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
+  const minD = 0.8;
+  if (ddist < minD && ddist > 1e-4 && w.y < 1.5) {
+    const sp = Math.sqrt(mx * mx + mz * mz);
+    if (sp > 0.1) {
+      w.vx = mx * player.speed * 1.0;
+      w.vz = mz * player.speed * 1.0;
+    } else {
+      w.vx = (ddx / ddist) * 1.5;
+      w.vz = (ddz / ddist) * 1.5;
     }
   }
 }
