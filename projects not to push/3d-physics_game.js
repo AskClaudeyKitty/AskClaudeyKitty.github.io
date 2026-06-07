@@ -1583,7 +1583,7 @@ function loop(time) {
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.3;
     // Dust rings — narrow at the base, wide at the top (tornado shape).
-    // The first ring sits right on the baseplate so the tornado looks grounded.
+    // Each ring is 0.2 tall, so center at baseY+0.1 so it sits ON baseplate.
     for (let i = 0; i < 5; i++) {
       const ringY = baseY + 0.1 + i * 0.8 * sizeScale;
       const ringR = (0.2 + i * 0.5) * sizeScale;
@@ -1601,9 +1601,10 @@ function loop(time) {
       );
     }
     // Funnel column: narrow at bottom, wide at top — typical tornado.
-    // Bottom segment starts at floor level so it sits ON the baseplate.
+    // Each box is 1.4 tall. Center the first segment so its bottom is just
+    // above the baseplate (y=0) so it never pokes through the floor.
     for (let i = 0; i < 4; i++) {
-      const colY = baseY + 0.1 + i * 1.5 * sizeScale;
+      const colY = baseY + 0.8 + i * 1.4 * sizeScale;
       const colR = (0.4 + i * 0.45) * sizeScale;
       const buf = createBuffer(createBox(colR, 1.4 * sizeScale, colR, 0.3, 0.28, 0.24));
       drawMesh(
