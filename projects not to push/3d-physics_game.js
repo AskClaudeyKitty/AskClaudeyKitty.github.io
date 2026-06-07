@@ -1261,36 +1261,20 @@ function loop(time) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // Crowd update: walk in toward seats as day rises, out at night.
-  // Also apply persistent vx/vz (from spring punches) with friction.
   for (const c of crowd) {
     if (c.farX === undefined) {
       c.farX = c.x;
       c.farZ = c.z;
     }
-    if (c.vx === undefined) c.vx = 0;
-    if (c.vz === undefined) c.vz = 0;
-    if (player.ending || player.sinking) {
-      c.vx = 0;
-      c.vz = 0;
-      continue; // ending loop moves them
-    }
+    if (player.ending || player.sinking) continue; // ending loop moves them
     const presence = Math.max(0, Math.min(1, (sunY + 10) / 20));
     const prevPresence = c.lastPresence === undefined ? presence : c.lastPresence;
     c.lastPresence = presence;
     c.leaving = presence < prevPresence;
-    const homeX = c.farX + (c.sx - c.farX) * presence;
-    const homeZ = c.farZ + (c.sz - c.farZ) * presence;
     const prevX = c.x,
       prevZ = c.z;
-    // Spring velocity: pull back toward "home" (where they should be at this time)
-    // so they actually move but eventually return to their seat.
-    c.vx += (homeX - c.x) * 4 * dt;
-    c.vz += (homeZ - c.z) * 4 * dt;
-    // Friction
-    c.vx *= 0.95;
-    c.vz *= 0.95;
-    c.x += c.vx * dt;
-    c.z += c.vz * dt;
+    c.x = c.farX + (c.sx - c.farX) * presence;
+    c.z = c.farZ + (c.sz - c.farZ) * presence;
     c.moving = Math.abs(c.x - prevX) + Math.abs(c.z - prevZ) > 1e-4;
     if (c.moving) c.walkPhase += dt * 6;
   }
