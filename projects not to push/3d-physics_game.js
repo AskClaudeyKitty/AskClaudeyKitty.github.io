@@ -817,6 +817,15 @@ function useInventorySlot(idx) {
         p.vz += (ddz / dd) * power;
       }
     }
+    // Glued brick walls in range: break the glue and blast the bricks.
+    for (const w of brickWalls) {
+      if (!w.alive || !w.glue) continue;
+      const ddx = w.x - player.x, ddz = w.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        unglueWall(w, ddx / dd, ddz / dd, 2.0);
+      }
+    }
   } else if (idx === 3) {
     // Slot 4: heavy block — larger, darker, big mass, smashes walls
     const buf = makePieceBuf(0.35, 0.35, 0.4);
@@ -982,6 +991,16 @@ function doKick() {
     sblk.vry = (Math.random() - 0.5) * 15;
     sblk.vrz = (Math.random() - 0.5) * 15;
   }
+  // Kick glued brick walls: breaks the glue and the bricks fly off.
+  for (const w of brickWalls) {
+    if (!w.alive || !w.glue) continue;
+    const dx = w.x - player.x, dz = w.z - player.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 3.5 || dist < 1e-4) continue;
+    if (Math.abs(w.y - 0.2) > 1.2) continue;
+    const kx = dx / dist, kz = dz / dist;
+    unglueWall(w, kx, kz, 3.0);
+  }
   // Kick animation
 }
 window.addEventListener("keyup", (e) => {
@@ -996,6 +1015,30 @@ function regObj(x, z, r, pushable = true) {
 }
 function regObb(x, z, halfX, halfZ, angle, pushable = true) {
   dynamicObjects.push({ kind: "obb", x, z, halfX, halfZ, angle, pushable });
+}
+// Convert a glued brick (and all glued bricks in the same wall) into
+// loose brown spawned blocks, optionally with a kick velocity along (nx, nz).
+function unglueWall(w, nx = 0, nz = 0, power = 1.0) {
+  if (!w || !w.alive || !w.glue) return;
+  const wallBricks = brickWalls.filter(
+    (bw) => bw.alive && bw.glue && bw.wallX === w.wallX,
+  );
+  for (const bw of wallBricks) {
+    const brownBuf = makePieceBuf(0.55, 0.32, 0.18);
+    spawnedBlocks.push({
+      x: bw.x, z: bw.z, y: bw.y,
+      vx: nx * power + (Math.random() - 0.5) * 2,
+      vy: 1.5,
+      vz: nz * power + (Math.random() - 0.5) * 2,
+      rx: 0, ry: 0, rz: 0,
+      vrx: (Math.random() - 0.5) * 8,
+      vry: (Math.random() - 0.5) * 8,
+      vrz: (Math.random() - 0.5) * 8,
+      buf: brownBuf, color: [0.55, 0.32, 0.18], settled: false,
+      kind: "block", mass: 1, half: 0.2,
+    });
+    bw.alive = false;
+  }
 }
 // Closest point on OBB (at origin, axis-aligned) to point (px, pz)
 function obbClosest(halfX, halfZ, px, pz) {
@@ -1147,29 +1190,11 @@ function resolveDynamicCollisions() {
       a.z -= nz * corrected * aPush;
       b.x += nx * corrected * bPush;
       b.z += nz * corrected * bPush;
-      // Brick glue break: a heavy impactor smashes the glue and the brick
-      // gets converted into a regular spawned block (brown) so it can be
-      // pushed, kicked, and spring-punched like any other block.
+      // Brick glue break: a heavy impactor or the main ball smashes the
+      // glue and converts the brick (and its wall) into loose brown blocks.
       const breakGlue = (obj) => {
         if (obj && obj.ref && obj.ref.glue && obj.ref.wallX !== undefined) {
-          const w = obj.ref;
-          w.glue = false;
-          // Spawn equivalent brown block at the brick's current position
-          const brownBuf = makePieceBuf(0.55, 0.32, 0.18);
-          spawnedBlocks.push({
-            x: w.x, z: w.z, y: w.y,
-            vx: (w.vx ?? 0) + nx * 1.0,
-            vy: 1.0,
-            vz: (w.vz ?? 0) + nz * 1.0,
-            rx: w.rx ?? 0, ry: w.ry ?? 0, rz: w.rz ?? 0,
-            vrx: (w.vrx ?? 0) + (Math.random() - 0.5) * 6,
-            vry: (w.vry ?? 0) + (Math.random() - 0.5) * 6,
-            vrz: (w.vrz ?? 0) + (Math.random() - 0.5) * 6,
-            buf: brownBuf, color: [0.55, 0.32, 0.18], settled: false,
-            kind: "block", mass: 1, half: 0.2,
-          });
-          // Mark the brick as dead so it no longer renders/physics-updates
-          w.alive = false;
+          unglueWall(obj.ref, nx, nz, 1.0);
         }
       };
       breakGlue(a);
@@ -1891,6 +1916,21 @@ for (const b of spawnedBlocks) {
     }
   }
 }
+// Player push glued brick walls: player walking/running into a wall
+// breaks the glue (heavy enough push counts as a heavy impact).
+for (const w of brickWalls) {
+  if (!w.alive || !w.glue) continue;
+  const ddx = w.x - player.x, ddz = w.z - player.z;
+  const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
+  if (ddist >= 0.8 || ddist < 1e-4) continue;
+  if (Math.abs(w.y - 0.2) > 1.5) continue;
+  const sp = Math.sqrt(mx * mx + mz * mz);
+  // Walking/running: unglue. Standing still: just block.
+  if (sp > 0.05) {
+    const dirX = (mx / sp), dirZ = (mz / sp);
+    unglueWall(w, dirX, dirZ, player.speed * 0.6);
+  }
+}
 // Court invisible walls (ball only) + goal nets
 {
   const bx = courtCenterX,
@@ -2087,27 +2127,11 @@ for (const b of breakables) {
       ball.vx *= 0.7;
       ball.vz *= 0.7;
     }
-    // Hard hit breaks the wall: convert this brick (and the rest of the wall)
+    // Hard hit breaks the wall: convert all glued bricks in this wall
     // into loose brown spawned blocks.
     const speed = Math.hypot(ball.vx, ball.vz);
     if (speed > 4) {
-      const wallBricks = brickWalls.filter((bw) => bw.alive && bw.glue && bw.wallX === w.wallX);
-      for (const bw of wallBricks) {
-        const brownBuf = makePieceBuf(0.55, 0.32, 0.18);
-        spawnedBlocks.push({
-          x: bw.x, z: bw.z, y: bw.y,
-          vx: -nx * 2 + (Math.random() - 0.5) * 2,
-          vy: 1.5,
-          vz: -nz * 2 + (Math.random() - 0.5) * 2,
-          rx: 0, ry: 0, rz: 0,
-          vrx: (Math.random() - 0.5) * 8,
-          vry: (Math.random() - 0.5) * 8,
-          vrz: (Math.random() - 0.5) * 8,
-          buf: brownBuf, color: [0.55, 0.32, 0.18], settled: false,
-          kind: "block", mass: 1, half: 0.2,
-        });
-        bw.alive = false;
-      }
+      unglueWall(w, -nx, -nz, 2.0);
     }
   }
 }
