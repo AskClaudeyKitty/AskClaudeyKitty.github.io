@@ -668,12 +668,12 @@ const btnClear = addPanelButton("1. Clear Spawned", () => {
   brickWalls.length = 0;
   flashStatus("Cleared all spawned objects");
 });
-// Event 2: earthquake — shake all dynamic objects violently for 2 seconds
-const earthquake = { active: false, timeLeft: 0, intensity: 8 };
-const btnEarthquake = addPanelButton("2. Earthquake", () => {
+// Event 2: tornado — swirl all dynamic objects around the player for 3 seconds
+const earthquake = { active: false, timeLeft: 0, intensity: 3 };
+const btnEarthquake = addPanelButton("2. Tornado", () => {
   earthquake.active = true;
-  earthquake.timeLeft = 2.0;
-  flashStatus("Earthquake!");
+  earthquake.timeLeft = 3.0;
+  flashStatus("Tornado!");
 });
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
 let zeroG = { active: false, timeLeft: 0 };
@@ -1326,11 +1326,10 @@ function loop(time) {
     } else {
       // Tornado-like swirl: force all dynamic objects to orbit a tornado
       // center, with a vertical lift + downward gravity for the floor.
-      const t = earthquake.timeLeft;
       const intensity = earthquake.intensity;
       // Tornado center slowly drifts so objects get flung in different directions
-      const cx = player.x + Math.cos(performance.now() * 0.001) * 4;
-      const cz = player.z + Math.sin(performance.now() * 0.001) * 4;
+      const cx = player.x + Math.cos(performance.now() * 0.001) * 3;
+      const cz = player.z + Math.sin(performance.now() * 0.001) * 3;
       const swirlAll = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
         const dist = Math.hypot(ddx, ddz);
@@ -1338,21 +1337,28 @@ function loop(time) {
         // Tangential direction (90° rotated) + slight inward pull
         const tnx = -ddz / dist;
         const tnz = ddx / dist;
-        const inx = -ddx / dist;
-        const inz = -ddz / dist;
-        // Force scales with distance so far things get whipped harder
-        const force = intensity * (0.5 + Math.min(dist, 20) * 0.1);
-        b.vx += tnx * force + inx * 1.5;
-        b.vz += tnz * force + inz * 1.5;
-        // Strong upward lift
-        b.vy += 6 + Math.random() * 4;
+        // Weaker inward so things don't all collapse to center
+        const inx = -ddx / dist * 0.3;
+        const inz = -ddz / dist * 0.3;
+        // Tangential force scaled by distance (but capped) so far things whip
+        const force = intensity * Math.min(1 + dist * 0.05, 3);
+        b.vx += tnx * force + inx;
+        b.vz += tnz * force + inz;
+        // Moderate upward lift (clamped so things don't fly to orbit)
+        b.vy = Math.min(b.vy + 3, 8);
+        // Cap horizontal speed
+        const spd = Math.hypot(b.vx, b.vz);
+        if (spd > 25) {
+          b.vx = b.vx / spd * 25;
+          b.vz = b.vz / spd * 25;
+        }
         // Tumble spin
         if (isBlock) {
-          b.vrx += (Math.random() - 0.5) * 8;
-          b.vrz += (Math.random() - 0.5) * 8;
+          b.vrx += (Math.random() - 0.5) * 6;
+          b.vrz += (Math.random() - 0.5) * 6;
         } else {
-          b.spinX += (Math.random() - 0.5) * 4;
-          b.spinZ += (Math.random() - 0.5) * 4;
+          b.spinX += (Math.random() - 0.5) * 3;
+          b.spinZ += (Math.random() - 0.5) * 3;
         }
       };
       for (const b of spawnedBalls) swirlAll(b, false);
