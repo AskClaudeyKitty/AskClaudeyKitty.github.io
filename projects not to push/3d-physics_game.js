@@ -1602,105 +1602,7 @@ function loop(time) {
     if (c.moving) c.walkPhase += dt * 6;
   }
 
-  // Crowd render: same body/head/limb as player; walk when moving, arms-up cheer when at seat
-  for (const c of crowd) {
-    const presence = player.ending || player.sinking
-      ? 1
-      : Math.max(0, Math.min(1, (sunY + 10) / 20));
-    if (presence < 0.05) continue;
-    const atSeat = presence > 0.95;
-    // Body faces court when arriving/seated; faces player when ending
-    const facing =
-      player.ending && !player.sinking
-        ? Math.atan2(player.x - c.x, player.z - c.z)
-        : c.leaving
-        ? Math.atan2(c.sx - c.x, c.sz - c.z)
-        : Math.atan2(courtCenterX - c.x, courtCenterZ - c.z);
-    const m = mat4Multiply(vp, mat4Translate(c.x, 0, c.z));
-  const rot = mat4Identity();
-  rot[0] = Math.cos(facing);
-  rot[2] = -Math.sin(facing);
-  rot[8] = Math.sin(facing);
-  rot[10] = Math.cos(facing);
-  const baseM = mat4Multiply(m, rot);
-  const meshes = crowdMeshes[c.color];
-  // Walk swing
-  const swing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
-  const bob = c.moving ? Math.abs(Math.sin(c.walkPhase)) * 0.1 : 0;
-  // Head turn: track player if c.headTrack; else face same as body
-  const worldLook = c.headTrack
-    ? Math.atan2(player.x - c.x, player.z - c.z)
-    : facing;
-  let headTurn = worldLook - facing;
-  while (headTurn > Math.PI) headTurn -= 2 * Math.PI;
-  while (headTurn < -Math.PI) headTurn += 2 * Math.PI;
-  const headM = mat4Multiply(baseM, mat4Translate(0, 1.6 - bob, 0));
-  const headRot = mat4Identity();
-  headRot[0] = Math.cos(headTurn);
-  headRot[2] = -Math.sin(headTurn);
-  headRot[8] = Math.sin(headTurn);
-  headRot[10] = Math.cos(headTurn);
-  // Body
-  drawMesh(
-    meshes.body,
-    36,
-    mat4Multiply(baseM, mat4Translate(0, 0.85 - bob, 0)),
-  );
-  // Head (rotates to look at player)
-  drawMesh(meshes.head, 36, mat4Multiply(mat4Multiply(headM, headRot), mat4Identity()));
-  // Eyes
-  drawMesh(
-    meshes.eye,
-    36,
-    mat4Multiply(mat4Multiply(headM, headRot), mat4Translate(-0.1, 0.05, 0.2)),
-  );
-  drawMesh(
-    meshes.eye,
-    36,
-    mat4Multiply(mat4Multiply(headM, headRot), mat4Translate(0.1, 0.05, 0.2)),
-  );
-  // Arms: cheer arms up when at seat (no walking), swing when walking
-  if (atSeat) {
-    // Arms up: rotate up
-    const armWave = Math.sin(dayTime * Math.PI * 12 + c.phase) * 0.2;
-    drawMesh(
-      meshes.limb,
-      36,
-      mat4Multiply(baseM, mat4Translate(-0.3, 1.6 + armWave, 0)),
-    );
-    drawMesh(
-      meshes.limb,
-      36,
-      mat4Multiply(baseM, mat4Translate(0.3, 1.6 - armWave, 0)),
-    );
-  } else {
-    // Walking arms
-    drawMesh(
-      meshes.limb,
-      36,
-      mat4Multiply(baseM, mat4Translate(-0.3, 1.05 - bob, swing)),
-    );
-    drawMesh(
-      meshes.limb,
-      36,
-      mat4Multiply(baseM, mat4Translate(0.3, 1.05 - bob, -swing)),
-    );
-  }
-  // Legs swing only when moving
-  const legSwing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
-  drawMesh(
-    meshes.limb,
-    36,
-    mat4Multiply(baseM, mat4Translate(-0.13, 0.35 - bob, -legSwing)),
-  );
-  drawMesh(
-    meshes.limb,
-    36,
-    mat4Multiply(baseM, mat4Translate(0.13, 0.35 - bob, legSwing)),
-  );
-}
-
-// Sun (no depth, always visible)
+  // Sun (no depth, always visible)
 if (sunY > -5) {
   gl.disable(gl.DEPTH_TEST);
   drawMesh(
@@ -2612,6 +2514,104 @@ if (!firstPerson && !player.dead) {
       drawMesh(brickBuf, 36, mat4Multiply(m, r));
     }
   }
+
+  // Crowd render: same body/head/limb as player; walk when moving, arms-up cheer when at seat
+  for (const c of crowd) {
+    const presence = player.ending || player.sinking
+      ? 1
+      : Math.max(0, Math.min(1, (sunY + 10) / 20));
+    if (presence < 0.05) continue;
+    const atSeat = presence > 0.95;
+    // Body faces court when arriving/seated; faces player when ending
+    const facing =
+      player.ending && !player.sinking
+        ? Math.atan2(player.x - c.x, player.z - c.z)
+        : c.leaving
+        ? Math.atan2(c.sx - c.x, c.sz - c.z)
+        : Math.atan2(courtCenterX - c.x, courtCenterZ - c.z);
+    const m = mat4Multiply(vp, mat4Translate(c.x, 0, c.z));
+  const rot = mat4Identity();
+  rot[0] = Math.cos(facing);
+  rot[2] = -Math.sin(facing);
+  rot[8] = Math.sin(facing);
+  rot[10] = Math.cos(facing);
+  const baseM = mat4Multiply(m, rot);
+  const meshes = crowdMeshes[c.color];
+  // Walk swing
+  const swing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
+  const bob = c.moving ? Math.abs(Math.sin(c.walkPhase)) * 0.1 : 0;
+  // Head turn: track player if c.headTrack; else face same as body
+  const worldLook = c.headTrack
+    ? Math.atan2(player.x - c.x, player.z - c.z)
+    : facing;
+  let headTurn = worldLook - facing;
+  while (headTurn > Math.PI) headTurn -= 2 * Math.PI;
+  while (headTurn < -Math.PI) headTurn += 2 * Math.PI;
+  const headM = mat4Multiply(baseM, mat4Translate(0, 1.6 - bob, 0));
+  const headRot = mat4Identity();
+  headRot[0] = Math.cos(headTurn);
+  headRot[2] = -Math.sin(headTurn);
+  headRot[8] = Math.sin(headTurn);
+  headRot[10] = Math.cos(headTurn);
+  // Body
+  drawMesh(
+    meshes.body,
+    36,
+    mat4Multiply(baseM, mat4Translate(0, 0.85 - bob, 0)),
+  );
+  // Head (rotates to look at player)
+  drawMesh(meshes.head, 36, mat4Multiply(mat4Multiply(headM, headRot), mat4Identity()));
+  // Eyes
+  drawMesh(
+    meshes.eye,
+    36,
+    mat4Multiply(mat4Multiply(headM, headRot), mat4Translate(-0.1, 0.05, 0.2)),
+  );
+  drawMesh(
+    meshes.eye,
+    36,
+    mat4Multiply(mat4Multiply(headM, headRot), mat4Translate(0.1, 0.05, 0.2)),
+  );
+  // Arms: cheer arms up when at seat (no walking), swing when walking
+  if (atSeat) {
+    // Arms up: rotate up
+    const armWave = Math.sin(dayTime * Math.PI * 12 + c.phase) * 0.2;
+    drawMesh(
+      meshes.limb,
+      36,
+      mat4Multiply(baseM, mat4Translate(-0.3, 1.6 + armWave, 0)),
+    );
+    drawMesh(
+      meshes.limb,
+      36,
+      mat4Multiply(baseM, mat4Translate(0.3, 1.6 - armWave, 0)),
+    );
+  } else {
+    // Walking arms
+    drawMesh(
+      meshes.limb,
+      36,
+      mat4Multiply(baseM, mat4Translate(-0.3, 1.05 - bob, swing)),
+    );
+    drawMesh(
+      meshes.limb,
+      36,
+      mat4Multiply(baseM, mat4Translate(0.3, 1.05 - bob, -swing)),
+    );
+  }
+  // Legs swing only when moving
+  const legSwing = c.moving ? Math.sin(c.walkPhase) * 0.35 : 0;
+  drawMesh(
+    meshes.limb,
+    36,
+    mat4Multiply(baseM, mat4Translate(-0.13, 0.35 - bob, -legSwing)),
+  );
+  drawMesh(
+    meshes.limb,
+    36,
+    mat4Multiply(baseM, mat4Translate(0.13, 0.35 - bob, legSwing)),
+  );
+}
 
   // Tornado visual: rendered LAST so it draws on top of EVERYTHING
   // (baseplate, sun, crowd, player) — always visible.
