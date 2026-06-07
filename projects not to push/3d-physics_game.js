@@ -1337,13 +1337,13 @@ function loop(time) {
     } else {
       const intensity = earthquake.intensity;
       const size = earthquake.size;
-      // Tornado center slowly orbits the player (xz only), but track player.y too
+      // Tornado center stays RIGHT ON the player (small orbit for life)
       const t = performance.now() * 0.001;
-      const cx = player.x + Math.cos(t) * 3;
-      const cz = player.z + Math.sin(t) * 3;
+      const cx = player.x + Math.cos(t) * 0.8;
+      const cz = player.z + Math.sin(t) * 0.8;
       // Tornado center anchored ON the baseplate (floor top = y=0).
       // Track player Y so when player rises, the funnel rises with them.
-      const cy = Math.max(0, player.y - 1.0);
+      const cy = Math.max(0, player.y);
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1383,7 +1383,7 @@ function loop(time) {
       // Pull the player toward the tornado too (xz swirl + inward + lift)
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
-      if (pdist > 0.5) {
+      if (pdist > 0.05) {
         const ptnx = -pdz / pdist;
         const ptnz = pdx / pdist;
         const pinx = -pdx / pdist * 1.0;
