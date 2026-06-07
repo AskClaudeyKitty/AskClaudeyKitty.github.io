@@ -1562,17 +1562,17 @@ function loop(time) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Tornado visual: draw spinning dust rings at the tornado center.
+  // Tornado visual: draw spinning dust rings at the tornado center, plus
+  // a dark funnel column to make the tornado obvious at any angle.
   if (tornadoVisual.alpha > 0) {
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.depthMask(false);
-    for (let i = 0; i < 6; i++) {
-      const ringY = 0.5 + i * 1.0;
-      const ringR = 0.6 + i * 0.5;
-      const buf = createBuffer(
-        createBox(ringR * 2, 0.15, 0.15, 0.7, 0.65, 0.5, tornadoVisual.alpha),
-      );
+    // Draw on top of everything by disabling depth test for these meshes
+    gl.disable(gl.DEPTH_TEST);
+    // Dust rings — staggered heights, each larger as it goes up
+    for (let i = 0; i < 7; i++) {
+      const ringY = 0.5 + i * 1.2;
+      const ringR = 0.4 + i * 0.45;
+      // Bright dust color so it stands out against the dark sky
+      const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.95, 0.85, 0.6));
       drawMesh(
         buf,
         36,
@@ -1585,8 +1585,21 @@ function loop(time) {
         ),
       );
     }
-    gl.depthMask(true);
-    gl.disable(gl.BLEND);
+    // Funnel column: vertical translucent strip rising from the ground
+    for (let i = 0; i < 4; i++) {
+      const colY = 2 + i * 2;
+      const colR = 1.5 - i * 0.3;
+      const buf = createBuffer(createBox(colR, 1.8, colR, 0.45, 0.4, 0.35));
+      drawMesh(
+        buf,
+        36,
+        mat4Multiply(
+          vp,
+          mat4Translate(tornadoVisual.cx, colY, tornadoVisual.cz),
+        ),
+      );
+    }
+    gl.enable(gl.DEPTH_TEST);
   }
 
   // Crowd update: walk in toward seats as day rises, out at night.
