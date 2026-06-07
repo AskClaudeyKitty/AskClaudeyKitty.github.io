@@ -1127,17 +1127,25 @@ function resolveDynamicCollisions() {
       // Slop: ignore tiny overlaps to kill the warp from continuous re-push
       if (overlap < 0.01) continue;
       // Mass: prefer explicit mass if set, else default 1
-      const ma = a.mass ?? 1;
-      const mb = b.mass ?? 1;
-      const totalM = ma + mb;
+      // Immovable objects (e.g. immovable block, glued brick) get infinite mass
+      // so they neither move on position correction nor change velocity on impulse.
+      const aImmovable = !a.pushable;
+      const bImmovable = !b.pushable;
+      const ma = aImmovable ? Infinity : (a.mass ?? 1);
+      const mb = bImmovable ? Infinity : (b.mass ?? 1);
+      const aInv = aImmovable ? 0 : 1 / ma;
+      const bInv = bImmovable ? 0 : 1 / mb;
+      const totalInv = aInv + bInv;
       // Correct position proportional to inverse mass
-      const aPush = (mb / totalM) * aShare;
-      const bPush = (ma / totalM) * bShare;
-      // Position correction
-      a.x -= nx * overlap * aPush;
-      a.z -= nz * overlap * aPush;
-      b.x += nx * overlap * bPush;
-      b.z += nz * overlap * bPush;
+      const aPush = totalInv > 0 ? (bInv / totalInv) * aShare : 0;
+      const bPush = totalInv > 0 ? (aInv / totalInv) * bShare : 0;
+      // Position correction: always fully resolve overlap with a small buffer
+      // so light blocks can't end up inside heavy ones.
+      const corrected = overlap + 0.02;
+      a.x -= nx * corrected * aPush;
+      a.z -= nz * corrected * aPush;
+      b.x += nx * corrected * bPush;
+      b.z += nz * corrected * bPush;
       // Brick glue break: a heavy (mass >= 4) pushable or the main ball
       // smashes the glue on any brick wall it touches.
       const breakGlue = (obj) => {
@@ -1161,17 +1169,20 @@ function resolveDynamicCollisions() {
       const vRelN = (vb.x - va.x) * nx + (vb.z - va.z) * nz;
       if (vRelN < 0) {
         // approaching: apply elastic impulse with restitution
+        // With infinite mass on one side, the impulse simplifies to
+        // 2 * vRelN / (inv_a + inv_b). vRelN is along n pointing a->b,
+        // so the moving object gets reflected with restitution.
         const e = 0.3; // low restitution -> blocks don't bounce much
-        const j = -(1 + e) * vRelN / (1 / ma + 1 / mb);
+        const j = -(1 + e) * vRelN / (aInv + bInv);
         const jx = j * nx;
         const jz = j * nz;
-        if (a.ref) {
-          a.ref.vx = (a.ref.vx ?? 0) - jx / ma;
-          a.ref.vz = (a.ref.vz ?? 0) - jz / ma;
+        if (a.ref && !aImmovable) {
+          a.ref.vx = (a.ref.vx ?? 0) - jx * aInv;
+          a.ref.vz = (a.ref.vz ?? 0) - jz * aInv;
         }
-        if (b.ref) {
-          b.ref.vx = (b.ref.vx ?? 0) + jx / mb;
-          b.ref.vz = (b.ref.vz ?? 0) + jz / mb;
+        if (b.ref && !bImmovable) {
+          b.ref.vx = (b.ref.vx ?? 0) + jx * bInv;
+          b.ref.vz = (b.ref.vz ?? 0) + jz * bInv;
         }
       }
     }
@@ -2256,22 +2267,57 @@ if (!firstPerson && !player.dead) {
     if (b.y < blockHalf) b.y = blockHalf;
   }
 
-  // Anti-stick pass: for spawned blocks sitting on the floor, push any pair
-  // that's overlapping in 2D apart by the full overlap + a small buffer.
-  for (let i = 0; i < spawnedBlocks.length; i++) {
-    for (let j = i + 1; j < spawnedBlocks.length; j++) {
-      const a = spawnedBlocks[i];
-      const b = spawnedBlocks[j];
-      const dx = b.x - a.x, dz = b.z - a.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      const minD = 0.4; // 2 * halfX
-      if (dist >= minD || dist < 1e-4) continue;
-      const overlap = (minD - dist) + 0.02;
-      const nx = dx / dist, nz = dz / dist;
-      a.x -= nx * overlap * 0.5;
-      a.z -= nz * overlap * 0.5;
-      b.x += nx * overlap * 0.5;
-      b.z += nz * overlap * 0.5;
+  // Anti-stick pass: push any pair of physics objects (spawned blocks,
+  // brick walls) that are overlapping in 2D apart by the full overlap.
+  const antiStick = (arr, defaultHalf) => {
+    for (let i = 0; i < arr.length; i++) {
+      const a = arr[i];
+      if (a.y < -1) continue; // skip dead
+      const aHalf = a.half ?? defaultHalf;
+      for (let j = i + 1; j < arr.length; j++) {
+        const b = arr[j];
+        if (b.y < -1) continue;
+        const bHalf = b.half ?? defaultHalf;
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const minD = aHalf + bHalf;
+        if (dist >= minD || dist < 1e-4) continue;
+        // Immovable objects don't move
+        const aFixed = a.kind === "immovable";
+        const bFixed = b.kind === "immovable";
+        if (aFixed && bFixed) continue;
+        const overlap = (minD - dist) + 0.02;
+        const nx = dx / dist, nz = dz / dist;
+        if (aFixed) {
+          b.x += nx * overlap;
+          b.z += nz * overlap;
+        } else if (bFixed) {
+          a.x -= nx * overlap;
+          a.z -= nz * overlap;
+        } else {
+          a.x -= nx * overlap * 0.5;
+          a.z -= nz * overlap * 0.5;
+          b.x += nx * overlap * 0.5;
+          b.z += nz * overlap * 0.5;
+        }
+      }
+    }
+  };
+  // Convert brickWalls into the same shape: { x, z, y, half, kind }
+  const brickList = brickWalls.filter((w) => w.alive).map((w) => ({
+    x: w.x, z: w.z, y: w.y, half: 0.2, ref: w,
+    kind: w.glue ? "immovable" : "block",
+  }));
+  antiStick(spawnedBlocks, 0.2);
+  antiStick(brickList, 0.2);
+  // Write brickList adjustments back to brickWalls
+  for (let i = 0; i < brickWalls.length; i++) {
+    const w = brickWalls[i];
+    if (!w.alive) continue;
+    const li = brickList.find((bl) => bl.ref === w);
+    if (li) {
+      w.x = li.x;
+      w.z = li.z;
     }
   }
 
