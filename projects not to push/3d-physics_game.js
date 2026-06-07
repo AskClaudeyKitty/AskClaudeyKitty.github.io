@@ -1568,11 +1568,11 @@ function loop(time) {
     // Draw on top of everything by disabling depth test for these meshes
     gl.disable(gl.DEPTH_TEST);
     // Dust rings — staggered heights, each larger as it goes up
-    for (let i = 0; i < 7; i++) {
-      const ringY = 0.5 + i * 1.2;
-      const ringR = 0.4 + i * 0.45;
-      // Bright dust color so it stands out against the dark sky
-      const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.95, 0.85, 0.6));
+    for (let i = 0; i < 5; i++) {
+      const ringY = 0.3 + i * 0.8;
+      const ringR = 0.3 + i * 0.35;
+      // Slightly dimmer dust color so it doesn't hide the sun
+      const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
       drawMesh(
         buf,
         36,
@@ -1586,10 +1586,10 @@ function loop(time) {
       );
     }
     // Funnel column: vertical translucent strip rising from the ground
-    for (let i = 0; i < 4; i++) {
-      const colY = 2 + i * 2;
-      const colR = 1.5 - i * 0.3;
-      const buf = createBuffer(createBox(colR, 1.8, colR, 0.45, 0.4, 0.35));
+    for (let i = 0; i < 3; i++) {
+      const colY = 1.5 + i * 1.5;
+      const colR = 1.2 - i * 0.3;
+      const buf = createBuffer(createBox(colR, 1.4, colR, 0.3, 0.28, 0.24));
       drawMesh(
         buf,
         36,
