@@ -1343,7 +1343,8 @@ function loop(time) {
       const cz = player.z + Math.sin(t) * 0.8;
       // Tornado center anchored ON the baseplate (floor top = y=0).
       // Track player Y so when player rises, the funnel rises with them.
-      const cy = Math.max(0, player.y);
+      // Floor top = y=0, grass top = y=0.1. Always keep funnel above 0.
+      const cy = Math.max(0, player.y || 0);
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1413,6 +1414,8 @@ function loop(time) {
       b.vz *= damp;
     }
     tornadoVisual.alpha = Math.max(0, tornadoVisual.alpha - dt * 0.5);
+    // Keep cy tracking player so visual doesn't sink
+    tornadoVisual.cy = Math.max(0, player.y || 0);
   } else {
     tornadoVisual.alpha = 0;
   }
@@ -1583,9 +1586,9 @@ function loop(time) {
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.3;
     // Dust rings — narrow at the base, wide at the top (tornado shape).
-    // Each ring is 0.2 tall, so center at baseY+0.1 so it sits ON baseplate.
+    // Each ring is 0.2 tall, centered above the grass top (y=0.1).
     for (let i = 0; i < 5; i++) {
-      const ringY = baseY + 0.1 + i * 0.8 * sizeScale;
+      const ringY = baseY + 0.2 + i * 0.8 * sizeScale;
       const ringR = (0.2 + i * 0.5) * sizeScale;
       const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
       drawMesh(
@@ -1601,8 +1604,7 @@ function loop(time) {
       );
     }
     // Funnel column: narrow at bottom, wide at top — typical tornado.
-    // Each box is 1.4 tall. Center the first segment so its bottom is just
-    // above the baseplate (y=0) so it never pokes through the floor.
+    // Each box is 1.4 tall. Bottom of first segment must clear the grass top (y=0.1).
     for (let i = 0; i < 4; i++) {
       const colY = baseY + 0.8 + i * 1.4 * sizeScale;
       const colR = (0.4 + i * 0.45) * sizeScale;
