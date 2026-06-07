@@ -817,6 +817,19 @@ function useInventorySlot(idx) {
         p.vz += (ddz / dd) * power;
       }
     }
+    // Loose bricks (only ones already broken free)
+    for (const w of brickWalls) {
+      if (!w.alive || w.glue) continue;
+      const ddx = w.x - player.x, ddz = w.z - player.z;
+      const dd = Math.hypot(ddx, ddz);
+      if (dd < radius && dd > 0.01) {
+        w.vx += (ddx / dd) * power;
+        w.vy = 3;
+        w.vz += (ddz / dd) * power;
+        w.vrx += (Math.random() - 0.5) * 8;
+        w.vrz += (Math.random() - 0.5) * 8;
+      }
+    }
   } else if (idx === 3) {
     // Slot 4: heavy block — larger, darker, big mass, smashes walls
     const buf = makePieceBuf(0.35, 0.35, 0.4);
@@ -992,13 +1005,14 @@ function doKick() {
     if (Math.abs(w.y - 0.2) > 1.2) continue;
     const kx = dx / dist,
       kz = dz / dist;
-    const power = 8 + Math.random() * 4;
-    w.vx = kx * power + (Math.random() - 0.5) * 4;
-    w.vy = 6 + Math.random() * 3;
-    w.vz = kz * power + (Math.random() - 0.5) * 4;
-    w.vrx = (Math.random() - 0.5) * 10;
-    w.vry = (Math.random() - 0.5) * 10;
-    w.vrz = (Math.random() - 0.5) * 10;
+    const power = 10 + Math.random() * 3;
+    // Mostly horizontal, with a small upward boost
+    w.vx = kx * power;
+    w.vy = 2 + Math.random() * 1;
+    w.vz = kz * power;
+    w.vrx = -kz * 8;
+    w.vry = 0;
+    w.vrz = kx * 8;
   }
   // Kick animation
   player.kickTime = 0.3;
