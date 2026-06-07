@@ -778,6 +778,11 @@ function useInventorySlot(idx) {
         b.vx += (ddx / dd) * power;
         b.vy = 4;
         b.vz += (ddz / dd) * power;
+        // Random tumble: spin axes proportional to force
+        b.vrx += (Math.random() - 0.5) * 12;
+        b.vry += (Math.random() - 0.5) * 12;
+        b.vrz += (Math.random() - 0.5) * 12;
+        b.settled = false;
       }
     }
     // Crowd members
@@ -785,8 +790,13 @@ function useInventorySlot(idx) {
       const ddx = c.x - player.x, ddz = c.z - player.z;
       const dd = Math.hypot(ddx, ddz);
       if (dd < radius && dd > 0.01) {
-        c.x += (ddx / dd) * 1.5;
-        c.z += (ddz / dd) * 1.5;
+        c.vx = (ddx / dd) * power;
+        c.vz = (ddz / dd) * power;
+        c.farX = c.x;
+        c.farZ = c.z;
+        c.sx = c.x;
+        c.sz = c.z;
+        c.lastPresence = -1; // force moving flag
       }
     }
     // Physics pieces
@@ -1250,21 +1260,37 @@ function loop(time) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Crowd update: walk in toward seats as day rises, out at night
+  // Crowd update: walk in toward seats as day rises, out at night.
+  // Also apply persistent vx/vz (from spring punches) with friction.
   for (const c of crowd) {
     if (c.farX === undefined) {
       c.farX = c.x;
       c.farZ = c.z;
     }
-    if (player.ending || player.sinking) continue; // ending loop moves them
+    if (c.vx === undefined) c.vx = 0;
+    if (c.vz === undefined) c.vz = 0;
+    if (player.ending || player.sinking) {
+      c.vx = 0;
+      c.vz = 0;
+      continue; // ending loop moves them
+    }
     const presence = Math.max(0, Math.min(1, (sunY + 10) / 20));
     const prevPresence = c.lastPresence === undefined ? presence : c.lastPresence;
     c.lastPresence = presence;
     c.leaving = presence < prevPresence;
+    const homeX = c.farX + (c.sx - c.farX) * presence;
+    const homeZ = c.farZ + (c.sz - c.farZ) * presence;
     const prevX = c.x,
       prevZ = c.z;
-    c.x = c.farX + (c.sx - c.farX) * presence;
-    c.z = c.farZ + (c.sz - c.farZ) * presence;
+    // Spring velocity: pull back toward "home" (where they should be at this time)
+    // so they actually move but eventually return to their seat.
+    c.vx += (homeX - c.x) * 4 * dt;
+    c.vz += (homeZ - c.z) * 4 * dt;
+    // Friction
+    c.vx *= 0.95;
+    c.vz *= 0.95;
+    c.x += c.vx * dt;
+    c.z += c.vz * dt;
     c.moving = Math.abs(c.x - prevX) + Math.abs(c.z - prevZ) > 1e-4;
     if (c.moving) c.walkPhase += dt * 6;
   }
