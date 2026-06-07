@@ -1074,10 +1074,16 @@ function resolveDynamicCollisions() {
       const vb = b.ref ? { x: b.ref.vx ?? 0, z: b.ref.vz ?? 0 } : { x: 0, z: 0 };
       // n is from a to b, so vb.going toward a is negative along n
       const vRelN = (vb.x - va.x) * nx + (vb.z - va.z) * nz;
-      if (vRelN < 0) {
-        // approaching: apply elastic impulse with restitution
-        const e = 0.3; // low restitution -> blocks don't bounce much
-        const j = -(1 + e) * vRelN / (1 / ma + 1 / mb);
+      // If they're touching and not separating fast enough, kick them apart.
+      // This handles the case where both are stationary and re-merge each frame.
+      const minSepSpeed = 0.5; // minimum normal speed to push them apart
+      if (vRelN < minSepSpeed) {
+        // Choose impulse to give at least minSepSpeed of separation velocity.
+        // If approaching (vRelN < 0), use elastic-like response.
+        // If static (vRelN ~= 0), inject the minimum separation kick.
+        const targetVRel = Math.max(minSepSpeed, -vRelN);
+        const e = vRelN < 0 ? 0.3 : 0;
+        const j = ((1 + e) * vRelN - targetVRel) / (1 / ma + 1 / mb);
         const jx = j * nx;
         const jz = j * nz;
         if (a.ref) {
@@ -2056,11 +2062,22 @@ if (!firstPerson && !player.dead) {
     if (b.y < 0.2) {
       b.y = 0.2;
       b.vy = 0; // hard-zero on contact stops the warp
-      b.vx *= 0.5;
-      b.vz *= 0.5;
-      b.vrx *= 0.6;
-      b.vrz *= 0.6;
-      b.vry *= 0.6;
+      // Only damp if the block is moving very slowly — otherwise let it slide.
+      const speedSq = b.vx * b.vx + b.vz * b.vz;
+      if (speedSq < 0.04) {
+        b.vx *= 0.5;
+        b.vz *= 0.5;
+        b.vrx *= 0.6;
+        b.vrz *= 0.6;
+        b.vry *= 0.6;
+      } else {
+        // Light friction so they keep gliding a bit
+        b.vx *= 0.95;
+        b.vz *= 0.95;
+        b.vrx *= 0.95;
+        b.vrz *= 0.95;
+        b.vry *= 0.95;
+      }
       // Settle rx and rz to 0 (face down) — hard snap if very close, no per-frame drift
       if (Math.abs(b.rx) < 0.05) b.rx = 0;
       else b.rx += (0 - b.rx) * 0.1;
