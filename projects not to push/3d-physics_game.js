@@ -1575,25 +1575,25 @@ function loop(time) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Tornado visual: 8 stacked thin disks from ground up, each wider
-  // than the last, forming a classic tornado cone that sits on the ground.
+  // Tornado visual: 10 stacked disks forming a wide tornado cone.
+  // Each disk is sized so its bottom sits exactly at the top of the disk below,
+  // and the whole stack starts at baseY (which is on the ground).
   if (tornadoVisual.alpha > 0) {
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(false);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
-    const baseY = tornadoVisual.cy ?? 0.2;
-    // Number of segments and segment height
+    const baseY = tornadoVisual.cy ?? 0.15;
     const segs = 10;
-    const segH = 0.9 * sizeScale;
-    const baseR = 0.15 * sizeScale;
-    const topR = 1.3 * sizeScale;
+    const segH = 1.2 * sizeScale;
+    const baseR = 0.4 * sizeScale;
+    const topR = 2.5 * sizeScale;
     for (let i = 0; i < segs; i++) {
       const t = i / (segs - 1);
-      // Bottom of this segment = baseY + i*segH
-      // Center of box = bottom + segH/2
+      // Bottom of segment i is at baseY + i*segH
+      // Center of segment is half-height up
       const segCenterY = baseY + i * segH + segH / 2;
       const segR = baseR + (topR - baseR) * t;
-      const buf = createBuffer(createBox(segR * 2, segH, segR, 0.45, 0.4, 0.32));
+      const buf = createBuffer(createBox(segR * 2, segH, segR, 0.5, 0.45, 0.35));
       drawMesh(
         buf,
         36,
