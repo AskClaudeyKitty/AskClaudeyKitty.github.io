@@ -1614,6 +1614,29 @@ function loop(time) {
         ),
       );
     }
+    // Bright cap on top so the funnel is clearly a 3D object from any angle
+    const topCenterY = baseY + segs * segH + 0.3;
+    const topBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.7, 0.65, 0.5));
+    drawMesh(
+      topBuf,
+      36,
+      mat4Multiply(
+        vp,
+        mat4Translate(tornadoVisual.cx, topCenterY, tornadoVisual.cz),
+      ),
+    );
+    // Bright ring on the ground so the base is clearly visible from above
+    const groundY = 0.05; // just above grass top
+    const groundR = baseR * 1.2;
+    const groundBuf = createBuffer(createBox(groundR * 2, 0.05, groundR * 2, 0.8, 0.75, 0.5));
+    drawMesh(
+      groundBuf,
+      36,
+      mat4Multiply(
+        vp,
+        mat4Translate(tornadoVisual.cx, groundY, tornadoVisual.cz),
+      ),
+    );
     gl.depthMask(true);
   }
 
