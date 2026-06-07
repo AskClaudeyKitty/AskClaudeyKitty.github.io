@@ -668,13 +668,23 @@ const btnClear = addPanelButton("1. Clear Spawned", () => {
   brickWalls.length = 0;
   flashStatus("Cleared all spawned objects");
 });
-// Event 2: tornado — swirl all dynamic objects around the player for 3 seconds
-const earthquake = { active: false, timeLeft: 0, intensity: 3 };
+// Event 2: tornado — pick a random size F1-F5 with different pull/lift strengths
+const tornadoSizes = [
+  { name: "F1", intensity: 1, liftCap: 1.5, heightFactor: 0.05, inward: 2.0, dur: 4.0 },
+  { name: "F2", intensity: 2, liftCap: 3,   heightFactor: 0.1,  inward: 2.0, dur: 4.0 },
+  { name: "F3", intensity: 3, liftCap: 6,   heightFactor: 0.3,  inward: 2.0, dur: 3.5 },
+  { name: "F4", intensity: 4, liftCap: 10,  heightFactor: 0.6,  inward: 2.5, dur: 3.0 },
+  { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 2.5 },
+];
+const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
 const tornadoVisual = { cx: 0, cz: 0, alpha: 0 };
 const btnEarthquake = addPanelButton("2. Tornado", () => {
+  const size = tornadoSizes[Math.floor(Math.random() * tornadoSizes.length)];
+  earthquake.size = size;
+  earthquake.intensity = size.intensity;
+  earthquake.timeLeft = size.dur;
   earthquake.active = true;
-  earthquake.timeLeft = 3.0;
-  flashStatus("Tornado!");
+  flashStatus("Tornado " + size.name + "!");
 });
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
 let zeroG = { active: false, timeLeft: 0 };
@@ -1326,6 +1336,7 @@ function loop(time) {
       earthquake.active = false;
     } else {
       const intensity = earthquake.intensity;
+      const size = earthquake.size;
       // Tornado center slowly orbits the player
       const cx = player.x + Math.cos(performance.now() * 0.001) * 3;
       const cz = player.z + Math.sin(performance.now() * 0.001) * 3;
@@ -1340,14 +1351,14 @@ function loop(time) {
         // Tangential direction (90° rotated)
         const tnx = -ddz / dist;
         const tnz = ddx / dist;
-        // Strong inward pull toward the tornado axis
-        const inx = -ddx / dist * 1.5;
-        const inz = -ddz / dist * 1.5;
+        // Strong inward pull (scales with tornado size)
+        const inx = -ddx / dist * size.inward;
+        const inz = -ddz / dist * size.inward;
         const force = intensity * Math.min(1 + dist * 0.05, 3);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
-        // Lift
-        b.vy = Math.min(b.vy + 3, 8);
+        // Lift (scales with tornado size)
+        b.vy = Math.min(b.vy + 3 * size.heightFactor, size.liftCap);
         // Cap horizontal speed
         const spd = Math.hypot(b.vx, b.vz);
         if (spd > 25) {
@@ -1374,14 +1385,27 @@ function loop(time) {
         player.x += (ptnx * pforce + pinx) * dt;
         player.z += (ptnz * pforce + pinz) * dt;
       }
-      // Strong upward lift on the player — suck them up
+      // Upward lift on the player — scales with tornado size
       if (pdist < 8) {
-        const suck = (1 - Math.min(pdist, 8) / 8) * 12;
-        player.vy = Math.min((player.vy ?? 0) + suck, 15);
+        const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
+        player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
       }
       for (const b of spawnedBalls) swirl(b, false);
       for (const b of spawnedBlocks) swirl(b, true);
     }
+  } else if (tornadoVisual.alpha > 0) {
+    // Wind-down: for 1s after the tornado ends, damp horizontal velocity
+    // so objects don't all launch outward when the inward pull stops.
+    const damp = 0.9;
+    for (const b of spawnedBalls) {
+      b.vx *= damp;
+      b.vz *= damp;
+    }
+    for (const b of spawnedBlocks) {
+      b.vx *= damp;
+      b.vz *= damp;
+    }
+    tornadoVisual.alpha = Math.max(0, tornadoVisual.alpha - dt * 0.5);
   } else {
     tornadoVisual.alpha = 0;
   }
