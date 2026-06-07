@@ -660,7 +660,7 @@ function addPanelButton(label, onClick) {
   return b;
 }
 // Event 1: clear all spawned objects (keeps red breakables, ball, player)
-addPanelButton("Clear Spawned", () => {
+const btnClear = addPanelButton("1. Clear Spawned", () => {
   spawnedBalls.length = 0;
   spawnedBlocks.length = 0;
   pieces.length = 0;
@@ -670,7 +670,7 @@ addPanelButton("Clear Spawned", () => {
 });
 // Event 2: earthquake — shake all dynamic objects violently for 2 seconds
 const earthquake = { active: false, timeLeft: 0, intensity: 8 };
-addPanelButton("Earthquake", () => {
+const btnEarthquake = addPanelButton("2. Earthquake", () => {
   earthquake.active = true;
   earthquake.timeLeft = 2.0;
   flashStatus("Earthquake!");
@@ -678,7 +678,7 @@ addPanelButton("Earthquake", () => {
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
 let zeroG = { active: false, timeLeft: 0 };
 let gravityMultiplier = 1;
-addPanelButton("Zero-Gravity", () => {
+const btnZeroG = addPanelButton("3. Zero-Gravity", () => {
   zeroG.active = true;
   zeroG.timeLeft = 4.0;
   gravityMultiplier = -0.3; // mild anti-gravity
@@ -1000,6 +1000,11 @@ window.addEventListener("keydown", (e) => {
   }
   if (key === "c" && !e.repeat) {
     togglePanel();
+  }
+  if (panelOpen && !e.repeat) {
+    if (key === "1") btnClear.click();
+    else if (key === "2") btnEarthquake.click();
+    else if (key === "3") btnZeroG.click();
   }
   keys[key] = true;
 });
