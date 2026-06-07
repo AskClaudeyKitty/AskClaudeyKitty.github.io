@@ -636,6 +636,82 @@ const _origLoop = requestAnimationFrame;
 const goalHudInterval = setInterval(updateGoalHud, 100);
 window.addEventListener("beforeunload", () => clearInterval(goalHudInterval));
 
+// ── Control Panel (toggle with C) ──
+const controlPanel = document.createElement("div");
+controlPanel.id = "control-panel";
+controlPanel.style.cssText =
+  "position:fixed;top:80px;right:20px;display:none;flex-direction:column;gap:8px;" +
+  "padding:12px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);" +
+  "border-radius:10px;font-family:monospace;color:#fff;z-index:6;min-width:180px;" +
+  "backdrop-filter:blur(4px);";
+controlPanel.innerHTML =
+  '<div style="font-size:14px;opacity:0.7;margin-bottom:4px;">CONTROL PANEL</div>';
+function addPanelButton(label, onClick) {
+  const b = document.createElement("button");
+  b.textContent = label;
+  b.style.cssText =
+    "padding:8px 12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid " +
+    "rgba(255,255,255,0.3);border-radius:6px;font-family:monospace;cursor:pointer;" +
+    "transition:background 0.15s;font-size:13px;";
+  b.addEventListener("mouseenter", () => (b.style.background = "rgba(255,255,0,0.2)"));
+  b.addEventListener("mouseleave", () => (b.style.background = "rgba(255,255,255,0.1)"));
+  b.addEventListener("click", onClick);
+  controlPanel.appendChild(b);
+  return b;
+}
+// Event 1: clear all spawned objects (keeps red breakables, ball, player)
+addPanelButton("Clear Spawned", () => {
+  spawnedBalls.length = 0;
+  spawnedBlocks.length = 0;
+  pieces.length = 0;
+  // Remove all glued brick walls and any remaining loose bricks
+  brickWalls.length = 0;
+  flashStatus("Cleared all spawned objects");
+});
+// Event 2: earthquake — shake all dynamic objects violently for 2 seconds
+const earthquake = { active: false, timeLeft: 0, intensity: 8 };
+addPanelButton("Earthquake", () => {
+  earthquake.active = true;
+  earthquake.timeLeft = 2.0;
+  flashStatus("Earthquake!");
+});
+// Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
+let zeroG = { active: false, timeLeft: 0 };
+let gravityMultiplier = 1;
+addPanelButton("Zero-Gravity", () => {
+  zeroG.active = true;
+  zeroG.timeLeft = 4.0;
+  gravityMultiplier = -0.3; // mild anti-gravity
+  flashStatus("Zero-Gravity!");
+  setTimeout(() => {
+    gravityMultiplier = 3.0; // heavy slam-down for 0.5s
+    setTimeout(() => {
+      gravityMultiplier = 1.0;
+    }, 500);
+  }, 3500);
+});
+// Status flash message
+const statusMsg = document.createElement("div");
+statusMsg.style.cssText =
+  "position:fixed;top:60px;left:50%;transform:translateX(-50%);padding:6px 14px;" +
+  "background:rgba(0,0,0,0.7);color:#ff0;font-family:monospace;font-size:14px;" +
+  "border-radius:6px;pointer-events:none;z-index:7;opacity:0;transition:opacity 0.3s;";
+document.body.appendChild(statusMsg);
+let statusTimeout;
+function flashStatus(msg) {
+  statusMsg.textContent = msg;
+  statusMsg.style.opacity = "1";
+  clearTimeout(statusTimeout);
+  statusTimeout = setTimeout(() => (statusMsg.style.opacity = "0"), 1500);
+}
+document.body.appendChild(controlPanel);
+// Toggle panel with C
+let panelOpen = false;
+function togglePanel() {
+  panelOpen = !panelOpen;
+  controlPanel.style.display = panelOpen ? "flex" : "none";
+}
+
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
   slots: ["ball", "block", "spring", "heavy", "immovable", "wall", null, null, null], // 9 slots
@@ -921,6 +997,9 @@ window.addEventListener("keydown", (e) => {
   }
   if (key === "t" && !e.repeat) {
     useInventorySlot(playerInventory.selected);
+  }
+  if (key === "c" && !e.repeat) {
+    togglePanel();
   }
   keys[key] = true;
 });
@@ -1233,6 +1312,28 @@ let lastTime = 0;
 function loop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.1);
   lastTime = time;
+
+  // Earthquake: shake all dynamic objects randomly for `timeLeft` seconds.
+  if (earthquake.active) {
+    earthquake.timeLeft -= dt;
+    if (earthquake.timeLeft <= 0) {
+      earthquake.active = false;
+    } else {
+      const k = earthquake.intensity;
+      for (const b of spawnedBalls) {
+        b.vx += (Math.random() - 0.5) * k;
+        b.vy += Math.random() * k * 0.5;
+        b.vz += (Math.random() - 0.5) * k;
+      }
+      for (const b of spawnedBlocks) {
+        b.vx += (Math.random() - 0.5) * k;
+        b.vy += Math.random() * k * 0.5;
+        b.vz += (Math.random() - 0.5) * k;
+        b.vrx += (Math.random() - 0.5) * 4;
+        b.vrz += (Math.random() - 0.5) * 4;
+      }
+    }
+  }
 
   // Rotation from arrow keys
   const turnSpeed = 2.2;
@@ -2214,7 +2315,7 @@ if (!firstPerson && !player.dead) {
   }
   // Spawned balls and blocks (from inventory items)
   for (const b of spawnedBalls) {
-    b.vy -= 20 * dt;
+    b.vy -= 20 * gravityMultiplier * dt;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.z += b.vz * dt;
@@ -2233,7 +2334,7 @@ if (!firstPerson && !player.dead) {
     dynamicObjects.push({ kind: "sphere", x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
   }
   for (const b of spawnedBlocks) {
-    b.vy -= 20 * dt;
+    b.vy -= 20 * gravityMultiplier * dt;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.z += b.vz * dt;
