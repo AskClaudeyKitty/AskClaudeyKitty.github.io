@@ -1324,19 +1324,39 @@ function loop(time) {
     if (earthquake.timeLeft <= 0) {
       earthquake.active = false;
     } else {
-      const k = earthquake.intensity;
-      for (const b of spawnedBalls) {
-        b.vx += (Math.random() - 0.5) * k;
-        b.vy += Math.random() * k * 0.5;
-        b.vz += (Math.random() - 0.5) * k;
-      }
-      for (const b of spawnedBlocks) {
-        b.vx += (Math.random() - 0.5) * k;
-        b.vy += Math.random() * k * 0.5;
-        b.vz += (Math.random() - 0.5) * k;
-        b.vrx += (Math.random() - 0.5) * 4;
-        b.vrz += (Math.random() - 0.5) * 4;
-      }
+      // Tornado-like swirl: force all dynamic objects to orbit a tornado
+      // center, with a vertical lift + downward gravity for the floor.
+      const t = earthquake.timeLeft;
+      const intensity = earthquake.intensity;
+      // Tornado center slowly drifts so objects get flung in different directions
+      const cx = player.x + Math.cos(performance.now() * 0.001) * 4;
+      const cz = player.z + Math.sin(performance.now() * 0.001) * 4;
+      const swirlAll = (b, isBlock) => {
+        const ddx = b.x - cx, ddz = b.z - cz;
+        const dist = Math.hypot(ddx, ddz);
+        if (dist < 0.01) return;
+        // Tangential direction (90° rotated) + slight inward pull
+        const tnx = -ddz / dist;
+        const tnz = ddx / dist;
+        const inx = -ddx / dist;
+        const inz = -ddz / dist;
+        // Force scales with distance so far things get whipped harder
+        const force = intensity * (0.5 + Math.min(dist, 20) * 0.1);
+        b.vx += tnx * force + inx * 1.5;
+        b.vz += tnz * force + inz * 1.5;
+        // Strong upward lift
+        b.vy += 6 + Math.random() * 4;
+        // Tumble spin
+        if (isBlock) {
+          b.vrx += (Math.random() - 0.5) * 8;
+          b.vrz += (Math.random() - 0.5) * 8;
+        } else {
+          b.spinX += (Math.random() - 0.5) * 4;
+          b.spinZ += (Math.random() - 0.5) * 4;
+        }
+      };
+      for (const b of spawnedBalls) swirlAll(b, false);
+      for (const b of spawnedBlocks) swirlAll(b, true);
     }
   }
 
