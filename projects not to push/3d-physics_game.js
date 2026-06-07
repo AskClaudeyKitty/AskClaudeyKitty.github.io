@@ -1571,14 +1571,15 @@ function loop(time) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Tornado visual: draw spinning dust rings at the tornado center, plus
-  // a dark funnel column that's narrow at the base and wide at the top
-  // (classic tornado shape). Scales with the tornado size (F1-F5).
+  // Tornado visual: spinning dust rings + funnel with real depth so
+  // objects and the baseplate can occlude them naturally.
   if (tornadoVisual.alpha > 0) {
-    // Draw on top of everything by disabling depth test for these meshes
-    gl.disable(gl.DEPTH_TEST);
-    // Scale the funnel with the tornado size: F1 small, F5 huge
-    const sizeScale = (tornadoVisual.sizeScale ?? 1.0);
+    // Enable depth test so the funnel can be occluded by the baseplate
+    // and other geometry. Disable depth write so it doesn't z-fight
+    // with the dust rings above it.
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(false);
+    const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.3;
     // Dust rings — narrow at the base, wide at the top (tornado shape)
     for (let i = 0; i < 5; i++) {
@@ -1611,7 +1612,7 @@ function loop(time) {
         ),
       );
     }
-    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(true);
   }
 
   // Crowd update: walk in toward seats as day rises, out at night.
