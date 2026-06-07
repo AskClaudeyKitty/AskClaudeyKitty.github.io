@@ -1342,9 +1342,9 @@ function loop(time) {
       const cx = player.x + Math.cos(t) * 0.8;
       const cz = player.z + Math.sin(t) * 0.8;
       // Tornado center anchored ON the baseplate (floor top = y=0).
-      // Track player Y so when player rises, the funnel rises with them.
-      // Floor top = y=0, grass top = y=0.1. Always keep funnel above 0.
-      const cy = Math.max(0, player.y || 0);
+      // Tornado center hugs the player at ground level.
+      // baseY = ground (0) or player.y if in the air (e.g. sucked up)
+      const cy = player.y > 0.2 ? player.y : 0.15;
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1575,46 +1575,34 @@ function loop(time) {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Tornado visual: spinning dust rings + funnel with real depth so
-  // objects and the baseplate can occlude them naturally.
+  // Tornado visual: 8 stacked thin disks from ground up, each wider
+  // than the last, forming a classic tornado cone that sits on the ground.
   if (tornadoVisual.alpha > 0) {
-    // Enable depth test so the funnel can be occluded by the baseplate
-    // and other geometry. Disable depth write so it doesn't z-fight
-    // with the dust rings above it.
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(false);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
-    const baseY = tornadoVisual.cy ?? 0.3;
-    // Dust rings — narrow at the base, wide at the top (tornado shape).
-    // Each ring is 0.2 tall, centered above the grass top (y=0.1).
-    for (let i = 0; i < 5; i++) {
-      const ringY = baseY + 0.2 + i * 0.8 * sizeScale;
-      const ringR = (0.2 + i * 0.5) * sizeScale;
-      const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
+    const baseY = tornadoVisual.cy ?? 0.2;
+    // Number of segments and segment height
+    const segs = 10;
+    const segH = 0.9 * sizeScale;
+    const baseR = 0.15 * sizeScale;
+    const topR = 1.3 * sizeScale;
+    for (let i = 0; i < segs; i++) {
+      const t = i / (segs - 1);
+      // Bottom of this segment = baseY + i*segH
+      // Center of box = bottom + segH/2
+      const segCenterY = baseY + i * segH + segH / 2;
+      const segR = baseR + (topR - baseR) * t;
+      const buf = createBuffer(createBox(segR * 2, segH, segR, 0.45, 0.4, 0.32));
       drawMesh(
         buf,
         36,
         mat4Multiply(
           vp,
           mat4Multiply(
-            mat4Translate(tornadoVisual.cx, ringY, tornadoVisual.cz),
-            mat4RotateY(performance.now() * 0.004 + i * 0.4),
+            mat4Translate(tornadoVisual.cx, segCenterY, tornadoVisual.cz),
+            mat4RotateY(performance.now() * 0.004 + i * 0.3),
           ),
-        ),
-      );
-    }
-    // Funnel column: narrow at bottom, wide at top — typical tornado.
-    // Each box is 1.4 tall. Bottom of first segment must clear the grass top (y=0.1).
-    for (let i = 0; i < 4; i++) {
-      const colY = baseY + 0.8 + i * 1.4 * sizeScale;
-      const colR = (0.4 + i * 0.45) * sizeScale;
-      const buf = createBuffer(createBox(colR, 1.4 * sizeScale, colR, 0.3, 0.28, 0.24));
-      drawMesh(
-        buf,
-        36,
-        mat4Multiply(
-          vp,
-          mat4Translate(tornadoVisual.cx, colY, tornadoVisual.cz),
         ),
       );
     }
