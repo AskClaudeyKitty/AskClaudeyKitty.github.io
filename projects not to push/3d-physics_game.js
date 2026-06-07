@@ -1054,7 +1054,7 @@ function resolveDynamicCollisions() {
       if (a.pushable && !b.pushable) { aShare = 1; bShare = 0; }
       else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
       // Slop: ignore tiny overlaps to kill the warp from continuous re-push
-      if (overlap < 0.01) continue;
+      if (overlap < 0.001) continue;
       // Mass: prefer explicit mass if set, else default 1
       const ma = a.mass ?? 1;
       const mb = b.mass ?? 1;
@@ -1062,8 +1062,8 @@ function resolveDynamicCollisions() {
       // Correct position proportional to inverse mass
       const aPush = (mb / totalM) * aShare;
       const bPush = (ma / totalM) * bShare;
-      // If the overlap is large (deep merge), fully resolve it so they can separate.
-      const corrected = overlap < 0.3 ? 0.3 : overlap;
+      // Always fully resolve overlap so two touching blocks actually separate.
+      const corrected = overlap + 0.05;
       a.x -= nx * corrected * aPush;
       a.z -= nz * corrected * aPush;
       b.x += nx * corrected * bPush;
