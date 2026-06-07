@@ -2209,6 +2209,10 @@ if (!firstPerson && !player.dead) {
       w.vz *= 0.92;
       w.vrx *= 0.95;
       w.vrz *= 0.95;
+      if (Math.abs(w.vx) < 0.05) w.vx = 0;
+      if (Math.abs(w.vz) < 0.05) w.vz = 0;
+      if (Math.abs(w.vrx) < 0.05) w.vrx = 0;
+      if (Math.abs(w.vrz) < 0.05) w.vrz = 0;
     }
   }
   for (const b of spawnedBlocks) {
@@ -2222,12 +2226,19 @@ if (!firstPerson && !player.dead) {
     if (b.y < 0.2) {
       b.y = 0.2;
       b.vy = 0; // hard-zero on contact stops the warp
-      // Light friction so the post-impulse slide isn't killed in a single frame
-      b.vx *= 0.92;
-      b.vz *= 0.92;
+      // Friction (heavier blocks have more grip)
+      const fric = b.kind === "heavy" ? 0.85 : 0.92;
+      b.vx *= fric;
+      b.vz *= fric;
       b.vrx *= 0.95;
       b.vrz *= 0.95;
       b.vry *= 0.95;
+      // Hard stop when nearly still — kills the infinite drift
+      if (Math.abs(b.vx) < 0.05) b.vx = 0;
+      if (Math.abs(b.vz) < 0.05) b.vz = 0;
+      if (Math.abs(b.vrx) < 0.05) b.vrx = 0;
+      if (Math.abs(b.vrz) < 0.05) b.vrz = 0;
+      if (Math.abs(b.vry) < 0.05) b.vry = 0;
       // Settle rx and rz to 0 (face down) — hard snap if very close, no per-frame drift
       if (Math.abs(b.rx) < 0.05) b.rx = 0;
       else b.rx += (0 - b.rx) * 0.1;
