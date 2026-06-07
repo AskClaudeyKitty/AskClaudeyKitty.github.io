@@ -2055,11 +2055,12 @@ if (!firstPerson && !player.dead) {
     if (b.y < 0.2) {
       b.y = 0.2;
       b.vy = 0; // hard-zero on contact stops the warp
-      b.vx *= 0.5;
-      b.vz *= 0.5;
-      b.vrx *= 0.6;
-      b.vrz *= 0.6;
-      b.vry *= 0.6;
+      // Light friction so the post-impulse slide isn't killed in a single frame
+      b.vx *= 0.92;
+      b.vz *= 0.92;
+      b.vrx *= 0.95;
+      b.vrz *= 0.95;
+      b.vry *= 0.95;
       // Settle rx and rz to 0 (face down) — hard snap if very close, no per-frame drift
       if (Math.abs(b.rx) < 0.05) b.rx = 0;
       else b.rx += (0 - b.rx) * 0.1;
@@ -2089,6 +2090,25 @@ if (!firstPerson && !player.dead) {
   const blockHalf = 0.2;
   for (const b of spawnedBlocks) {
     if (b.y < blockHalf) b.y = blockHalf;
+  }
+
+  // Anti-stick pass: for spawned blocks sitting on the floor, push any pair
+  // that's overlapping in 2D apart by the full overlap + a small buffer.
+  for (let i = 0; i < spawnedBlocks.length; i++) {
+    for (let j = i + 1; j < spawnedBlocks.length; j++) {
+      const a = spawnedBlocks[i];
+      const b = spawnedBlocks[j];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const minD = 0.4; // 2 * halfX
+      if (dist >= minD || dist < 1e-4) continue;
+      const overlap = (minD - dist) + 0.02;
+      const nx = dx / dist, nz = dz / dist;
+      a.x -= nx * overlap * 0.5;
+      a.z -= nz * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.z += nz * overlap * 0.5;
+    }
   }
 
   // Render spawned balls (white sphere + black pentagon overlay) with spin
