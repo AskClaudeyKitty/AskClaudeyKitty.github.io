@@ -873,6 +873,7 @@ function useInventorySlot(idx) {
         brickWalls.push({
           x, y, z,
           alive: true,
+          glue: true,
           vx: 0, vy: 0, vz: 0,
           vrx: 0, vry: 0, vrz: 0,
           rx: 0, ry: 0, rz: 0,
@@ -997,7 +998,7 @@ function doKick() {
     const dx = w.x - player.x, dz = w.z - player.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     if (dist > 3.5 || dist < 1e-4) continue;
-    if (Math.abs(w.y - 0.2) > 1.2) continue;
+    if (w.y > 2.5) continue;
     const kx = dx / dist, kz = dz / dist;
     unglueWall(w, kx, kz, 3.0);
   }
@@ -1923,7 +1924,7 @@ for (const w of brickWalls) {
   const ddx = w.x - player.x, ddz = w.z - player.z;
   const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
   if (ddist >= 0.8 || ddist < 1e-4) continue;
-  if (Math.abs(w.y - 0.2) > 1.5) continue;
+  if (w.y > 2.5) continue; // ignore very high bricks
   const sp = Math.sqrt(mx * mx + mz * mz);
   // Walking/running: unglue. Standing still: just block.
   if (sp > 0.05) {
