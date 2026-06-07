@@ -1054,7 +1054,7 @@ function resolveDynamicCollisions() {
       if (a.pushable && !b.pushable) { aShare = 1; bShare = 0; }
       else if (!a.pushable && b.pushable) { aShare = 0; bShare = 1; }
       // Slop: ignore tiny overlaps to kill the warp from continuous re-push
-      if (overlap < 0.001) continue;
+      if (overlap < 0.01) continue;
       // Mass: prefer explicit mass if set, else default 1
       const ma = a.mass ?? 1;
       const mb = b.mass ?? 1;
@@ -1062,28 +1062,21 @@ function resolveDynamicCollisions() {
       // Correct position proportional to inverse mass
       const aPush = (mb / totalM) * aShare;
       const bPush = (ma / totalM) * bShare;
-      // Always fully resolve overlap so two touching blocks actually separate.
-      const corrected = overlap + 0.05;
-      a.x -= nx * corrected * aPush;
-      a.z -= nz * corrected * aPush;
-      b.x += nx * corrected * bPush;
-      b.z += nz * corrected * bPush;
+      // Position correction
+      a.x -= nx * overlap * aPush;
+      a.z -= nz * overlap * aPush;
+      b.x += nx * overlap * bPush;
+      b.z += nz * overlap * bPush;
       // Impulse: exchange momentum along normal so blocks separate naturally
       // vRel = (vb - va) . n  (along collision normal n points a->b)
       const va = a.ref ? { x: a.ref.vx ?? 0, z: a.ref.vz ?? 0 } : { x: 0, z: 0 };
       const vb = b.ref ? { x: b.ref.vx ?? 0, z: b.ref.vz ?? 0 } : { x: 0, z: 0 };
       // n is from a to b, so vb.going toward a is negative along n
       const vRelN = (vb.x - va.x) * nx + (vb.z - va.z) * nz;
-      // If they're touching and not separating fast enough, kick them apart.
-      // This handles the case where both are stationary and re-merge each frame.
-      const minSepSpeed = 0.5; // minimum normal speed to push them apart
-      if (vRelN < minSepSpeed) {
-        // Choose impulse to give at least minSepSpeed of separation velocity.
-        // If approaching (vRelN < 0), use elastic-like response.
-        // If static (vRelN ~= 0), inject the minimum separation kick.
-        const targetVRel = Math.max(minSepSpeed, -vRelN);
-        const e = vRelN < 0 ? 0.3 : 0;
-        const j = ((1 + e) * vRelN - targetVRel) / (1 / ma + 1 / mb);
+      if (vRelN < 0) {
+        // approaching: apply elastic impulse with restitution
+        const e = 0.3; // low restitution -> blocks don't bounce much
+        const j = -(1 + e) * vRelN / (1 / ma + 1 / mb);
         const jx = j * nx;
         const jz = j * nz;
         if (a.ref) {
@@ -2062,22 +2055,11 @@ if (!firstPerson && !player.dead) {
     if (b.y < 0.2) {
       b.y = 0.2;
       b.vy = 0; // hard-zero on contact stops the warp
-      // Only damp if the block is moving very slowly — otherwise let it slide.
-      const speedSq = b.vx * b.vx + b.vz * b.vz;
-      if (speedSq < 0.04) {
-        b.vx *= 0.5;
-        b.vz *= 0.5;
-        b.vrx *= 0.6;
-        b.vrz *= 0.6;
-        b.vry *= 0.6;
-      } else {
-        // Light friction so they keep gliding a bit
-        b.vx *= 0.95;
-        b.vz *= 0.95;
-        b.vrx *= 0.95;
-        b.vrz *= 0.95;
-        b.vry *= 0.95;
-      }
+      b.vx *= 0.5;
+      b.vz *= 0.5;
+      b.vrx *= 0.6;
+      b.vrz *= 0.6;
+      b.vry *= 0.6;
       // Settle rx and rz to 0 (face down) — hard snap if very close, no per-frame drift
       if (Math.abs(b.rx) < 0.05) b.rx = 0;
       else b.rx += (0 - b.rx) * 0.1;
