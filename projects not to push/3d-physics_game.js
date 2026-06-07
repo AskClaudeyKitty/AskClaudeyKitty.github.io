@@ -779,6 +779,7 @@ function useInventorySlot(idx) {
     }
     // Spawned blocks
     for (const b of spawnedBlocks) {
+      if (b.kind === "immovable") continue;
       const ddx = b.x - player.x, ddz = b.z - player.z;
       const dd = Math.hypot(ddx, ddz);
       if (dd < radius && dd > 0.01) {
@@ -965,6 +966,7 @@ function doKick() {
   }
   // Kick spawned blocks
   for (const sblk of spawnedBlocks) {
+    if (sblk.kind === "immovable") continue;
     const dx = sblk.x - player.x,
       dz = sblk.z - player.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
@@ -1863,6 +1865,7 @@ for (const b of spawnedBalls) {
 }
 // Player push spawned blocks
 for (const b of spawnedBlocks) {
+  if (b.kind === "immovable") continue;
   const ddx = b.x - player.x, ddz = b.z - player.z;
   const ddist = Math.sqrt(ddx * ddx + ddz * ddz);
   const minD = 0.8;
