@@ -1523,7 +1523,10 @@ function loop(time) {
   dayTime = (dayTime + dt / dayPeriod) % 1;
   const sunAngle = dayTime * Math.PI * 2;
   const sunX = Math.cos(sunAngle) * 60;
-  const sunY = Math.sin(sunAngle) * 40 + 10;
+  // Sun Y stays well above the player so it's always visible in the sky.
+  // Without this, getting sucked up by a tornado puts the player above the sun.
+  const sunYBase = Math.sin(sunAngle) * 40 + 10;
+  const sunY = Math.max(sunYBase, player.y + 30);
   const sunZ = -40;
   sunPos.x = sunX;
   sunPos.y = sunY;
