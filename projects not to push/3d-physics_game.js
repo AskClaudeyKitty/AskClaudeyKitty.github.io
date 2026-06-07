@@ -2086,35 +2086,10 @@ if (!firstPerson && !player.dead) {
     }
   }
 
-  // Y-stacking: lift each spawned block to sit on top of the nearest block
-  // (or the ground). This keeps them from visually merging on top of each other.
-  const blockHalf = 0.2; // half-size of 0.4 cube
+  // Y-stacking: just keep spawned blocks above the ground.
+  const blockHalf = 0.2;
   for (const b of spawnedBlocks) {
-    // Find highest top surface under this block
-    let supportY = blockHalf; // ground top
-    // Horizontal radius for stacking support: must overlap on xz AND other.y <= b.y + 0.4
-    // (so the other block is at-or-below this one, not above)
-    for (const other of spawnedBlocks) {
-      if (other === b) continue;
-      const dx = other.x - b.x, dz = other.z - b.z;
-      if (dx * dx + dz * dz > 0.05) continue; // need xz overlap
-      if (other.y > b.y + 0.3) continue; // other is above, not a support
-      const topY = other.y + blockHalf;
-      if (topY > supportY) supportY = topY;
-    }
-    const restingY = supportY + blockHalf;
-    if (b.y <= restingY + 0.05 && b.vy <= 0) {
-      b.y = restingY;
-      // No bounce: just stop. The block then sits. vx/vz friction still applies.
-      b.vy = 0;
-      b.vx *= 0.85;
-      b.vz *= 0.85;
-      b.vrx *= 0.7;
-      b.vrz *= 0.7;
-      b.vry *= 0.7;
-    } else if (b.y < blockHalf) {
-      b.y = blockHalf;
-    }
+    if (b.y < blockHalf) b.y = blockHalf;
   }
 
   // Render spawned balls (white sphere + black pentagon overlay) with spin
