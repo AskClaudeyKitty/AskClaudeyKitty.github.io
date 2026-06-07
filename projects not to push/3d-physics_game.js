@@ -1362,7 +1362,7 @@ function loop(time) {
           b.spinZ += (Math.random() - 0.5) * 3;
         }
       };
-      // Pull the player toward the tornado too
+      // Pull the player toward the tornado too (xz swirl + inward + lift)
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
       if (pdist > 0.5) {
@@ -1373,6 +1373,11 @@ function loop(time) {
         const pforce = intensity * Math.min(1 + pdist * 0.05, 3);
         player.x += (ptnx * pforce + pinx) * dt;
         player.z += (ptnz * pforce + pinz) * dt;
+      }
+      // Strong upward lift on the player — suck them up
+      if (pdist < 8) {
+        const suck = (1 - Math.min(pdist, 8) / 8) * 12;
+        player.vy = Math.min((player.vy ?? 0) + suck, 15);
       }
       for (const b of spawnedBalls) swirl(b, false);
       for (const b of spawnedBlocks) swirl(b, true);
