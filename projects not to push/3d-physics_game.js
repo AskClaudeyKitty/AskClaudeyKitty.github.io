@@ -678,14 +678,17 @@ const tornadoSizes = [
   { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 2.5 },
 ];
 const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
-const tornadoVisual = { cx: 0, cy: 0.3, cz: 0, alpha: 0 };
+const tornadoVisual = { cx: 0, cy: 0.3, cz: 0, anchorX: 0, anchorZ: 0, alpha: 0 };
 const btnEarthquake = addPanelButton("2. Tornado", () => {
   const size = tornadoSizes[Math.floor(Math.random() * tornadoSizes.length)];
   earthquake.size = size;
   earthquake.intensity = size.intensity;
   earthquake.timeLeft = size.dur;
   earthquake.active = true;
-  console.log("Tornado " + size.name + " activated");
+  // Anchor the tornado center in world space at the player's current position
+  tornadoVisual.anchorX = player.x;
+  tornadoVisual.anchorZ = player.z;
+  console.log("Tornado " + size.name + " activated at (" + player.x.toFixed(1) + ", " + player.z.toFixed(1) + ")");
   flashStatus("Tornado " + size.name + "!");
 });
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
@@ -1331,7 +1334,8 @@ function loop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.1);
   lastTime = time;
 
-  // Tornado: swirl all dynamic objects (and the player) around a center.
+  // Tornado: swirl all dynamic objects (and the player) around a center
+  // that is ANCHORED in world space at the moment the tornado starts.
   if (earthquake.active) {
     earthquake.timeLeft -= dt;
     if (earthquake.timeLeft <= 0) {
@@ -1339,14 +1343,13 @@ function loop(time) {
     } else {
       const intensity = earthquake.intensity;
       const size = earthquake.size;
-      // Tornado center sits a few units in front of the player so the
-      // player/camera is OUTSIDE the funnel and can see it as a 3D object.
+      // Anchor the tornado center to the world position where the player
+      // was when the tornado started. The visual stays put so the camera
+      // can move around it like a real 3D object.
       const t = performance.now() * 0.001;
-      const forwardX = Math.sin(player.angle || 0);
-      const forwardZ = Math.cos(player.angle || 0);
-      const wobble = 0.4;
-      const cx = player.x + forwardX * 3.0 + Math.cos(t) * wobble;
-      const cz = player.z + forwardZ * 3.0 + Math.sin(t) * wobble;
+      const wobble = 0.3;
+      const cx = tornadoVisual.anchorX + Math.cos(t) * wobble;
+      const cz = tornadoVisual.anchorZ + Math.sin(t) * wobble;
       // Stay grounded at y=0.15 (above grass top). Only follow player up
       // when player is clearly being lifted off the ground.
       const cy = player.y > 1.5 ? player.y : 0.15;
