@@ -2226,8 +2226,11 @@ if (!firstPerson && !player.dead) {
     if (b.y < 0.2) {
       b.y = 0.2;
       b.vy = 0; // hard-zero on contact stops the warp
-      // Friction (heavier blocks have more grip)
-      const fric = b.kind === "heavy" ? 0.85 : 0.92;
+      // Stronger friction on grass court area: blocks slow down fast
+      const onGrass =
+        Math.abs(b.x - courtCenterX) < courtW &&
+        Math.abs(b.z - courtCenterZ) < courtL;
+      const fric = onGrass ? 0.6 : (b.kind === "heavy" ? 0.85 : 0.92);
       b.vx *= fric;
       b.vz *= fric;
       b.vrx *= 0.95;
