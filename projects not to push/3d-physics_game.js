@@ -1602,52 +1602,6 @@ function loop(time) {
     if (c.moving) c.walkPhase += dt * 6;
   }
 
-  // Tornado visual: drawn AFTER world geometry, BEFORE crowd/player so
-  // people always render on top of the funnel (no draw-over).
-  if (tornadoVisual.alpha > 0) {
-    gl.disable(gl.DEPTH_TEST);
-    const sizeScale = tornadoVisual.sizeScale ?? 1.0;
-    const baseY = tornadoVisual.cy ?? 0.15;
-    const segs = 8;
-    const segH = 0.8 * sizeScale;
-    const baseR = 0.3 * sizeScale;
-    const topR = 1.4 * sizeScale;
-    for (let i = 0; i < segs; i++) {
-      const t = i / (segs - 1);
-      const segCenterY = baseY + i * segH + segH / 2;
-      const segR = baseR + (topR - baseR) * t;
-      const buf = createBuffer(createBox(segR * 2, segH, segR, 0.5, 0.45, 0.35));
-      drawMesh(
-        buf,
-        36,
-        mat4Multiply(
-          vp,
-          mat4Multiply(
-            mat4Translate(tornadoVisual.cx, segCenterY, tornadoVisual.cz),
-            mat4RotateY(performance.now() * 0.004 + i * 0.3),
-          ),
-        ),
-      );
-    }
-    // Bright cap on top so the funnel reads as a 3D object from any angle
-    const topCenterY = baseY + segs * segH + 0.3;
-    const topBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.7, 0.65, 0.5));
-    drawMesh(
-      topBuf,
-      36,
-      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, topCenterY, tornadoVisual.cz)),
-    );
-    // Bright ring on the ground so the base is clearly visible from above
-    const groundY = 0.05;
-    const groundR = baseR * 1.2;
-    const groundBuf = createBuffer(createBox(groundR * 2, 0.05, groundR * 2, 0.8, 0.75, 0.5));
-    drawMesh(
-      groundBuf,
-      36,
-      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, groundY, tornadoVisual.cz)),
-    );
-  }
-
   // Crowd render: same body/head/limb as player; walk when moving, arms-up cheer when at seat
   for (const c of crowd) {
     const presence = player.ending || player.sinking
@@ -2657,6 +2611,52 @@ if (!firstPerson && !player.dead) {
       r[8] = cx * sy * cz + sx * sz; r[9] = cx * sy * sz - sx * cz; r[10] = cx * cy;
       drawMesh(brickBuf, 36, mat4Multiply(m, r));
     }
+  }
+
+  // Tornado visual: rendered LAST so it draws on top of EVERYTHING
+  // (baseplate, sun, crowd, player) — always visible.
+  if (tornadoVisual.alpha > 0) {
+    gl.disable(gl.DEPTH_TEST);
+    const sizeScale = tornadoVisual.sizeScale ?? 1.0;
+    const baseY = tornadoVisual.cy ?? 0.15;
+    const segs = 8;
+    const segH = 0.8 * sizeScale;
+    const baseR = 0.3 * sizeScale;
+    const topR = 1.4 * sizeScale;
+    for (let i = 0; i < segs; i++) {
+      const t = i / (segs - 1);
+      const segCenterY = baseY + i * segH + segH / 2;
+      const segR = baseR + (topR - baseR) * t;
+      const buf = createBuffer(createBox(segR * 2, segH, segR, 0.5, 0.45, 0.35));
+      drawMesh(
+        buf,
+        36,
+        mat4Multiply(
+          vp,
+          mat4Multiply(
+            mat4Translate(tornadoVisual.cx, segCenterY, tornadoVisual.cz),
+            mat4RotateY(performance.now() * 0.004 + i * 0.3),
+          ),
+        ),
+      );
+    }
+    // Bright cap on top
+    const topCenterY = baseY + segs * segH + 0.3;
+    const topBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.7, 0.65, 0.5));
+    drawMesh(
+      topBuf,
+      36,
+      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, topCenterY, tornadoVisual.cz)),
+    );
+    // Bright ring on the ground
+    const groundY = 0.05;
+    const groundR = baseR * 1.2;
+    const groundBuf = createBuffer(createBox(groundR * 2, 0.05, groundR * 2, 0.8, 0.75, 0.5));
+    drawMesh(
+      groundBuf,
+      36,
+      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, groundY, tornadoVisual.cz)),
+    );
   }
 
   requestAnimationFrame(loop);
