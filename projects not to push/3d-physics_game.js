@@ -1337,14 +1337,17 @@ function loop(time) {
     } else {
       const intensity = earthquake.intensity;
       const size = earthquake.size;
-      // Tornado center stays RIGHT ON the player (small orbit for life)
+      // Tornado center sits a few units in front of the player so the
+      // player/camera is OUTSIDE the funnel and can see it as a 3D object.
       const t = performance.now() * 0.001;
-      const cx = player.x + Math.cos(t) * 0.8;
-      const cz = player.z + Math.sin(t) * 0.8;
-      // Tornado center anchored ON the baseplate (floor top = y=0).
-      // Tornado center hugs the player at ground level.
-      // baseY = ground (0) or player.y if in the air (e.g. sucked up)
-      const cy = player.y > 0.2 ? player.y : 0.15;
+      const forwardX = Math.sin(player.angle || 0);
+      const forwardZ = Math.cos(player.angle || 0);
+      const wobble = 0.4;
+      const cx = player.x + forwardX * 3.0 + Math.cos(t) * wobble;
+      const cz = player.z + forwardZ * 3.0 + Math.sin(t) * wobble;
+      // Stay grounded at y=0.15 (above grass top). Only follow player up
+      // when player is clearly being lifted off the ground.
+      const cy = player.y > 1.5 ? player.y : 0.15;
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1583,10 +1586,10 @@ function loop(time) {
     gl.depthMask(false);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.15;
-    const segs = 10;
-    const segH = 1.2 * sizeScale;
-    const baseR = 0.4 * sizeScale;
-    const topR = 2.5 * sizeScale;
+    const segs = 8;
+    const segH = 0.8 * sizeScale;
+    const baseR = 0.3 * sizeScale;
+    const topR = 1.4 * sizeScale;
     for (let i = 0; i < segs; i++) {
       const t = i / (segs - 1);
       // Bottom of segment i is at baseY + i*segH
