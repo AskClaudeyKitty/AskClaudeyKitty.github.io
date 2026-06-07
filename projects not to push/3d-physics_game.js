@@ -670,6 +670,7 @@ const btnClear = addPanelButton("1. Clear Spawned", () => {
 });
 // Event 2: tornado — swirl all dynamic objects around the player for 3 seconds
 const earthquake = { active: false, timeLeft: 0, intensity: 3 };
+const tornadoVisual = { cx: 0, cz: 0, alpha: 0 };
 const btnEarthquake = addPanelButton("2. Tornado", () => {
   earthquake.active = true;
   earthquake.timeLeft = 3.0;
@@ -1318,33 +1319,34 @@ function loop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.1);
   lastTime = time;
 
-  // Earthquake: shake all dynamic objects randomly for `timeLeft` seconds.
+  // Tornado: swirl all dynamic objects (and the player) around a center.
   if (earthquake.active) {
     earthquake.timeLeft -= dt;
     if (earthquake.timeLeft <= 0) {
       earthquake.active = false;
     } else {
-      // Tornado-like swirl: force all dynamic objects to orbit a tornado
-      // center, with a vertical lift + downward gravity for the floor.
       const intensity = earthquake.intensity;
-      // Tornado center slowly drifts so objects get flung in different directions
+      // Tornado center slowly orbits the player
       const cx = player.x + Math.cos(performance.now() * 0.001) * 3;
       const cz = player.z + Math.sin(performance.now() * 0.001) * 3;
-      const swirlAll = (b, isBlock) => {
+      // Stash for the visual draw later (after vp is built)
+      tornadoVisual.cx = cx;
+      tornadoVisual.cz = cz;
+      tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
+      const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
         const dist = Math.hypot(ddx, ddz);
         if (dist < 0.01) return;
-        // Tangential direction (90° rotated) + slight inward pull
+        // Tangential direction (90° rotated)
         const tnx = -ddz / dist;
         const tnz = ddx / dist;
-        // Weaker inward so things don't all collapse to center
-        const inx = -ddx / dist * 0.3;
-        const inz = -ddz / dist * 0.3;
-        // Tangential force scaled by distance (but capped) so far things whip
+        // Strong inward pull toward the tornado axis
+        const inx = -ddx / dist * 1.5;
+        const inz = -ddz / dist * 1.5;
         const force = intensity * Math.min(1 + dist * 0.05, 3);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
-        // Moderate upward lift (clamped so things don't fly to orbit)
+        // Lift
         b.vy = Math.min(b.vy + 3, 8);
         // Cap horizontal speed
         const spd = Math.hypot(b.vx, b.vz);
@@ -1352,7 +1354,6 @@ function loop(time) {
           b.vx = b.vx / spd * 25;
           b.vz = b.vz / spd * 25;
         }
-        // Tumble spin
         if (isBlock) {
           b.vrx += (Math.random() - 0.5) * 6;
           b.vrz += (Math.random() - 0.5) * 6;
@@ -1361,9 +1362,23 @@ function loop(time) {
           b.spinZ += (Math.random() - 0.5) * 3;
         }
       };
-      for (const b of spawnedBalls) swirlAll(b, false);
-      for (const b of spawnedBlocks) swirlAll(b, true);
+      // Pull the player toward the tornado too
+      const pdx = player.x - cx, pdz = player.z - cz;
+      const pdist = Math.hypot(pdx, pdz);
+      if (pdist > 0.5) {
+        const ptnx = -pdz / pdist;
+        const ptnz = pdx / pdist;
+        const pinx = -pdx / pdist * 1.0;
+        const pinz = -pdz / pdist * 1.0;
+        const pforce = intensity * Math.min(1 + pdist * 0.05, 3);
+        player.x += (ptnx * pforce + pinx) * dt;
+        player.z += (ptnz * pforce + pinz) * dt;
+      }
+      for (const b of spawnedBalls) swirl(b, false);
+      for (const b of spawnedBlocks) swirl(b, true);
     }
+  } else {
+    tornadoVisual.alpha = 0;
   }
 
   // Rotation from arrow keys
@@ -1517,6 +1532,33 @@ function loop(time) {
   // Render
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Tornado visual: draw spinning dust rings at the tornado center.
+  if (tornadoVisual.alpha > 0) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    for (let i = 0; i < 6; i++) {
+      const ringY = 0.5 + i * 1.0;
+      const ringR = 0.6 + i * 0.5;
+      const buf = createBuffer(
+        createBox(ringR * 2, 0.15, 0.15, 0.7, 0.65, 0.5, tornadoVisual.alpha),
+      );
+      drawMesh(
+        buf,
+        36,
+        mat4Multiply(
+          vp,
+          mat4Multiply(
+            mat4Translate(tornadoVisual.cx, ringY, tornadoVisual.cz),
+            mat4RotateY(performance.now() * 0.004 + i * 0.4),
+          ),
+        ),
+      );
+    }
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
 
   // Crowd update: walk in toward seats as day rises, out at night.
   for (const c of crowd) {
