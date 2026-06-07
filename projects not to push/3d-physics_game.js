@@ -376,6 +376,10 @@ const breakables = [
 ];
 const breakableBuf = createBuffer(createBox(1, 1, 1, 0.85, 0.2, 0.2));
 
+// ── Brick walls (slot 6) — many small breakable bricks in a grid ──
+const brickWalls = [];
+const brickBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.66, 0.36, 0.22));
+
 // ── Physics pieces (spawned when red blocks break) ──
 const pieces = [];
 const pieceBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.85, 0.2, 0.2));
@@ -634,7 +638,7 @@ window.addEventListener("beforeunload", () => clearInterval(goalHudInterval));
 
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
-  slots: ["ball", "block", "spring", null, null, null, null, null, null], // 9 slots
+  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", null, null, null], // 9 slots
   selected: 0, // 0-8
 };
 const invHud = document.createElement("div");
@@ -645,6 +649,9 @@ const slotIcons = {
   ball: '<div style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0%,#ddd 25%,#888 80%);box-shadow:inset -2px -2px 4px rgba(0,0,0,0.4);"></div>',
   block: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#7af,#35c);border-radius:3px;box-shadow:inset -2px -2px 3px rgba(0,0,0,0.3);"></div>',
   spring: '<div style="font-size:20px;line-height:1;">👊</div>',
+  heavy: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#555,#222);border-radius:3px;box-shadow:inset -2px -2px 3px rgba(0,0,0,0.6);"></div>',
+  immovable: '<div style="width:22px;height:22px;background:repeating-linear-gradient(45deg,#888,#888 4px,#555 4px,#555 8px);border-radius:3px;border:1px solid #222;"></div>',
+  wall: '<div style="width:22px;height:22px;background:repeating-linear-gradient(0deg,#a85,#a85 3px,#864 3px,#864 6px);border-radius:2px;"></div>',
   _default: '<div style="font-size:18px;opacity:0.4;">·</div>',
 };
 for (let i = 0; i < 9; i++) {
@@ -807,6 +814,60 @@ function useInventorySlot(idx) {
         p.vx += (ddx / dd) * power;
         p.vy = 6;
         p.vz += (ddz / dd) * power;
+      }
+    }
+  } else if (idx === 3) {
+    // Slot 4: heavy block — larger, darker, big mass, smashes walls
+    const buf = makePieceBuf(0.35, 0.35, 0.4);
+    spawnedBlocks.push({
+      x: spawnX, z: spawnZ, y: 0.4,
+      vx: fx * 2, vy: 0, vz: fz * 2,
+      rx: Math.random() * Math.PI, ry: Math.random() * Math.PI, rz: Math.random() * Math.PI,
+      vrx: (Math.random() - 0.5) * 4, vry: (Math.random() - 0.5) * 4, vrz: (Math.random() - 0.5) * 4,
+      buf, color: [0.35, 0.35, 0.4], settled: false,
+      kind: "heavy", mass: 8, half: 0.3,
+    });
+  } else if (idx === 4) {
+    // Slot 5: immovable stone block — pushable: false, mass 100
+    const buf = makePieceBuf(0.5, 0.5, 0.5);
+    spawnedBlocks.push({
+      x: spawnX, z: spawnZ, y: 0.5,
+      vx: 0, vy: 0, vz: 0,
+      rx: 0, ry: 0, rz: 0,
+      vrx: 0, vry: 0, vrz: 0,
+      buf, color: [0.5, 0.5, 0.5], settled: true,
+      kind: "immovable", mass: 100, half: 0.5,
+    });
+  } else if (idx === 5) {
+    // Slot 6: brick wall — a 4-wide x 3-tall grid of brick pieces
+    const wallW = 4, wallH = 3;
+    const brickHalf = 0.2;
+    const brickSize = brickHalf * 2;
+    const totalW = wallW * brickSize;
+    // Wall faces away from player (toward where player is looking)
+    // Bricks span the player's left/right perpendicular to facing direction
+    const px = -fz; // perpendicular x
+    const pz = fx;  // perpendicular z
+    const startX = spawnX - (px * totalW) / 2 + (brickHalf * px);
+    const startZ = spawnZ - (pz * totalW) / 2 + (brickHalf * pz);
+    const wallX = spawnX;
+    const wallZ = spawnZ;
+    for (let row = 0; row < wallH; row++) {
+      // Stagger every other row for brick pattern
+      const offset = (row % 2) * brickSize * 0.5;
+      const cols = (row % 2) ? wallW - 1 : wallW;
+      for (let col = 0; col < cols; col++) {
+        const x = startX + px * (col * brickSize + offset) + fx * row * brickSize;
+        const z = startZ + pz * (col * brickSize + offset) + fz * row * brickSize;
+        const y = brickSize + row * brickSize;
+        brickWalls.push({
+          x, y, z,
+          alive: true,
+          vx: 0, vy: 0, vz: 0,
+          vrx: 0, vry: 0, vrz: 0,
+          rx: 0, ry: 0, rz: 0,
+          wallX, wallZ,
+        });
       }
     }
   }
@@ -1077,6 +1138,21 @@ function resolveDynamicCollisions() {
       a.z -= nz * overlap * aPush;
       b.x += nx * overlap * bPush;
       b.z += nz * overlap * bPush;
+      // Brick glue break: a heavy (mass >= 4) pushable or the main ball
+      // smashes the glue on any brick wall it touches.
+      const breakGlue = (obj) => {
+        if (obj && obj.ref && obj.ref.glue && obj.ref.wallX !== undefined) {
+          obj.ref.glue = false;
+          // Inherit some velocity from the impactor
+          const ivx = obj.ref.vx ?? 0;
+          const ivz = obj.ref.vz ?? 0;
+          obj.ref.vx = ivx + nx * 1.0;
+          obj.ref.vz = ivz + nz * 1.0;
+          obj.ref.vy = 1.0;
+        }
+      };
+      breakGlue(a);
+      breakGlue(b);
       // Impulse: exchange momentum along normal so blocks separate naturally
       // vRel = (vb - va) . n  (along collision normal n points a->b)
       const va = a.ref ? { x: a.ref.vx ?? 0, z: a.ref.vz ?? 0 } : { x: 0, z: 0 };
@@ -1964,6 +2040,46 @@ for (const b of breakables) {
   }
 }
 
+// Ball collides with brick walls: if glued, ball bounces; if loose, bounce + impart velocity
+{
+  const ballR = 0.4;
+  for (const w of brickWalls) {
+    if (!w.alive) continue;
+    const dx = ball.x - w.x, dz = ball.z - w.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist >= 0.6) continue;
+    if (Math.abs(ball.y - w.y) > 1.0) continue;
+    if (dist < 1e-4) continue;
+    const nx = dx / dist, nz = dz / dist;
+    const overlap = 0.6 - dist + 0.01;
+    ball.x += nx * overlap;
+    ball.z += nz * overlap;
+    // Reflect ball velocity along normal
+    const vDotN = ball.vx * nx + ball.vz * nz;
+    if (vDotN < 0) {
+      ball.vx -= 2 * vDotN * nx;
+      ball.vz -= 2 * vDotN * nz;
+      ball.vx *= 0.7;
+      ball.vz *= 0.7;
+    }
+    // If glued, glue can break when ball hits hard
+    if (w.glue) {
+      const speed = Math.hypot(ball.vx, ball.vz);
+      if (speed > 4) {
+        w.glue = false;
+        w.vx = -nx * 3;
+        w.vz = -nz * 3;
+        w.vy = 2;
+      }
+    } else {
+      // Loose brick: impart velocity to brick too
+      w.vx = -nx * 2;
+      w.vz = -nz * 2;
+      w.vy = 1;
+    }
+  }
+}
+
 if (!firstPerson && !player.dead) {
   // Character
   const charY = player.y;
@@ -2030,6 +2146,11 @@ if (!firstPerson && !player.dead) {
   if (ball.y > -2) regObj(ball.x, ball.z, 0.4, true);
   for (const c of crowd) regObj(c.x, c.z, 0.4, true);
   for (const b of breakables) if (b.alive) regObj(b.x, b.z, 0.5, false);
+  // Brick walls: bricks as OBBs (pushable when their glue is broken)
+  for (const w of brickWalls) {
+    if (!w.alive) continue;
+    dynamicObjects.push({ kind: "obb", x: w.x, z: w.z, halfX: 0.2, halfZ: 0.2, angle: 0, pushable: w.glue === false, ref: w, mass: 0.5 });
+  }
   // Wrap pieces so we can write back after resolution.
   for (const p of pieces) {
     dynamicObjects.push({ kind: "sphere", x: p.x, z: p.z, r: 0.2, pushable: true, ref: p });
@@ -2053,6 +2174,28 @@ if (!firstPerson && !player.dead) {
       b.spinZ *= 0.95;
     }
     dynamicObjects.push({ kind: "sphere", x: b.x, z: b.z, r: 0.4, pushable: true, ref: b });
+  }
+  // Brick walls: glue holds bricks in place until something heavy hits them.
+  for (const w of brickWalls) {
+    if (!w.alive) continue;
+    if (w.glue === undefined) w.glue = true;
+    if (w.glue) continue; // glued bricks don't fall
+    // Loose brick: gravity + floor
+    w.vy -= 20 * dt;
+    w.x += w.vx * dt;
+    w.y += w.vy * dt;
+    w.z += w.vz * dt;
+    w.rx += w.vrx * dt;
+    w.ry += w.vry * dt;
+    w.rz += w.vrz * dt;
+    if (w.y < 0.2) {
+      w.y = 0.2;
+      w.vy = 0;
+      w.vx *= 0.92;
+      w.vz *= 0.92;
+      w.vrx *= 0.95;
+      w.vrz *= 0.95;
+    }
   }
   for (const b of spawnedBlocks) {
     b.vy -= 20 * dt;
@@ -2085,7 +2228,18 @@ if (!firstPerson && !player.dead) {
     }
     // Collision: true OBB that rotates with the block's ry
     // (0.4 cube -> halfX=halfZ=0.2). y is handled by stacking pass below.
-    dynamicObjects.push({ kind: "obb", x: b.x, z: b.z, halfX: 0.2, halfZ: 0.2, angle: b.ry, pushable: true, ref: b });
+    // Heavy blocks are larger, immovable blocks have very large mass.
+    const half = b.half ?? 0.2;
+    const pushable = b.kind !== "immovable";
+    dynamicObjects.push({
+      kind: "obb",
+      x: b.x, z: b.z,
+      halfX: half, halfZ: half,
+      angle: b.ry,
+      pushable,
+      ref: b,
+      mass: b.mass ?? 1,
+    });
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
@@ -2163,6 +2317,23 @@ if (!firstPerson && !player.dead) {
     r[9] = cx * sy * sz - sx * cz;
     r[10] = cx * cy;
     drawMesh(b.buf, 36, mat4Multiply(m, r));
+  }
+  // Render brick walls (glued = axis-aligned, loose = tumbling)
+  for (const w of brickWalls) {
+    if (!w.alive) continue;
+    const m = mat4Multiply(vp, mat4Translate(w.x, w.y, w.z));
+    if (w.glue) {
+      drawMesh(brickBuf, 36, m);
+    } else {
+      const cx = Math.cos(w.rx), sx = Math.sin(w.rx);
+      const cy = Math.cos(w.ry), sy = Math.sin(w.ry);
+      const cz = Math.cos(w.rz), sz = Math.sin(w.rz);
+      const r = mat4Identity();
+      r[0] = cy * cz; r[1] = cy * sz; r[2] = -sy;
+      r[4] = sx * sy * cz - cx * sz; r[5] = sx * sy * sz + cx * cz; r[6] = sx * cy;
+      r[8] = cx * sy * cz + sx * sz; r[9] = cx * sy * sz - sx * cz; r[10] = cx * cy;
+      drawMesh(brickBuf, 36, mat4Multiply(m, r));
+    }
   }
 
   requestAnimationFrame(loop);
