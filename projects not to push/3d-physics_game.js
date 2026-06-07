@@ -444,7 +444,7 @@ const ballBlackBuf = createBuffer(
 );
 
 // Sun
-const sunBuf = createBuffer(createSphere(3, 1.0, 0.95, 0.3, 8, 12));
+const sunBuf = createBuffer(createSphere(8, 1.0, 0.95, 0.3, 8, 12));
 let sunPos = { x: 60, y: 50, z: -40 };
 let dayTime = 0; // 0..1
 const dayPeriod = 60; // seconds for full cycle
@@ -677,7 +677,7 @@ const tornadoSizes = [
   { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 2.5 },
 ];
 const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
-const tornadoVisual = { cx: 0, cz: 0, alpha: 0 };
+const tornadoVisual = { cx: 0, cy: 0.3, cz: 0, alpha: 0 };
 const btnEarthquake = addPanelButton("2. Tornado", () => {
   const size = tornadoSizes[Math.floor(Math.random() * tornadoSizes.length)];
   earthquake.size = size;
@@ -1337,12 +1337,16 @@ function loop(time) {
     } else {
       const intensity = earthquake.intensity;
       const size = earthquake.size;
-      // Tornado center slowly orbits the player
-      const cx = player.x + Math.cos(performance.now() * 0.001) * 3;
-      const cz = player.z + Math.sin(performance.now() * 0.001) * 3;
+      // Tornado center slowly orbits the player (xz only), but track player.y too
+      const t = performance.now() * 0.001;
+      const cx = player.x + Math.cos(t) * 3;
+      const cz = player.z + Math.sin(t) * 3;
+      // Clamp tornado center above the baseplate (y = 0) so it never sinks below
+      const cy = Math.max(0.3, player.y - 1.0);
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
+      tornadoVisual.cy = cy;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1568,10 +1572,10 @@ function loop(time) {
     // Draw on top of everything by disabling depth test for these meshes
     gl.disable(gl.DEPTH_TEST);
     // Dust rings — staggered heights, each larger as it goes up
+    const baseY = tornadoVisual.cy ?? 0.3;
     for (let i = 0; i < 5; i++) {
-      const ringY = 0.3 + i * 0.8;
+      const ringY = baseY + i * 0.8;
       const ringR = 0.3 + i * 0.35;
-      // Slightly dimmer dust color so it doesn't hide the sun
       const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
       drawMesh(
         buf,
@@ -1587,7 +1591,7 @@ function loop(time) {
     }
     // Funnel column: vertical translucent strip rising from the ground
     for (let i = 0; i < 3; i++) {
-      const colY = 1.5 + i * 1.5;
+      const colY = baseY + 0.5 + i * 1.5;
       const colR = 1.2 - i * 0.3;
       const buf = createBuffer(createBox(colR, 1.4, colR, 0.3, 0.28, 0.24));
       drawMesh(
