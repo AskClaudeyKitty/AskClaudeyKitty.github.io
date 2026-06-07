@@ -1341,9 +1341,9 @@ function loop(time) {
       const t = performance.now() * 0.001;
       const cx = player.x + Math.cos(t) * 3;
       const cz = player.z + Math.sin(t) * 3;
-      // Clamp tornado center well above the baseplate (top of floor is y=0)
-      // so the funnel never sinks into the ground.
-      const cy = Math.max(0.5, player.y - 1.0);
+      // Tornado center anchored ON the baseplate (floor top = y=0).
+      // Track player Y so when player rises, the funnel rises with them.
+      const cy = Math.max(0, player.y - 1.0);
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1582,9 +1582,10 @@ function loop(time) {
     gl.depthMask(false);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.3;
-    // Dust rings — narrow at the base, wide at the top (tornado shape)
+    // Dust rings — narrow at the base, wide at the top (tornado shape).
+    // The first ring sits right on the baseplate so the tornado looks grounded.
     for (let i = 0; i < 5; i++) {
-      const ringY = baseY + i * 0.8 * sizeScale;
+      const ringY = baseY + 0.1 + i * 0.8 * sizeScale;
       const ringR = (0.2 + i * 0.5) * sizeScale;
       const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
       drawMesh(
@@ -1600,9 +1601,9 @@ function loop(time) {
       );
     }
     // Funnel column: narrow at bottom, wide at top — typical tornado.
-    // Start above the baseplate (floor top = 0) so the funnel never sinks in.
+    // Bottom segment starts at floor level so it sits ON the baseplate.
     for (let i = 0; i < 4; i++) {
-      const colY = baseY + 0.5 + i * 1.5 * sizeScale;
+      const colY = baseY + 0.1 + i * 1.5 * sizeScale;
       const colR = (0.4 + i * 0.45) * sizeScale;
       const buf = createBuffer(createBox(colR, 1.4 * sizeScale, colR, 0.3, 0.28, 0.24));
       drawMesh(
