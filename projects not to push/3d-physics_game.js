@@ -1,4 +1,5 @@
 const canvas = document.getElementById("c");
+console.log("3d-physics_game.js v2026-06-07-tornado-v8 loaded");
 const cheerSound = new Audio("assets/cheer.wav");
 cheerSound.volume = 0.6;
 cheerSound.preload = "auto";
@@ -684,6 +685,7 @@ const btnEarthquake = addPanelButton("2. Tornado", () => {
   earthquake.intensity = size.intensity;
   earthquake.timeLeft = size.dur;
   earthquake.active = true;
+  console.log("Tornado " + size.name + " activated");
   flashStatus("Tornado " + size.name + "!");
 });
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
