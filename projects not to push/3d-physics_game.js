@@ -1341,8 +1341,9 @@ function loop(time) {
       const t = performance.now() * 0.001;
       const cx = player.x + Math.cos(t) * 3;
       const cz = player.z + Math.sin(t) * 3;
-      // Clamp tornado center above the baseplate (y = 0) so it never sinks below
-      const cy = Math.max(0.3, player.y - 1.0);
+      // Clamp tornado center well above the baseplate (top of floor is y=0)
+      // so the funnel never sinks into the ground.
+      const cy = Math.max(0.5, player.y - 1.0);
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1598,9 +1599,10 @@ function loop(time) {
         ),
       );
     }
-    // Funnel column: narrow at bottom, wide at top — typical tornado
+    // Funnel column: narrow at bottom, wide at top — typical tornado.
+    // Start above the baseplate (floor top = 0) so the funnel never sinks in.
     for (let i = 0; i < 4; i++) {
-      const colY = baseY + 0.3 + i * 1.5 * sizeScale;
+      const colY = baseY + 0.5 + i * 1.5 * sizeScale;
       const colR = (0.4 + i * 0.45) * sizeScale;
       const buf = createBuffer(createBox(colR, 1.4 * sizeScale, colR, 0.3, 0.28, 0.24));
       drawMesh(
