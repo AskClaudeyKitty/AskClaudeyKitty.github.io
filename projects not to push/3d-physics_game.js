@@ -1347,6 +1347,8 @@ function loop(time) {
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
       tornadoVisual.cy = cy;
+      // Scale visual with tornado size: F1=0.6, F5=1.6
+      tornadoVisual.sizeScale = 0.4 + size.intensity * 0.2;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1570,15 +1572,18 @@ function loop(time) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // Tornado visual: draw spinning dust rings at the tornado center, plus
-  // a dark funnel column to make the tornado obvious at any angle.
+  // a dark funnel column that's narrow at the base and wide at the top
+  // (classic tornado shape). Scales with the tornado size (F1-F5).
   if (tornadoVisual.alpha > 0) {
     // Draw on top of everything by disabling depth test for these meshes
     gl.disable(gl.DEPTH_TEST);
-    // Dust rings — staggered heights, each larger as it goes up
+    // Scale the funnel with the tornado size: F1 small, F5 huge
+    const sizeScale = (tornadoVisual.sizeScale ?? 1.0);
     const baseY = tornadoVisual.cy ?? 0.3;
+    // Dust rings — narrow at the base, wide at the top (tornado shape)
     for (let i = 0; i < 5; i++) {
-      const ringY = baseY + i * 0.8;
-      const ringR = 0.3 + i * 0.35;
+      const ringY = baseY + i * 0.8 * sizeScale;
+      const ringR = (0.2 + i * 0.5) * sizeScale;
       const buf = createBuffer(createBox(ringR * 2, 0.2, 0.2, 0.55, 0.5, 0.35));
       drawMesh(
         buf,
@@ -1592,11 +1597,11 @@ function loop(time) {
         ),
       );
     }
-    // Funnel column: vertical translucent strip rising from the ground
-    for (let i = 0; i < 3; i++) {
-      const colY = baseY + 0.5 + i * 1.5;
-      const colR = 1.2 - i * 0.3;
-      const buf = createBuffer(createBox(colR, 1.4, colR, 0.3, 0.28, 0.24));
+    // Funnel column: narrow at bottom, wide at top — typical tornado
+    for (let i = 0; i < 4; i++) {
+      const colY = baseY + 0.3 + i * 1.5 * sizeScale;
+      const colR = (0.4 + i * 0.45) * sizeScale;
+      const buf = createBuffer(createBox(colR, 1.4 * sizeScale, colR, 0.3, 0.28, 0.24));
       drawMesh(
         buf,
         36,
