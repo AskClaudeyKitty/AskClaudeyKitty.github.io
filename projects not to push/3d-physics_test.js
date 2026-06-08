@@ -1486,10 +1486,9 @@ function loop(time) {
         }
         player.x += moveX * dt;
         player.z += moveZ * dt;
-        // Upward lift on the player — keep adding lift so the player can
-        // rise to the top of the funnel and trigger the fling.
+        // Upward lift on the player — strong enough to reach the funnel top.
         if (pdist < 8) {
-          const suck = (1 - Math.min(pdist, 8) / 8) * 12 * size.heightFactor;
+          const suck = (1 - Math.min(pdist, 8) / 8) * 30 * size.heightFactor;
           player.vy = (player.vy ?? 0) + suck;
         }
         // Top-of-tornado fling: when the player reaches the highest point,
