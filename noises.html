@@ -35,16 +35,35 @@
     font-size: 0.8rem;
     letter-spacing: 2px;
   }
-  .spectrogram {
+  .spectrogram-wrap {
+    position: relative;
     width: min(92vw, 900px);
+    margin-bottom: 0.75rem;
+  }
+  .spectrogram {
+    width: 100%;
     height: 320px;
     background: #000;
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
-    margin-bottom: 0.75rem;
     display: block;
     box-shadow: 0 0 40px rgba(255, 0, 110, 0.15);
     image-rendering: pixelated;
+  }
+  /* The playhead is a separate DOM element overlaid on the canvas so
+     it is always visible regardless of canvas drawing issues. */
+  .playhead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 320px;
+    background: rgba(255, 0, 110, 0.95);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 0, 110, 0.6);
+    pointer-events: none;
+    display: none;
+    z-index: 2;
+    transform: translateX(0);
   }
   .progress-track {
     width: min(92vw, 900px);
@@ -163,7 +182,10 @@
     <div class="now-playing" id="nowPlaying">radio-station.wav</div>
   </div>
 
-  <canvas id="spectrogram" class="spectrogram" width="1200" height="320"></canvas>
+  <div class="spectrogram-wrap">
+    <canvas id="spectrogram" class="spectrogram" width="1200" height="320"></canvas>
+    <div class="playhead" id="playhead"></div>
+  </div>
   <div class="progress-track" id="progress" title="Click to seek">
     <div class="progress-fill" id="progressFill"></div>
     <div class="progress-handle" id="progressHandle"></div>
@@ -196,6 +218,8 @@
     const nowPlay   = document.getElementById('nowPlaying');
     const specCanvas = document.getElementById('spectrogram');
     const specCtx = specCanvas.getContext('2d');
+    const playheadEl = document.getElementById('playhead');
+    const specWrap = document.querySelector('.spectrogram-wrap');
 
     // ── State ──
     // precomputedFrames: array of Uint8Array (one per spectrogram column)
@@ -564,13 +588,18 @@
           const t = Math.max(0, Math.min(audio.duration, audio.currentTime || 0));
           x = timeToColumnX(t);
         }
-        // Draw the playhead: 7px halo, 3px white core, 1px hot-pink line.
-        specCtx.fillStyle = audio.paused
-          ? 'rgba(255, 255, 255, 0.55)'
-          : 'rgba(255, 255, 255, 0.95)';
-        specCtx.fillRect(x - 1, 0, 3, specCanvas.height);
-        specCtx.fillStyle = 'rgba(255, 0, 110, ' + (audio.paused ? '0.5' : '0.95') + ')';
-        specCtx.fillRect(x, 0, 1, specCanvas.height);
+        // Position the DOM playhead element over the canvas. This is
+        // a separate element so it is always visible regardless of
+        // canvas drawing issues.
+        const wrapRect = specWrap.getBoundingClientRect();
+        const canvasRect = specCanvas.getBoundingClientRect();
+        const offsetX = canvasRect.left - wrapRect.left;
+        const displayX = (x / specCanvas.width) * canvasRect.width + offsetX;
+        playheadEl.style.display = 'block';
+        playheadEl.style.transform = 'translateX(' + displayX + 'px)';
+        playheadEl.style.opacity = audio.paused ? '0.55' : '0.95';
+      } else if (precomputedFrames === null) {
+        playheadEl.style.display = 'none';
       } else if (specBgDirty) {
         // Still analyzing: paint whatever frames we have so the user
         // sees the spectrogram grow in real time.
