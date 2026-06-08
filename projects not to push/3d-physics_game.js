@@ -678,7 +678,18 @@ const tornadoSizes = [
   { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 2.5 },
 ];
 const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
-const tornadoVisual = { cx: 0, cy: 0.15, cz: 0, anchorX: 0, anchorY: 0.15, anchorZ: 0, alpha: 0 };
+const tornadoVisual = {
+  cx: 0,
+  cy: 0.15,
+  cz: 0,
+  anchorX: 0,
+  anchorY: 0.15,
+  anchorZ: 0,
+  driftAngle: 0,
+  driftSpeed: 0,
+  driftNext: 0,
+  alpha: 0,
+};
 const btnEarthquake = addPanelButton("2. Tornado", () => {
   const size = tornadoSizes[Math.floor(Math.random() * tornadoSizes.length)];
   earthquake.size = size;
@@ -692,6 +703,9 @@ const btnEarthquake = addPanelButton("2. Tornado", () => {
   tornadoVisual.anchorZ = player.z + Math.sin(angle) * dist;
   tornadoVisual.anchorY = 0.15;
   tornadoVisual.cy = tornadoVisual.anchorY;
+  tornadoVisual.driftAngle = Math.random() * Math.PI * 2;
+  tornadoVisual.driftSpeed = 0.15 + size.intensity * 0.08;
+  tornadoVisual.driftNext = performance.now() * 0.001 + 1 + Math.random() * 1.2;
   console.log(
     "Tornado " + size.name + " activated at (" + tornadoVisual.anchorX.toFixed(1) + ", " + tornadoVisual.anchorZ.toFixed(1) + ")",
   );
@@ -1353,16 +1367,21 @@ function loop(time) {
       // was when the tornado started. The visual stays put so the camera
       // can move around it like a real 3D object.
       const t = performance.now() * 0.001;
-      const wobble = 0.3;
+      if (t > tornadoVisual.driftNext) {
+        tornadoVisual.driftAngle = Math.random() * Math.PI * 2;
+        tornadoVisual.driftSpeed = 0.15 + size.intensity * 0.08 + Math.random() * 0.08;
+        tornadoVisual.driftNext = t + 0.8 + Math.random() * 1.2;
+      }
+      tornadoVisual.anchorX += Math.cos(tornadoVisual.driftAngle) * tornadoVisual.driftSpeed * dt;
+      tornadoVisual.anchorZ += Math.sin(tornadoVisual.driftAngle) * tornadoVisual.driftSpeed * dt;
+      const wobble = 0.4 + size.intensity * 0.1;
       const cx = tornadoVisual.anchorX + Math.cos(t) * wobble;
       const cz = tornadoVisual.anchorZ + Math.sin(t) * wobble;
       // Keep the visual anchored at fixed ground height so it does not follow the player.
       const cy = tornadoVisual.anchorY;
-      // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
       tornadoVisual.cy = cy;
-      // Scale visual with tornado size: F1=0.6, F5=1.6
       tornadoVisual.sizeScale = 0.4 + size.intensity * 0.2;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
@@ -1372,9 +1391,10 @@ function loop(time) {
         // Tangential direction (90° rotated)
         const tnx = -ddz / dist;
         const tnz = ddx / dist;
-        // Strong inward pull (scales with tornado size)
-        const inx = -ddx / dist * size.inward;
-        const inz = -ddz / dist * size.inward;
+        // Strong inward pull (scales with tornado size, stronger near the middle)
+        const constPull = size.inward * (1 + Math.max(0, 5 - dist) * 0.15);
+        const inx = -ddx / dist * constPull;
+        const inz = -ddz / dist * constPull;
         const force = intensity * Math.min(1 + dist * 0.08, 4);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
@@ -1386,12 +1406,14 @@ function loop(time) {
           b.vx = b.vx / spd * 25;
           b.vz = b.vz / spd * 25;
         }
-        if (isBlock && dist > 5) {
-          b.vrx += (Math.random() - 0.5) * 6;
-          b.vrz += (Math.random() - 0.5) * 6;
-        } else if (!isBlock) {
-          b.spinX += (Math.random() - 0.5) * 3;
-          b.spinZ += (Math.random() - 0.5) * 3;
+        if (dist > 5) {
+          if (isBlock) {
+            b.vrx += (Math.random() - 0.5) * 6;
+            b.vrz += (Math.random() - 0.5) * 6;
+          } else {
+            b.spinX += (Math.random() - 0.5) * 3;
+            b.spinZ += (Math.random() - 0.5) * 3;
+          }
         }
       };
       // Pull the player toward the tornado too (xz swirl + inward + lift)
