@@ -1422,10 +1422,10 @@ function loop(time) {
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
       tornadoVisual.cy = cy;
-      // Adult-scale tornado: ~1.8 unit tall base, taller for stronger sizes.
-      // Top height matches an actual tornado when scaled to player size.
-      tornadoVisual.sizeScale = 1.0 + size.intensity * 0.6;
-      tornadoVisual.maxHeight = 1.8 * tornadoVisual.sizeScale;
+      // Much larger tornado: F1 ~6 units, F5 ~22 units tall (tornado-scale).
+      tornadoVisual.sizeScale = 3.0 + size.intensity * 1.6;
+      tornadoVisual.maxHeight = 6.0 * size.intensity;
+      tornadoVisual.flingOut = 18 + size.intensity * 4;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1482,15 +1482,15 @@ function loop(time) {
           player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
         }
         // Top-of-tornado fling: when the player reaches the highest point,
-        // toss them upward and outward so they don't rise above the funnel.
-        const tornadoTop = tornadoVisual.maxHeight ?? 1.8;
-        if (player.y + 1.8 >= tornadoTop - 0.1) {
+        // blast them upward and hard outward so they leave the tornado range.
+        const tornadoTop = tornadoVisual.maxHeight ?? 6.0;
+        const flingOut = tornadoVisual.flingOut ?? 18;
+        if (player.y + 1.8 >= tornadoTop - 0.4) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
-          const fling = 6 + size.intensity * 1.5;
-          player.vy = Math.max(player.vy ?? 0, 8);
-          player.vx = (player.vx ?? 0) + outX * fling * dt * 20;
-          player.vz = (player.vz ?? 0) + outZ * fling * dt * 20;
+          player.vy = Math.max(player.vy ?? 0, 18 + size.intensity * 2);
+          player.vx = outX * flingOut;
+          player.vz = outZ * flingOut;
         }
       }
       for (const b of spawnedBalls) swirl(b, false);
@@ -2706,11 +2706,11 @@ if (!firstPerson && !player.dead) {
     gl.disable(gl.DEPTH_TEST);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.15;
-    const totalH = tornadoVisual.maxHeight ?? 1.8 * sizeScale;
-    const segs = 8;
+    const totalH = tornadoVisual.maxHeight ?? 6.0 * sizeScale;
+    const segs = 10;
     const segH = totalH / segs;
-    const baseR = 0.35 * sizeScale;
-    const topR = 1.2 * sizeScale;
+    const baseR = 0.8 * sizeScale;
+    const topR = 3.0 * sizeScale;
     for (let i = 0; i < segs; i++) {
       const t = i / (segs - 1);
       const segCenterY = baseY + i * segH + segH / 2;
