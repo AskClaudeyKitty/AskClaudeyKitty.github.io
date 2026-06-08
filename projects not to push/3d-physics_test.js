@@ -1422,7 +1422,10 @@ function loop(time) {
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
       tornadoVisual.cy = cy;
-      tornadoVisual.sizeScale = 0.4 + size.intensity * 0.2;
+      // Adult-scale tornado: ~1.8 unit tall base, taller for stronger sizes.
+      // Top height matches an actual tornado when scaled to player size.
+      tornadoVisual.sizeScale = 1.0 + size.intensity * 0.6;
+      tornadoVisual.maxHeight = 1.8 * tornadoVisual.sizeScale;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1477,6 +1480,17 @@ function loop(time) {
         if (pdist < 8) {
           const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
           player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
+        }
+        // Top-of-tornado fling: when the player reaches the highest point,
+        // toss them upward and outward so they don't rise above the funnel.
+        const tornadoTop = tornadoVisual.maxHeight ?? 1.8;
+        if (player.y + 1.8 >= tornadoTop - 0.1) {
+          const outX = -pdx / Math.max(pdist, 0.01);
+          const outZ = -pdz / Math.max(pdist, 0.01);
+          const fling = 6 + size.intensity * 1.5;
+          player.vy = Math.max(player.vy ?? 0, 8);
+          player.vx = (player.vx ?? 0) + outX * fling * dt * 20;
+          player.vz = (player.vz ?? 0) + outZ * fling * dt * 20;
         }
       }
       for (const b of spawnedBalls) swirl(b, false);
@@ -2692,10 +2706,11 @@ if (!firstPerson && !player.dead) {
     gl.disable(gl.DEPTH_TEST);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.15;
+    const totalH = tornadoVisual.maxHeight ?? 1.8 * sizeScale;
     const segs = 8;
-    const segH = 0.8 * sizeScale;
-    const baseR = 0.3 * sizeScale;
-    const topR = 1.4 * sizeScale;
+    const segH = totalH / segs;
+    const baseR = 0.35 * sizeScale;
+    const topR = 1.2 * sizeScale;
     for (let i = 0; i < segs; i++) {
       const t = i / (segs - 1);
       const segCenterY = baseY + i * segH + segH / 2;
@@ -2714,7 +2729,7 @@ if (!firstPerson && !player.dead) {
       );
     }
     // Bright cap on top
-    const topCenterY = baseY + segs * segH + 0.3;
+    const topCenterY = baseY + segs * segH + 0.2;
     const topBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.7, 0.65, 0.5));
     drawMesh(
       topBuf,
