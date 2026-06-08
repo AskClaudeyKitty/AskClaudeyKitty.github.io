@@ -1491,6 +1491,14 @@ function loop(time) {
           const suck = (1 - Math.min(pdist, 8) / 8) * 30 * size.heightFactor;
           player.vy = (player.vy ?? 0) + suck;
         }
+        // Pull the player toward the middle of the tornado at all heights.
+        if (pdist > 0.5) {
+          const centerX = -pdx / pdist;
+          const centerZ = -pdz / pdist;
+          const centerForce = 25 * dt;
+          player.vx = (player.vx ?? 0) + centerX * centerForce;
+          player.vz = (player.vz ?? 0) + centerZ * centerForce;
+        }
         // Top-of-tornado fling: when the player reaches the highest point,
         // blast them hard outward (no vertical) so they leave the tornado range.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
@@ -1562,9 +1570,11 @@ function loop(time) {
   }
   player.angle = camYaw;
 
-  // Jump physics
+  // Jump physics — gravity is paused when the tornado is actively pulling
+  // the player, otherwise the lift would be cancelled by gravity.
   if (!player.sinking) {
-    player.vy -= 20 * dt;
+    const inTornado = earthquake.active && pdist < 8;
+    if (!inTornado) player.vy -= 20 * dt;
     player.y += player.vy * dt;
     if (player.y <= 0) {
       player.y = 0;
