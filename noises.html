@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Noises</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: linear-gradient(135deg, #1a0b2e 0%, #2a0a3a 50%, #0a1a3a 100%);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem 4rem;
+    user-select: none;
+  }
+  h1 {
+    font-size: 2.6rem;
+    margin: 0 0 0.25rem;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, #ff006e, #ffbe0b, #00f5d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(255, 0, 110, 0.3);
+  }
+  .subtitle {
+    opacity: 0.6;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+  }
+  .spectrogram {
+    width: min(92vw, 900px);
+    height: 320px;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    display: block;
+    box-shadow: 0 0 40px rgba(255, 0, 110, 0.15);
+    image-rendering: pixelated;
+  }
+  .progress-track {
+    width: min(92vw, 900px);
+    height: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: relative;
+    cursor: pointer;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00f5d4, #ffbe0b, #ff006e);
+    width: 0%;
+    border-radius: 7px;
+    box-shadow: 0 0 8px rgba(255, 0, 110, 0.4);
+    pointer-events: none;
+  }
+  .progress-handle {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    left: 0%;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+  }
+  .controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  button:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  button.playing { background: linear-gradient(90deg, #ff006e, #ffbe0b); border-color: transparent; }
+  .time {
+    font-family: monospace;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    min-width: 110px;
+    text-align: center;
+  }
+  .upload-wrap {
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .upload-label {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 30px;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-label:hover { background: rgba(255, 255, 255, 0.2); }
+  .upload-label input { display: none; }
+  .now-playing {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    max-width: 240px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .status {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #ffbe0b;
+    min-height: 1.2em;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .status.show { opacity: 1; }
+  .volume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  input[type=range] { width: 100px; }
+</style>
+</head>
+<body>
+  <h1>NOISES</h1>
+  <div class="subtitle">SPECTROGRAM VIEWER</div>
+
+  <div class="upload-wrap">
+    <label class="upload-label">
+      📁 UPLOAD
+      <input type="file" id="file" accept="audio/*">
+    </label>
+    <div class="now-playing" id="nowPlaying">radio-station.wav</div>
+  </div>
+
+  <canvas id="spectrogram" class="spectrogram" width="1200" height="320"></canvas>
+  <div class="progress-track" id="progress" title="Click to seek">
+    <div class="progress-fill" id="progressFill"></div>
+    <div class="progress-handle" id="progressHandle"></div>
+  </div>
+
+  <div class="controls">
+    <button id="play" disabled>▶ PLAY</button>
+    <div class="time" id="time">0:00 / 0:00</div>
+    <div class="volume">
+      🔊
+      <input type="range" id="vol" min="0" max="100" value="80">
+    </div>
+  </div>
+
+  <div class="status" id="status">Analyzing audio…</div>
+
+  <audio id="audio" src="radio-station.wav" preload="auto"></audio>
+
+  <script>
+    // ── DOM refs ──
+    const audio     = document.getElementById('audio');
+    const playBtn   = document.getElementById('play');
+    const timeEl    = document.getElementById('time');
+    const volEl     = document.getElementById('vol');
+    const fileEl    = document.getElementById('file');
+    const progress  = document.getElementById('progress');
+    const progressFill = document.getElementById('progressFill');
+    const progressHandle = document.getElementById('progressHandle');
+    const statusEl  = document.getElementById('status');
+    const nowPlay   = document.getElementById('nowPlaying');
+    const specCanvas = document.getElementById('spectrogram');
+    const specCtx = specCanvas.getContext('2d');
+
+    // ── State ──
+    // precomputedFrames: array of Uint8Array (one per spectrogram column)
+    // precomputedWidth:  number of columns actually filled
+    // specBg:            offscreen canvas holding the precomputed image
+    // specBgDirty:       whether specBg needs to be re-rendered
+    let precomputedFrames = null;
+    let precomputedWidth = 0;
+    let specBg = null;
+    let specBgCtx = null;
+    let specBgDirty = true;
+    let isUploading = false;
+
+    function setStatus(msg, show = true) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('show', show);
+    }
+
+    // ── Decode a File / URL into an AudioBuffer ──
+    function getAudioCtx() {
+      if (!getAudioCtx._ctx) {
+        getAudioCtx._ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return getAudioCtx._ctx;
+    }
+
+    async function decodeFile(file) {
+      setStatus('Reading file…');
+      const ab = await file.arrayBuffer();
+      setStatus('Decoding audio…');
+      const ctx = getAudioCtx();
+      return await ctx.decodeAudioData(ab);
+    }
+
+    async function decodeUrl(url) {
+      setStatus('Downloading audio…');
+      const r = await fetch(url);
+      const ab = await r.arrayBuffer();
+      setStatus('Decoding audio…');
+      const ctx = getAudioCtx();
+      return await ctx.decodeAudioData(ab);
+    }
+
+    // ── Viridis-flame color map (matches the original look) ──
+    function magToRGB(v) {
+      const t = v / 255;
+      const r = Math.min(255, Math.floor(20 + t * t * 920));
+      const g = Math.min(255, Math.floor(t * 230 + (1 - Math.abs(2 * t - 1)) * 60));
+      const b = Math.min(255, Math.floor(180 * (1 - t) * (1 - t) + 20));
+      return [r, g, b];
+    }
+
+    // ── Build the FULL spectrogram up front, then store the data ──
+    // We hop the audio buffer with a sliding window and run a naive DFT
+    // per slice. To stay usable in the browser we process in async
+    // chunks so the UI stays responsive and a progress bar updates.
+    async function precomputeSpectrogram(buffer) {
+      const totalSamples = buffer.length;
+      // Mix down to mono Float32Array
+      const channels = buffer.numberOfChannels;
+      const mono = new Float32Array(totalSamples);
+      for (let c = 0; c < channels; c++) {
+        const data = buffer.getChannelData(c);
+        for (let i = 0; i < totalSamples; i++) mono[i] += data[i] / channels;
+      }
+
+      // Spectrogram parameters
+      const FFT_SIZE = 1024;
+      const HOP_SIZE = 512;             // 50% overlap
+      const N_BINS = 256;               // only paint the first 256 bins
+      const N_COLS = specCanvas.width;  // one column = one frame
+      const frames = new Array(N_COLS).fill(null).map(() => new Uint8Array(N_BINS));
+
+      // Hann window precompute
+      const window = new Float32Array(FFT_SIZE);
+      for (let i = 0; i < FFT_SIZE; i++) {
+        window[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1)));
+      }
+
+      // Decide how many frames we will compute. Sample frames evenly
+      // across the audio so the whole file fits N_COLS columns.
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
+      const frameStride = Math.max(1, Math.floor(totalFramesAvail / N_COLS));
+      const colsToFill = Math.min(N_COLS, totalFramesAvail);
+      precomputedWidth = 0;
+
+      // Precompute sin/cos tables for the DFT
+      const sinTable = new Float32Array(FFT_SIZE * N_BINS);
+      const cosTable = new Float32Array(FFT_SIZE * N_BINS);
+      for (let k = 0; k < N_BINS; k++) {
+        for (let n = 0; n < FFT_SIZE; n++) {
+          const a = (-2 * Math.PI * k * n) / FFT_SIZE;
+          sinTable[k * FFT_SIZE + n] = Math.sin(a);
+          cosTable[k * FFT_SIZE + n] = Math.cos(a);
+        }
+      }
+
+      const CHUNK = 4; // frames per async chunk
+      let col = 0;
+      while (col < colsToFill) {
+        const end = Math.min(colsToFill, col + CHUNK);
+        for (let c = col; c < end; c++) {
+          const frameStart = c * frameStride * HOP_SIZE;
+          // Get the windowed frame
+          const frame = new Float32Array(FFT_SIZE);
+          for (let n = 0; n < FFT_SIZE; n++) {
+            const s = mono[frameStart + n] || 0;
+            frame[n] = s * window[n];
+          }
+          // Compute magnitudes for the first N_BINS
+          const mag = frames[c];
+          for (let k = 0; k < N_BINS; k++) {
+            let re = 0, im = 0;
+            const base = k * FFT_SIZE;
+            for (let n = 0; n < FFT_SIZE; n++) {
+              const fn = frame[n];
+              re += fn * cosTable[base + n];
+              im += fn * sinTable[base + n];
+            }
+            const m = Math.sqrt(re * re + im * im);
+            // Compress to 0..255 with log scaling
+            const db = 20 * Math.log10(m + 1e-7);
+            const norm = Math.max(0, Math.min(1, (db + 60) / 60));
+            mag[k] = Math.floor(norm * 255);
+          }
+        }
+        col = end;
+        precomputedWidth = col;
+        specBgDirty = true; // new column data, repaint the offscreen buffer
+        // Paint progress on screen
+        paintSpectrogram();
+        setStatus(`Analyzing audio… ${Math.floor((col / colsToFill) * 100)}%`);
+        // Yield to the event loop so the progress bar can update
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      return frames;
+    }
+
+    // ── Paint the (currently filled portion of the) precomputed
+    //     spectrogram into an OFFSCREEN canvas (specBg). The visible
+    //     canvas just blits specBg every frame and adds a playhead on
+    //     top — this gives us a smooth 60fps real-time playhead without
+    //     re-rendering the whole spectrogram. ──
+    function paintSpectrogram() {
+      if (!precomputedFrames) {
+        specCtx.fillStyle = '#000';
+        specCtx.fillRect(0, 0, specCanvas.width, specCanvas.height);
+        specCtx.fillStyle = 'rgba(255,255,255,0.55)';
+        specCtx.font = '16px -apple-system, monospace';
+        specCtx.textAlign = 'center';
+        specCtx.fillText('▶ upload or load a sound to see the spectrogram',
+                         specCanvas.width / 2, specCanvas.height / 2);
+        return;
+      }
+      // Lazily create the offscreen buffer the same size as the visible
+      // canvas.
+      if (!specBg || specBg.width !== specCanvas.width || specBg.height !== specCanvas.height) {
+        specBg = document.createElement('canvas');
+        specBg.width = specCanvas.width;
+        specBg.height = specCanvas.height;
+        specBgCtx = specBg.getContext('2d');
+        specBgDirty = true;
+      }
+      if (specBgDirty) {
+        const W = specCanvas.width;
+        const H = specCanvas.height;
+        const N_BINS = precomputedFrames[0]?.length || 0;
+        if (N_BINS === 0) return;
+        const img = specBgCtx.createImageData(W, H);
+        const data = img.data;
+        const binsToShow = Math.min(N_BINS, H);
+        for (let x = 0; x < W; x++) {
+          const frame = x < precomputedWidth ? precomputedFrames[x] : null;
+          for (let y = 0; y < H; y++) {
+            // y=0 top of canvas = high frequency; y=H-1 = low frequency
+            const bin = Math.floor((1 - y / H) * (binsToShow - 1));
+            let v = 0;
+            if (frame) v = frame[bin] || 0;
+            const [r, g, b] = magToRGB(v);
+            const idx = (y * W + x) * 4;
+            data[idx] = r;
+            data[idx + 1] = g;
+            data[idx + 2] = b;
+            data[idx + 3] = 255;
+          }
+        }
+        specBgCtx.putImageData(img, 0, 0);
+        specBgDirty = false;
+      }
+      // Blit the offscreen buffer to the visible canvas.
+      specCtx.drawImage(specBg, 0, 0);
+    }
+
+    // ── Live playback: draw a vertical playhead over the spectrogram ──
+    let playheadX = -1;
+
+    function fmt(t) {
+      if (!isFinite(t)) return '0:00';
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t % 60).toString().padStart(2, '0');
+      return m + ':' + s;
+    }
+
+    // ── Load a source and precompute the spectrogram ──
+    async function loadAndAnalyze(source, label) {
+      isUploading = true;
+      playBtn.disabled = true;
+      playBtn.textContent = '▶ PLAY';
+      playBtn.classList.remove('playing');
+      // Replace the audio element source
+      audio.pause();
+      if (source instanceof Blob) {
+        audio.src = URL.createObjectURL(source);
+      } else {
+        audio.src = source;
+      }
+      nowPlay.textContent = label;
+
+      try {
+        const buffer = source instanceof Blob
+          ? await decodeFile(source)
+          : await decodeUrl(source);
+        setStatus('Computing spectrogram…');
+        precomputedFrames = await precomputeSpectrogram(buffer);
+        setStatus('Done! Press play.', true);
+        playBtn.disabled = false;
+        // Reset to first frame
+        playheadX = -1;
+        progressFill.style.width = '0%';
+        progressHandle.style.left = '0%';
+        timeEl.textContent = '0:00 / ' + fmt(buffer.duration);
+        paintSpectrogram();
+        audio.volume = volEl.value / 100;
+      } catch (e) {
+        console.error(e);
+        setStatus('Failed: ' + e.message);
+      } finally {
+        isUploading = false;
+      }
+    }
+
+    // ── Event handlers ──
+    fileEl.addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      loadAndAnalyze(f, f.name);
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (isUploading) return;
+      if (audio.paused) {
+        audio.play();
+        playBtn.textContent = '⏸ PAUSE';
+        playBtn.classList.add('playing');
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶ PLAY';
+        playBtn.classList.remove('playing');
+      }
+    });
+
+    volEl.addEventListener('input', () => {
+      audio.volume = volEl.value / 100;
+    });
+    audio.volume = 0.8;
+
+    audio.addEventListener('ended', () => {
+      playBtn.textContent = '▶ PLAY';
+      playBtn.classList.remove('playing');
+      playheadX = -1;
+      progressFill.style.width = '100%';
+      progressHandle.style.left = '100%';
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+      if (audio.duration > 0) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        progressFill.style.width = pct + '%';
+        progressHandle.style.left = pct + '%';
+      }
+    });
+
+    // Convert a currentTime (seconds) to a spectrogram column index using
+    // the same frame geometry as the precompute pass. Returns the
+    // canvas-space x coordinate.
+    function timeToColumnX(t) {
+      if (!precomputedBuffer) return 0;
+      const sr = precomputedBuffer.sampleRate;
+      const FFT_SIZE = 1024;
+      const HOP_SIZE = 512;
+      const totalSamples = precomputedBuffer.length;
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
+      const frameStride = Math.max(1, Math.floor(totalFramesAvail / specCanvas.width));
+      const colFloat = (t * sr) / (frameStride * HOP_SIZE);
+      return Math.max(0, Math.min(specCanvas.width - 1, Math.round(colFloat)));
+    }
+
+    // The maximum time represented by the precomputed spectrogram
+    // (slightly less than audio.duration if the file is long, equal
+    // otherwise). This is what the progress bar should reflect.
+    function getSpecDuration() {
+      if (!precomputedBuffer) return 0;
+      const sr = precomputedBuffer.sampleRate;
+      const FFT_SIZE = 1024;
+      const HOP_SIZE = 512;
+      const totalSamples = precomputedBuffer.length;
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
+      const frameStride = Math.max(1, Math.floor(totalFramesAvail / specCanvas.width));
+      // Time of the last painted column center
+      return ((specCanvas.width - 1) * frameStride * HOP_SIZE) / sr;
+    }
+
+    // Click anywhere on the progress bar to seek to that position.
+    // Use the spectrogram duration (the time range the spectrogram
+    // covers) as the denominator so the bar lines up perfectly with
+    // the painted spectrogram.
+    function seekFromEvent(e) {
+      if (!audio.duration || isUploading) return;
+      const rect = progress.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const pct = x / rect.width;
+      // Map click fraction to a column, then to a time. This way the
+      // seek lands exactly on the column the user clicked.
+      const targetCol = Math.round(pct * (specCanvas.width - 1));
+      const sr = precomputedBuffer ? precomputedBuffer.sampleRate : 44100;
+      const FFT_SIZE = 1024;
+      const HOP_SIZE = 512;
+      const totalSamples = precomputedBuffer ? precomputedBuffer.length : 0;
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
+      const frameStride = Math.max(1, Math.floor(totalFramesAvail / specCanvas.width));
+      const targetTime = (targetCol * frameStride * HOP_SIZE) / sr;
+      audio.currentTime = Math.min(targetTime, audio.duration);
+    }
+    progress.addEventListener('click', seekFromEvent);
+    progress.addEventListener('touchstart', seekFromEvent, { passive: true });
+    progress.addEventListener('touchmove', seekFromEvent, { passive: true });
+
+    // ── Real-time spectrogram render loop ──
+    // Redraws the spectrogram from the offscreen buffer at 60fps and
+    // overlays a thin playhead line that tracks audio.currentTime.
+    // The playhead is a vertical line that moves smoothly with the
+    // current play position, not just at timeupdate intervals.
+    function renderLoop() {
+      if (precomputedFrames && !specBgDirty) {
+        specCtx.drawImage(specBg, 0, 0);
+        // Draw the playhead over the spectrogram in real time.
+        if (audio.duration > 0) {
+          const x = timeToColumnX(audio.currentTime);
+          if (!audio.paused) {
+            // Bright core
+            specCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            specCtx.fillRect(x, 0, 2, specCanvas.height);
+            // Soft glow on either side
+            specCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            specCtx.fillRect(x - 2, 0, 1, specCanvas.height);
+            specCtx.fillRect(x + 2, 0, 1, specCanvas.height);
+          } else if (audio.currentTime > 0) {
+            // Dimmer head while paused so the user can still see position.
+            specCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            specCtx.fillRect(x, 0, 2, specCanvas.height);
+          }
+        }
+      } else if (specBgDirty) {
+        // Still analyzing: paint whatever frames we have so the user
+        // sees the spectrogram grow in real time.
+        paintSpectrogram();
+      }
+      requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
+
+    // ── Initial idle state ──
+    paintSpectrogram();
+    setStatus('Loading radio-station.wav…', true);
+    // Auto-load the bundled audio on page load
+    loadAndAnalyze('radio-station.wav', 'radio-station.wav');
+  </script>
+</body>
+</html>
