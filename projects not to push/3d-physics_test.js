@@ -1422,10 +1422,10 @@ function loop(time) {
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
       tornadoVisual.cy = cy;
-      // Much larger tornado: F1 ~6 units, F5 ~22 units tall (tornado-scale).
-      tornadoVisual.sizeScale = 3.0 + size.intensity * 1.6;
-      tornadoVisual.maxHeight = 6.0 * size.intensity;
-      tornadoVisual.flingOut = 18 + size.intensity * 4;
+      // Tornado: much taller (height scales with intensity) but width unchanged.
+      tornadoVisual.sizeScale = 1.0;
+      tornadoVisual.maxHeight = 8.0 + size.intensity * 4.0;
+      tornadoVisual.flingOut = 20 + size.intensity * 4;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1476,19 +1476,21 @@ function loop(time) {
         }
         player.x += moveX * dt;
         player.z += moveZ * dt;
-        // Upward lift on the player — scales with tornado size
+        // Upward lift on the player — scales with tornado size, capped high enough
+        // for the player to actually reach the top of the funnel.
         if (pdist < 8) {
-          const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
-          player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
+          const suck = (1 - Math.min(pdist, 8) / 8) * 12 * size.heightFactor;
+          const cap = (tornadoVisual.maxHeight ?? 12) + 4;
+          player.vy = Math.min((player.vy ?? 0) + suck, cap);
         }
         // Top-of-tornado fling: when the player reaches the highest point,
         // blast them upward and hard outward so they leave the tornado range.
-        const tornadoTop = tornadoVisual.maxHeight ?? 6.0;
-        const flingOut = tornadoVisual.flingOut ?? 18;
+        const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
+        const flingOut = tornadoVisual.flingOut ?? 20;
         if (player.y + 1.8 >= tornadoTop - 0.4) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
-          player.vy = Math.max(player.vy ?? 0, 18 + size.intensity * 2);
+          player.vy = Math.max(player.vy ?? 0, 22 + size.intensity * 2);
           player.vx = outX * flingOut;
           player.vz = outZ * flingOut;
         }
@@ -2706,7 +2708,7 @@ if (!firstPerson && !player.dead) {
     gl.disable(gl.DEPTH_TEST);
     const sizeScale = tornadoVisual.sizeScale ?? 1.0;
     const baseY = tornadoVisual.cy ?? 0.15;
-    const totalH = tornadoVisual.maxHeight ?? 6.0 * sizeScale;
+    const totalH = tornadoVisual.maxHeight ?? 12.0;
     const segs = 10;
     const segH = totalH / segs;
     const baseR = 0.8 * sizeScale;
