@@ -1425,7 +1425,7 @@ function loop(time) {
       // Tornado: much taller (height scales with intensity) but width unchanged.
       tornadoVisual.sizeScale = 1.0;
       tornadoVisual.maxHeight = 8.0 + size.intensity * 4.0;
-      tornadoVisual.flingOut = 20 + size.intensity * 4;
+      tornadoVisual.flingOut = 30 + size.intensity * 5;
       tornadoVisual.alpha = Math.min(1, earthquake.timeLeft / 3.0) * 0.5;
       const swirl = (b, isBlock) => {
         const ddx = b.x - cx, ddz = b.z - cz;
@@ -1504,13 +1504,13 @@ function loop(time) {
           }
         }
         // Top-of-tornado fling: when the player reaches the highest point,
-        // blast them upward and hard outward so they leave the tornado range.
+        // blast them hard outward (no vertical) so they leave the tornado range.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
         const flingOut = tornadoVisual.flingOut ?? 20;
         if (player.y + 1.8 >= tornadoTop - 0.4) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
-          player.vy = Math.max(player.vy ?? 0, 22 + size.intensity * 2);
+          player.vy = 0; // zero vertical, no extra upward kick
           player.vx = outX * flingOut;
           player.vz = outZ * flingOut;
         }
