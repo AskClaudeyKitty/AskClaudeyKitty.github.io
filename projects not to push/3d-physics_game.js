@@ -1398,13 +1398,19 @@ function loop(time) {
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
       if (pdist > 0.05) {
-        const ptnx = -pdz / pdist;
-        const ptnz = pdx / pdist;
         const pinx = -pdx / pdist * 1.0;
         const pinz = -pdz / pdist * 1.0;
         const pforce = intensity * Math.min(1 + pdist * 0.05, 3);
-        player.x += (ptnx * pforce + pinx) * dt;
-        player.z += (ptnz * pforce + pinz) * dt;
+        let moveX = pinx;
+        let moveZ = pinz;
+        if (pdist > 5) {
+          const ptnx = -pdz / pdist;
+          const ptnz = pdx / pdist;
+          moveX += ptnx * pforce;
+          moveZ += ptnz * pforce;
+        }
+        player.x += moveX * dt;
+        player.z += moveZ * dt;
       }
       // Upward lift on the player — scales with tornado size
       if (pdist < 8) {
