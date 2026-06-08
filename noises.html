@@ -552,27 +552,25 @@
     // The playhead is a vertical line that moves smoothly with the
     // current play position, not just at timeupdate intervals.
     function renderLoop() {
+      // Always draw the playhead when the spectrogram is loaded, even
+      // if precomputedBuffer is still null (just show a "0" marker
+      // until the audio buffer is decoded).
       if (precomputedFrames && !specBgDirty) {
         specCtx.drawImage(specBg, 0, 0);
-        // Draw the playhead over the spectrogram in real time.
-        if (audio.duration > 0 && precomputedBuffer) {
-          const x = timeToColumnX(audio.currentTime);
-          if (!audio.paused || audio.currentTime > 0) {
-            // Soft outer glow (3px halo)
-            specCtx.fillStyle = 'rgba(255, 255, 255, 0.18)';
-            specCtx.fillRect(x - 3, 0, 7, specCanvas.height);
-            // Bright core (3px wide so it survives canvas downscale)
-            specCtx.fillStyle = audio.paused
-              ? 'rgba(255, 255, 255, 0.6)'
-              : 'rgba(255, 255, 255, 0.95)';
-            specCtx.fillRect(x - 1, 0, 3, specCanvas.height);
-            // Hot-pink center line for visibility against bright spectrograms
-            specCtx.fillStyle = audio.paused
-              ? 'rgba(255, 0, 110, 0.6)'
-              : 'rgba(255, 0, 110, 0.95)';
-            specCtx.fillRect(x, 0, 1, specCanvas.height);
-          }
+        // Compute the playhead x position from the audio. Fall back
+        // to 0 when no buffer is loaded yet.
+        let x = 0;
+        if (precomputedBuffer && audio.duration > 0) {
+          const t = Math.max(0, Math.min(audio.duration, audio.currentTime || 0));
+          x = timeToColumnX(t);
         }
+        // Draw the playhead: 7px halo, 3px white core, 1px hot-pink line.
+        specCtx.fillStyle = audio.paused
+          ? 'rgba(255, 255, 255, 0.55)'
+          : 'rgba(255, 255, 255, 0.95)';
+        specCtx.fillRect(x - 1, 0, 3, specCanvas.height);
+        specCtx.fillStyle = 'rgba(255, 0, 110, ' + (audio.paused ? '0.5' : '0.95') + ')';
+        specCtx.fillRect(x, 0, 1, specCanvas.height);
       } else if (specBgDirty) {
         // Still analyzing: paint whatever frames we have so the user
         // sees the spectrogram grow in real time.
