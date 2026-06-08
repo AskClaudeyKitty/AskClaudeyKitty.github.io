@@ -1578,8 +1578,17 @@ function loop(time) {
   // Jump physics — gravity is paused when the tornado is actively pulling
   // the player, otherwise the lift would be cancelled by gravity.
   if (!player.sinking) {
-    const inTornado = earthquake.active && pdist < 8;
-    if (!inTornado) player.vy -= 20 * dt;
+    // Tornado is "around" the player if it's active and the player is within
+    // 8 units horizontally of its center. Recompute the distance each frame
+    // since the tornado drifts and rotates over time.
+    let playerInTornado = false;
+    if (earthquake.active) {
+      const dx = player.x - tornadoVisual.cx;
+      const dz = player.z - tornadoVisual.cz;
+      const dist = Math.hypot(dx, dz);
+      playerInTornado = dist < 8;
+    }
+    if (!playerInTornado) player.vy -= 20 * dt;
     player.y += player.vy * dt;
     if (player.y <= 0) {
       player.y = 0;
