@@ -975,12 +975,11 @@ function useInventorySlot(idx) {
     const wallX = spawnX;
     const wallZ = spawnZ;
     for (let row = 0; row < wallH; row++) {
-      // Stagger every other row for brick pattern
-      const offset = (row % 2) * brickSize * 0.5;
-      const cols = (row % 2) ? wallW - 1 : wallW;
+      const offset = 0;
+      const cols = wallW;
       for (let col = 0; col < cols; col++) {
-        const x = startX + px * (col * brickSize + offset) + fx * row * brickSize;
-        const z = startZ + pz * (col * brickSize + offset) + fz * row * brickSize;
+        const x = startX + px * (col * brickSize + offset);
+        const z = startZ + pz * (col * brickSize + offset);
         const y = brickSize + row * brickSize;
         brickWalls.push({
           x, y, z,
@@ -1416,10 +1415,10 @@ function loop(time) {
           }
         }
       };
-      // Pull the player toward the tornado too (xz swirl + inward + lift)
+      // Pull the player toward the tornado only when the player is nearby.
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
-      if (pdist > 0.05) {
+      if (pdist < 12 && pdist > 0.05) {
         const pinx = -pdx / pdist * 2.0;
         const pinz = -pdz / pdist * 2.0;
         const pforce = intensity * Math.min(1 + pdist * 0.08, 4);
@@ -1433,11 +1432,11 @@ function loop(time) {
         }
         player.x += moveX * dt;
         player.z += moveZ * dt;
-      }
-      // Upward lift on the player — scales with tornado size
-      if (pdist < 8) {
-        const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
-        player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
+        // Upward lift on the player — scales with tornado size
+        if (pdist < 8) {
+          const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
+          player.vy = Math.min((player.vy ?? 0) + suck, size.liftCap);
+        }
       }
       for (const b of spawnedBalls) swirl(b, false);
       for (const b of spawnedBlocks) swirl(b, true);
