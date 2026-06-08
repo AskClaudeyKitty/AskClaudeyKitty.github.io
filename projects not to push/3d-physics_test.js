@@ -1473,22 +1473,23 @@ function loop(time) {
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
       if (pdist < 30 && pdist > 0.05) {
-        // Top-of-tornado fling: when the player reaches near the highest
-        // point, blast them hard outward (no vertical) so they leave the
-        // tornado range. Use a permissive threshold so small F1 tornadoes
-        // also trigger.
+        // Top-of-tornado fling: when the player reaches halfway up the
+        // funnel, blast them hard outward (no vertical) so they leave the
+        // tornado range. The threshold scales with the funnel top so each
+        // tornado size is escapable.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
         const flingOut = tornadoVisual.flingOut ?? 20;
-        if (player.y + 1.8 >= tornadoTop - 2.0) {
+        const flingThreshold = tornadoTop * 0.6;
+        if (player.y + 1.8 >= flingThreshold) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
           player.vy = 0;
           player.vx = outX * flingOut;
           player.vz = outZ * flingOut;
-          // Push the player outside the tornado range this frame so the
-          // inward pull can't drag them back in.
-          player.x += outX * 6;
-          player.z += outZ * 6;
+          // Push the player well outside the 30u tornado pull range this
+          // frame so the inward pull can't drag them back in.
+          player.x += outX * 35;
+          player.z += outZ * 35;
         } else {
           const pinx = -pdx / pdist * 2.5;
           const pinz = -pdz / pdist * 2.5;
