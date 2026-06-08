@@ -841,6 +841,15 @@ function makePlayerBlockBufs(r, g, b) {
     eye: createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13)),
   };
 }
+// 1-unit player-style block: same parts, just scaled to fit in 1x1x1.
+function makeStudPlayerBufs(r, g, b) {
+  return {
+    body: createBuffer(createBox(0.6, 0.6, 0.6, r, g, b)),
+    head: createBuffer(createBox(0.5, 0.4, 0.5, 0.93, 0.78, 0.53)),
+    limb: createBuffer(createBox(0.18, 0.35, 0.18, r, g, b)),
+    eye: createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13)),
+  };
+}
 const blockColors = [
   [0.9, 0.2, 0.2], [0.2, 0.7, 0.2], [0.2, 0.4, 0.9],
   [0.9, 0.7, 0.2], [0.7, 0.2, 0.9], [0.2, 0.9, 0.9],
@@ -1006,8 +1015,9 @@ function useInventorySlot(idx) {
       }
     }
   } else if (idx === 6) {
-    // Slot 7: 1x1x1 stud block — a single cube that snaps to the 1-unit grid
-    const buf = makePieceBuf(0.7, 0.7, 0.72);
+    // Slot 7: 1x1x1 stud block — a player-style figure scaled to 1 unit
+    const c = blockColors[Math.floor(Math.random() * blockColors.length)];
+    const bufs = makeStudPlayerBufs(c[0], c[1], c[2]);
     const studHalf = 0.5;
     const gx = Math.round(spawnX);
     const gz = Math.round(spawnZ);
@@ -1016,8 +1026,8 @@ function useInventorySlot(idx) {
       vx: 0, vy: 0, vz: 0,
       rx: 0, ry: 0, rz: 0,
       vrx: 0, vry: 0, vrz: 0,
-      buf, color: [0.7, 0.7, 0.72], settled: true,
-      kind: "block", mass: 1, half: studHalf,
+      parts: bufs, color: c, settled: true,
+      kind: "stud", mass: 1, half: studHalf,
     });
   }
 }
@@ -2541,6 +2551,18 @@ if (!firstPerson && !player.dead) {
   // Render spawned blocks as spinning colored cubes (like pieces from red blocks)
   for (const b of spawnedBlocks) {
     const m = mat4Multiply(vp, mat4Translate(b.x, b.y, b.z));
+    if (b.kind === "stud" && b.parts) {
+      // 1-unit player-style figure: body, head, two arms, two legs
+      drawMesh(b.parts.body, 36, mat4Multiply(m, mat4Translate(0, 0.1, 0)));
+      drawMesh(b.parts.head, 36, mat4Multiply(m, mat4Translate(0, 0.55, 0)));
+      drawMesh(b.parts.eye, 36, mat4Multiply(m, mat4Translate(-0.1, 0.58, 0.27)));
+      drawMesh(b.parts.eye, 36, mat4Multiply(m, mat4Translate(0.1, 0.58, 0.27)));
+      drawMesh(b.parts.limb, 36, mat4Multiply(m, mat4Translate(-0.32, 0.1, 0)));
+      drawMesh(b.parts.limb, 36, mat4Multiply(m, mat4Translate(0.32, 0.1, 0)));
+      drawMesh(b.parts.limb, 36, mat4Multiply(m, mat4Translate(-0.13, -0.25, 0)));
+      drawMesh(b.parts.limb, 36, mat4Multiply(m, mat4Translate(0.13, -0.25, 0)));
+      continue;
+    }
     const cx = Math.cos(b.rx), sx = Math.sin(b.rx);
     const cy = Math.cos(b.ry), sy = Math.sin(b.ry);
     const cz = Math.cos(b.rz), sz = Math.sin(b.rz);
