@@ -678,7 +678,7 @@ const tornadoSizes = [
   { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 2.5 },
 ];
 const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
-const tornadoVisual = { cx: 0, cy: 0.3, cz: 0, anchorX: 0, anchorZ: 0, alpha: 0 };
+const tornadoVisual = { cx: 0, cy: 0.15, cz: 0, anchorX: 0, anchorY: 0.15, anchorZ: 0, alpha: 0 };
 const btnEarthquake = addPanelButton("2. Tornado", () => {
   const size = tornadoSizes[Math.floor(Math.random() * tornadoSizes.length)];
   earthquake.size = size;
@@ -688,6 +688,8 @@ const btnEarthquake = addPanelButton("2. Tornado", () => {
   // Anchor the tornado center in world space at the player's current position
   tornadoVisual.anchorX = player.x;
   tornadoVisual.anchorZ = player.z;
+  tornadoVisual.anchorY = 0.15;
+  tornadoVisual.cy = tornadoVisual.anchorY;
   console.log("Tornado " + size.name + " activated at (" + player.x.toFixed(1) + ", " + player.z.toFixed(1) + ")");
   flashStatus("Tornado " + size.name + "!");
 });
@@ -1350,9 +1352,8 @@ function loop(time) {
       const wobble = 0.3;
       const cx = tornadoVisual.anchorX + Math.cos(t) * wobble;
       const cz = tornadoVisual.anchorZ + Math.sin(t) * wobble;
-      // Stay grounded at y=0.15 (above grass top). Only follow player up
-      // when player is clearly being lifted off the ground.
-      const cy = player.y > 1.5 ? player.y : 0.15;
+      // Keep the visual anchored at fixed ground height so it does not follow the player.
+      const cy = tornadoVisual.anchorY;
       // Stash for the visual draw later (after vp is built)
       tornadoVisual.cx = cx;
       tornadoVisual.cz = cz;
@@ -1422,8 +1423,8 @@ function loop(time) {
       b.vz *= damp;
     }
     tornadoVisual.alpha = Math.max(0, tornadoVisual.alpha - dt * 0.5);
-    // Keep cy tracking player so visual doesn't sink
-    tornadoVisual.cy = Math.max(0, player.y || 0);
+    // Keep cy anchored at ground height during wind-down.
+    tornadoVisual.cy = tornadoVisual.anchorY;
   } else {
     tornadoVisual.alpha = 0;
   }
