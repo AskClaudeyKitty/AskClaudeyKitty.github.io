@@ -1386,10 +1386,10 @@ function loop(time) {
           b.vx = b.vx / spd * 25;
           b.vz = b.vz / spd * 25;
         }
-        if (isBlock) {
+        if (isBlock && dist > 5) {
           b.vrx += (Math.random() - 0.5) * 6;
           b.vrz += (Math.random() - 0.5) * 6;
-        } else {
+        } else if (!isBlock) {
           b.spinX += (Math.random() - 0.5) * 3;
           b.spinZ += (Math.random() - 0.5) * 3;
         }
