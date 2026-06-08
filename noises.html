@@ -276,9 +276,15 @@
       }
 
       // Decide how many frames we will compute. Sample frames evenly
-      // across the audio so the whole file fits N_COLS columns.
+      // across the FULL audio so the whole file (including any leading
+      // or trailing silence) fits N_COLS columns exactly. The very
+      // last column lands at the last sample of the file, not one
+      // stride short of it.
       const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
-      const frameStride = Math.max(1, Math.floor(totalFramesAvail / N_COLS));
+      // We have N_COLS - 1 intervals between the first and last column.
+      // Use a fractional stride so the last column = totalFramesAvail - 1.
+      const frameStrideF = (totalFramesAvail - 1) / Math.max(1, N_COLS - 1);
+      const frameStride = Math.max(1, frameStrideF);
       const colsToFill = Math.min(N_COLS, totalFramesAvail);
       precomputedWidth = 0;
 
@@ -298,7 +304,10 @@
       while (col < colsToFill) {
         const end = Math.min(colsToFill, col + CHUNK);
         for (let c = col; c < end; c++) {
-          const frameStart = c * frameStride * HOP_SIZE;
+          // Use a fractional stride so column 0 = frame 0 and column
+          // (N_COLS - 1) = last frame of the file (including any
+          // trailing silence).
+          const frameStart = Math.round(c * frameStrideF) * HOP_SIZE;
           // Get the windowed frame
           const frame = new Float32Array(FFT_SIZE);
           for (let n = 0; n < FFT_SIZE; n++) {
@@ -481,17 +490,19 @@
     });
 
     // Convert a currentTime (seconds) to a spectrogram column index using
-    // the same frame geometry as the precompute pass. Returns the
-    // canvas-space x coordinate.
+    // the same fractional-stride geometry as the precompute pass.
+    // Returns the canvas-space x coordinate.
     function timeToColumnX(t) {
       if (!precomputedBuffer) return 0;
       const sr = precomputedBuffer.sampleRate;
-      const FFT_SIZE = 1024;
       const HOP_SIZE = 512;
       const totalSamples = precomputedBuffer.length;
-      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
-      const frameStride = Math.max(1, Math.floor(totalFramesAvail / specCanvas.width));
-      const colFloat = (t * sr) / (frameStride * HOP_SIZE);
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - 1024) / HOP_SIZE) + 1);
+      // Use the fractional stride so the last column = totalFramesAvail - 1
+      // and the playhead at audio.duration lands on the very last column.
+      const N_COLS = specCanvas.width;
+      const frameStrideF = (totalFramesAvail - 1) / Math.max(1, N_COLS - 1);
+      const colFloat = (t * sr) / (frameStrideF * HOP_SIZE);
       return Math.max(0, Math.min(specCanvas.width - 1, Math.round(colFloat)));
     }
 
@@ -524,12 +535,11 @@
       // seek lands exactly on the column the user clicked.
       const targetCol = Math.round(pct * (specCanvas.width - 1));
       const sr = precomputedBuffer ? precomputedBuffer.sampleRate : 44100;
-      const FFT_SIZE = 1024;
       const HOP_SIZE = 512;
       const totalSamples = precomputedBuffer ? precomputedBuffer.length : 0;
-      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
-      const frameStride = Math.max(1, Math.floor(totalFramesAvail / specCanvas.width));
-      const targetTime = (targetCol * frameStride * HOP_SIZE) / sr;
+      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - 1024) / HOP_SIZE) + 1);
+      const frameStrideF = (totalFramesAvail - 1) / Math.max(1, specCanvas.width - 1);
+      const targetTime = (targetCol * frameStrideF * HOP_SIZE) / sr;
       audio.currentTime = Math.min(targetTime, audio.duration);
     }
     progress.addEventListener('click', seekFromEvent);
