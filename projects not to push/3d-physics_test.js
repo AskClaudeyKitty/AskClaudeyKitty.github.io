@@ -329,8 +329,6 @@ function pieceBlocks(px, py, pz) {
 // Floor
 const floorData = createBox(floorSize, 0.2, floorSize, ...floorGrey);
 const floorBuf = createBuffer(floorData);
-// Stud overlay: 1x1 plates spaced 1 unit apart on the baseplate.
-const studBuf = createBuffer(createBox(1, 0.08, 1, 0.35, 0.35, 0.37));
 
 // Room walls
 const wallNSData = createBox(
@@ -764,7 +762,7 @@ function togglePanel() {
 
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
-  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", null, null, null], // 9 slots
+  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", "stud", null, null], // 9 slots
   selected: 0, // 0-8
 };
 const invHud = document.createElement("div");
@@ -778,6 +776,7 @@ const slotIcons = {
   heavy: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#555,#222);border-radius:3px;box-shadow:inset -2px -2px 3px rgba(0,0,0,0.6);"></div>',
   immovable: '<div style="width:22px;height:22px;background:repeating-linear-gradient(45deg,#888,#888 4px,#555 4px,#555 8px);border-radius:3px;border:1px solid #222;"></div>',
   wall: '<div style="width:22px;height:22px;background:repeating-linear-gradient(0deg,#a85,#a85 3px,#864 3px,#864 6px);border-radius:2px;"></div>',
+  stud: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#bbb,#888);border-radius:3px;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #444;"></div>',
   _default: '<div style="font-size:18px;opacity:0.4;">·</div>',
 };
 for (let i = 0; i < 9; i++) {
@@ -1006,6 +1005,20 @@ function useInventorySlot(idx) {
         });
       }
     }
+  } else if (idx === 6) {
+    // Slot 7: 1x1x1 stud block — a single cube that snaps to the 1-unit grid
+    const buf = makePieceBuf(0.7, 0.7, 0.72);
+    const studHalf = 0.5;
+    const gx = Math.round(spawnX);
+    const gz = Math.round(spawnZ);
+    spawnedBlocks.push({
+      x: gx, z: gz, y: studHalf,
+      vx: 0, vy: 0, vz: 0,
+      rx: 0, ry: 0, rz: 0,
+      vrx: 0, vry: 0, vrz: 0,
+      buf, color: [0.7, 0.7, 0.72], settled: true,
+      kind: "block", mass: 1, half: studHalf,
+    });
   }
 }
 document.addEventListener("mousemove", (e) => {
@@ -1661,19 +1674,6 @@ if (sunY > -5) {
 
 // Floor
 drawMesh(floorBuf, 36, mat4Multiply(vp, mat4Translate(0, -0.1, 0)));
-
-// Baseplate studs: 1x1 plates on a 1-unit grid across the whole floor.
-const studRange = Math.floor(floorSize / 2);
-const studY = 0.04;
-for (let sx = -studRange; sx < studRange; sx++) {
-  for (let sz = -studRange; sz < studRange; sz++) {
-    drawMesh(
-      studBuf,
-      36,
-      mat4Multiply(vp, mat4Translate(sx + 0.5, studY, sz + 0.5)),
-    );
-  }
-}
 
 // Underground solid (visible when sinking)
 if (player.y < 0) {
