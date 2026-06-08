@@ -1441,8 +1441,7 @@ function loop(time) {
         const force = intensity * Math.min(1 + dist * 0.12, 8);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
-        // Lift (scales with tornado size)
-        b.vy = Math.min(b.vy + 3 * size.heightFactor, size.liftCap);
+        b.vy = b.vy + 3 * size.heightFactor;
         // Cap horizontal speed
         const spd = Math.hypot(b.vx, b.vz);
         if (spd > 25) {
@@ -1457,6 +1456,17 @@ function loop(time) {
             b.spinX += (Math.random() - 0.5) * 3;
             b.spinZ += (Math.random() - 0.5) * 3;
           }
+        }
+        // Top-of-tornado fling for spawned objects: once they reach the funnel
+        // top, blast them hard outward so they leave the tornado range.
+        const funnelTop = tornadoVisual.maxHeight ?? 12.0;
+        if (b.y >= funnelTop - 0.2) {
+          const outX = -ddx / dist;
+          const outZ = -ddz / dist;
+          const flingOut = tornadoVisual.flingOut ?? 30;
+          b.vy = 0;
+          b.vx = outX * flingOut;
+          b.vz = outZ * flingOut;
         }
       };
       // Pull the player toward the tornado only when the player is nearby.
