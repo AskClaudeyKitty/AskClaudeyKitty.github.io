@@ -1375,7 +1375,7 @@ function loop(time) {
         // Strong inward pull (scales with tornado size)
         const inx = -ddx / dist * size.inward;
         const inz = -ddz / dist * size.inward;
-        const force = intensity * Math.min(1 + dist * 0.05, 3);
+        const force = intensity * Math.min(1 + dist * 0.08, 4);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
         // Lift (scales with tornado size)
@@ -1398,9 +1398,9 @@ function loop(time) {
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
       if (pdist > 0.05) {
-        const pinx = -pdx / pdist * 1.0;
-        const pinz = -pdz / pdist * 1.0;
-        const pforce = intensity * Math.min(1 + pdist * 0.05, 3);
+        const pinx = -pdx / pdist * 2.0;
+        const pinz = -pdz / pdist * 2.0;
+        const pforce = intensity * Math.min(1 + pdist * 0.08, 4);
         let moveX = pinx;
         let moveZ = pinz;
         if (pdist > 5) {
