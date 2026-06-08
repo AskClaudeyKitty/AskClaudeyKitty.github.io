@@ -1476,10 +1476,13 @@ function loop(time) {
         }
         player.x += moveX * dt;
         player.z += moveZ * dt;
-        // Upward lift on the player — no upward cap, just keep adding lift.
+        // Upward lift on the player — capped at the top of the funnel so the
+        // player stops being pulled up once they reach the tornado's top.
         if (pdist < 8) {
           const suck = (1 - Math.min(pdist, 8) / 8) * 12 * size.heightFactor;
           player.vy = (player.vy ?? 0) + suck;
+          const liftCap = (tornadoVisual.maxHeight ?? 12) + 1;
+          if (player.y >= liftCap) player.vy = Math.min(player.vy ?? 0, 0);
         }
         // Top-of-tornado fling: when the player reaches the highest point,
         // blast them upward and hard outward so they leave the tornado range.
