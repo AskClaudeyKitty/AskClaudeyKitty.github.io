@@ -555,20 +555,22 @@
       if (precomputedFrames && !specBgDirty) {
         specCtx.drawImage(specBg, 0, 0);
         // Draw the playhead over the spectrogram in real time.
-        if (audio.duration > 0) {
+        if (audio.duration > 0 && precomputedBuffer) {
           const x = timeToColumnX(audio.currentTime);
-          if (!audio.paused) {
-            // Bright core
-            specCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            specCtx.fillRect(x, 0, 2, specCanvas.height);
-            // Soft glow on either side
-            specCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            specCtx.fillRect(x - 2, 0, 1, specCanvas.height);
-            specCtx.fillRect(x + 2, 0, 1, specCanvas.height);
-          } else if (audio.currentTime > 0) {
-            // Dimmer head while paused so the user can still see position.
-            specCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            specCtx.fillRect(x, 0, 2, specCanvas.height);
+          if (!audio.paused || audio.currentTime > 0) {
+            // Soft outer glow (3px halo)
+            specCtx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            specCtx.fillRect(x - 3, 0, 7, specCanvas.height);
+            // Bright core (3px wide so it survives canvas downscale)
+            specCtx.fillStyle = audio.paused
+              ? 'rgba(255, 255, 255, 0.6)'
+              : 'rgba(255, 255, 255, 0.95)';
+            specCtx.fillRect(x - 1, 0, 3, specCanvas.height);
+            // Hot-pink center line for visibility against bright spectrograms
+            specCtx.fillStyle = audio.paused
+              ? 'rgba(255, 0, 110, 0.6)'
+              : 'rgba(255, 0, 110, 0.95)';
+            specCtx.fillRect(x, 0, 1, specCanvas.height);
           }
         }
       } else if (specBgDirty) {
