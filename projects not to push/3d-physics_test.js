@@ -684,10 +684,10 @@ const btnClear = addPanelButton("1. Clear Spawned", () => {
 // Event 2: tornado — pick a random size F1-F5 with different pull/lift strengths
 const tornadoSizes = [
   { name: "F1", intensity: 1, liftCap: 1.5, heightFactor: 0.05, inward: 2.0, dur: 15.0 },
-  { name: "F2", intensity: 2, liftCap: 3,   heightFactor: 0.1,  inward: 2.0, dur: 14.0 },
-  { name: "F3", intensity: 3, liftCap: 6,   heightFactor: 0.3,  inward: 2.0, dur: 13.0 },
-  { name: "F4", intensity: 4, liftCap: 10,  heightFactor: 0.6,  inward: 2.5, dur: 12.0 },
-  { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 10.0 },
+  { name: "F2", intensity: 2, liftCap: 3,   heightFactor: 0.1,  inward: 2.0, dur: 15.0 },
+  { name: "F3", intensity: 3, liftCap: 6,   heightFactor: 0.3,  inward: 2.0, dur: 15.0 },
+  { name: "F4", intensity: 4, liftCap: 10,  heightFactor: 0.6,  inward: 2.5, dur: 15.0 },
+  { name: "F5", intensity: 6, liftCap: 16,  heightFactor: 1.0,  inward: 3.0, dur: 15.0 },
 ];
 const earthquake = { active: false, timeLeft: 0, intensity: 3, size: tornadoSizes[2] };
 const tornadoVisual = {
