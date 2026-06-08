@@ -1473,20 +1473,22 @@ function loop(time) {
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
       if (pdist < 30 && pdist > 0.05) {
-        // Top-of-tornado fling: when the player reaches the highest point,
-        // blast them hard outward (no vertical) so they leave the tornado range.
+        // Top-of-tornado fling: when the player reaches near the highest
+        // point, blast them hard outward (no vertical) so they leave the
+        // tornado range. Use a permissive threshold so small F1 tornadoes
+        // also trigger.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
         const flingOut = tornadoVisual.flingOut ?? 20;
-        if (player.y + 1.8 >= tornadoTop - 0.2) {
+        if (player.y + 1.8 >= tornadoTop - 2.0) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
-          player.vy = 0; // zero vertical, no extra upward kick
+          player.vy = 0;
           player.vx = outX * flingOut;
           player.vz = outZ * flingOut;
           // Push the player outside the tornado range this frame so the
           // inward pull can't drag them back in.
-          player.x += outX * 4;
-          player.z += outZ * 4;
+          player.x += outX * 6;
+          player.z += outZ * 6;
         } else {
           const pinx = -pdx / pdist * 2.5;
           const pinz = -pdz / pdist * 2.5;
@@ -1502,16 +1504,16 @@ function loop(time) {
           player.x += moveX * dt;
           player.z += moveZ * dt;
         }
-        // Upward lift on the player — strong enough to reach the funnel top.
+        // Upward lift on the player — gentle so they don't shoot up too fast.
         if (pdist < 8) {
-          const suck = (1 - Math.min(pdist, 8) / 8) * 30 * size.heightFactor;
+          const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
           player.vy = (player.vy ?? 0) + suck;
         }
         // Pull the player toward the middle of the tornado at all heights.
         if (pdist > 0.5) {
           const centerX = -pdx / pdist;
           const centerZ = -pdz / pdist;
-          const centerForce = 25 * dt;
+          const centerForce = 8 * dt;
           player.vx = (player.vx ?? 0) + centerX * centerForce;
           player.vz = (player.vz ?? 0) + centerZ * centerForce;
         }
