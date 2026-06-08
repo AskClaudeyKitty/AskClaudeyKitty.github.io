@@ -4,6 +4,18 @@ const cheerSound = new Audio("assets/cheer.wav");
 cheerSound.volume = 0.6;
 cheerSound.preload = "auto";
 const gl = canvas.getContext("webgl", { antialias: true });
+if (!gl || gl.isContextLost()) {
+  console.warn("WebGL context unavailable or lost; aborting init.");
+  throw new Error("WebGL context unavailable");
+}
+canvas.addEventListener("webglcontextlost", (e) => {
+  e.preventDefault();
+  console.warn("WebGL context lost");
+});
+canvas.addEventListener("webglcontextrestored", () => {
+  console.log("WebGL context restored");
+  window.location.reload();
+});
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
