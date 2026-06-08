@@ -1489,11 +1489,18 @@ function loop(time) {
         const tornadoTop2 = tornadoVisual.maxHeight ?? 12;
         if (player.y + 1.8 >= tornadoTop2 - 0.2) {
           player.vy -= 18 * dt; // mild gravity to keep them at the top
-          if (pdist > 0.5) {
-            const centerX = -pdx / pdist;
-            const centerZ = -pdz / pdist;
-            player.vx = (player.vx ?? 0) + centerX * 30 * dt;
-            player.vz = (player.vz ?? 0) + centerZ * 30 * dt;
+          // Only center the player while they're still close to the funnel;
+          // past that distance, the tornado stops pulling them in.
+          const centerRadius = 2.5 + size.intensity * 0.6;
+          if (pdist > centerRadius && pdist < centerRadius + 1.5) {
+            // In the release band: stop centering, let them leave.
+          } else if (pdist <= centerRadius) {
+            if (pdist > 0.5) {
+              const centerX = -pdx / pdist;
+              const centerZ = -pdz / pdist;
+              player.vx = (player.vx ?? 0) + centerX * 30 * dt;
+              player.vz = (player.vz ?? 0) + centerZ * 30 * dt;
+            }
           }
         }
         // Top-of-tornado fling: when the player reaches the highest point,
