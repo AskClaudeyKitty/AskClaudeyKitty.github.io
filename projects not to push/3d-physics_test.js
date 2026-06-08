@@ -708,9 +708,9 @@ const btnEarthquake = addPanelButton("2. Tornado", () => {
   earthquake.intensity = size.intensity;
   earthquake.timeLeft = size.dur;
   earthquake.active = true;
-  // Spawn the tornado randomly up to 50 units away from the player.
+  // Spawn the tornado randomly up to 30 units away from the player.
   const angle = Math.random() * Math.PI * 2;
-  const dist = Math.random() * 50;
+  const dist = Math.random() * 30;
   tornadoVisual.anchorX = player.x + Math.cos(angle) * dist;
   tornadoVisual.anchorZ = player.z + Math.sin(angle) * dist;
   tornadoVisual.anchorY = 0.15;
