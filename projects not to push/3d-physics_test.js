@@ -1484,6 +1484,18 @@ function loop(time) {
           const liftCap = (tornadoVisual.maxHeight ?? 12) + 1;
           if (player.y >= liftCap) player.vy = Math.min(player.vy ?? 0, 0);
         }
+        // Pull the player toward the middle once they reach the funnel top:
+        // gravity along with horizontal centering keeps them hovering.
+        const tornadoTop2 = tornadoVisual.maxHeight ?? 12;
+        if (player.y + 1.8 >= tornadoTop2 - 0.2) {
+          player.vy -= 18 * dt; // mild gravity to keep them at the top
+          if (pdist > 0.5) {
+            const centerX = -pdx / pdist;
+            const centerZ = -pdz / pdist;
+            player.vx = (player.vx ?? 0) + centerX * 30 * dt;
+            player.vz = (player.vz ?? 0) + centerZ * 30 * dt;
+          }
+        }
         // Top-of-tornado fling: when the player reaches the highest point,
         // blast them upward and hard outward so they leave the tornado range.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
