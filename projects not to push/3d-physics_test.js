@@ -1476,38 +1476,19 @@ function loop(time) {
         }
         player.x += moveX * dt;
         player.z += moveZ * dt;
-        // Upward lift on the player — capped at the top of the funnel so the
-        // player stops being pulled up once they reach the tornado's top.
+        // Upward lift on the player — capped ABOVE the top of the funnel so
+        // the player can actually reach the trigger height for the fling.
         if (pdist < 8) {
           const suck = (1 - Math.min(pdist, 8) / 8) * 12 * size.heightFactor;
           player.vy = (player.vy ?? 0) + suck;
-          const liftCap = (tornadoVisual.maxHeight ?? 12) + 1;
+          const liftCap = (tornadoVisual.maxHeight ?? 12) + 3;
           if (player.y >= liftCap) player.vy = Math.min(player.vy ?? 0, 0);
-        }
-        // Pull the player toward the middle once they reach the funnel top:
-        // gravity along with horizontal centering keeps them hovering.
-        const tornadoTop2 = tornadoVisual.maxHeight ?? 12;
-        if (player.y + 1.8 >= tornadoTop2 - 0.2) {
-          player.vy -= 18 * dt; // mild gravity to keep them at the top
-          // Only center the player while they're still close to the funnel;
-          // past that distance, the tornado stops pulling them in.
-          const centerRadius = 2.5 + size.intensity * 0.6;
-          if (pdist > centerRadius && pdist < centerRadius + 1.5) {
-            // In the release band: stop centering, let them leave.
-          } else if (pdist <= centerRadius) {
-            if (pdist > 0.5) {
-              const centerX = -pdx / pdist;
-              const centerZ = -pdz / pdist;
-              player.vx = (player.vx ?? 0) + centerX * 30 * dt;
-              player.vz = (player.vz ?? 0) + centerZ * 30 * dt;
-            }
-          }
         }
         // Top-of-tornado fling: when the player reaches the highest point,
         // blast them hard outward (no vertical) so they leave the tornado range.
         const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
         const flingOut = tornadoVisual.flingOut ?? 20;
-        if (player.y + 1.8 >= tornadoTop - 0.4) {
+        if (player.y + 1.8 >= tornadoTop - 0.2) {
           const outX = -pdx / Math.max(pdist, 0.01);
           const outZ = -pdz / Math.max(pdist, 0.01);
           player.vy = 0; // zero vertical, no extra upward kick
@@ -2750,23 +2731,6 @@ if (!firstPerson && !player.dead) {
         ),
       );
     }
-    // Bright cap on top
-    const topCenterY = baseY + segs * segH + 0.2;
-    const topBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.7, 0.65, 0.5));
-    drawMesh(
-      topBuf,
-      36,
-      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, topCenterY, tornadoVisual.cz)),
-    );
-    // Bright ring on the ground
-    const groundY = 0.05;
-    const groundR = baseR * 1.2;
-    const groundBuf = createBuffer(createBox(groundR * 2, 0.05, groundR * 2, 0.8, 0.75, 0.5));
-    drawMesh(
-      groundBuf,
-      36,
-      mat4Multiply(vp, mat4Translate(tornadoVisual.cx, groundY, tornadoVisual.cz)),
-    );
   }
 
   requestAnimationFrame(loop);
