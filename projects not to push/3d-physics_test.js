@@ -1485,11 +1485,10 @@ function loop(time) {
       const heightAboveGround = Math.max(0, player.y);
       const pullScale = Math.max(0, 1 - heightAboveGround / Math.max(1, tornadoTop));
       if (pdist < 30 && player.y + 1.8 >= flingThreshold) {
-        // One-shot fling: only re-apply the impulse if we're not already
-        // moving outward faster than the impulse speed. This stops the
-        // player from being re-launched every frame and staying trapped.
-        const outSpeed = Math.hypot(player.vx ?? 0, player.vz ?? 0);
-        if (outSpeed < flingOut * 0.9) {
+        // One-shot fling: only fire the impulse once when the player
+        // crosses the threshold. After that, the impulse carries the
+        // player out of the tornado range naturally.
+        if (!player.flinging) {
           let outX = -pdx / Math.max(pdist, 0.01);
           let outZ = -pdz / Math.max(pdist, 0.01);
           if (pdist < 0.05) {
@@ -1497,36 +1496,39 @@ function loop(time) {
             outZ = Math.sin(player.angle);
           }
           player.vy = 0;
+          // Fling velocity is set high enough that the player travels
+          // past the 30u tornado range in a fraction of a second.
           player.vx = outX * flingOut;
           player.vz = outZ * flingOut;
+          player.flinging = true;
         }
-        player.flinging = true;
-      } else {
+      } else if (player.flinging && pdist >= 30) {
+        // Player has cleared the tornado range: reset flag.
         player.flinging = false;
-        if (pdist < 30) {
-          // Apply tangential swirl via velocity so the position is updated
-          // in one place (the jump physics block) and never doubled.
-          if (pdist > 1) {
-            const ptnx = -pdz / pdist;
-            const ptnz = pdx / pdist;
-            const pforce = intensity * Math.min(1 + pdist * 0.12, 7) * pullScale;
-            player.vx = (player.vx ?? 0) + ptnx * pforce * dt;
-            player.vz = (player.vz ?? 0) + ptnz * pforce * dt;
-          }
-          // Upward lift on the player — gentle so they don't shoot up too fast.
-          if (pdist < 8) {
-            const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
-            player.vy = (player.vy ?? 0) + suck;
-          }
-          // Pull the player toward the middle of the tornado at all heights,
-          // scaled down as the player rises so they can reach the top.
-          if (pdist > 0.5) {
-            const centerX = -pdx / pdist;
-            const centerZ = -pdz / pdist;
-            const centerForce = 8 * dt * pullScale;
-            player.vx = (player.vx ?? 0) + centerX * centerForce;
-            player.vz = (player.vz ?? 0) + centerZ * centerForce;
-          }
+      } else if (pdist < 30) {
+        player.flinging = false;
+        // Apply tangential swirl via velocity so the position is updated
+        // in one place (the jump physics block) and never doubled.
+        if (pdist > 1) {
+          const ptnx = -pdz / pdist;
+          const ptnz = pdx / pdist;
+          const pforce = intensity * Math.min(1 + pdist * 0.12, 7) * pullScale;
+          player.vx = (player.vx ?? 0) + ptnx * pforce * dt;
+          player.vz = (player.vz ?? 0) + ptnz * pforce * dt;
+        }
+        // Upward lift on the player — gentle so they don't shoot up too fast.
+        if (pdist < 8) {
+          const suck = (1 - Math.min(pdist, 8) / 8) * 6 * size.heightFactor;
+          player.vy = (player.vy ?? 0) + suck;
+        }
+        // Pull the player toward the middle of the tornado at all heights,
+        // scaled down as the player rises so they can reach the top.
+        if (pdist > 0.5) {
+          const centerX = -pdx / pdist;
+          const centerZ = -pdz / pdist;
+          const centerForce = 8 * dt * pullScale;
+          player.vx = (player.vx ?? 0) + centerX * centerForce;
+          player.vz = (player.vz ?? 0) + centerZ * centerForce;
         }
       }
       for (const b of spawnedBalls) swirl(b, false);
