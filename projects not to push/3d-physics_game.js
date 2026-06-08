@@ -1390,11 +1390,11 @@ function loop(time) {
         // Tangential direction (90° rotated)
         const tnx = -ddz / dist;
         const tnz = ddx / dist;
-        // Strong inward pull (scales with tornado size, stronger near the middle)
-        const constPull = size.inward * (1 + Math.max(0, 5 - dist) * 0.15);
+        // Strong inward pull toward the core: much stronger near the middle.
+        const constPull = size.inward * (1.5 + Math.max(0, 20 - dist) * 0.25);
         const inx = -ddx / dist * constPull;
         const inz = -ddz / dist * constPull;
-        const force = intensity * Math.min(1 + dist * 0.08, 4);
+        const force = intensity * Math.min(1 + dist * 0.12, 8);
         b.vx += tnx * force + inx;
         b.vz += tnz * force + inz;
         // Lift (scales with tornado size)
@@ -1405,7 +1405,7 @@ function loop(time) {
           b.vx = b.vx / spd * 25;
           b.vz = b.vz / spd * 25;
         }
-        if (dist > 1) {
+        if (dist < 20) {
           if (isBlock) {
             b.vrx += (Math.random() - 0.5) * 6;
             b.vrz += (Math.random() - 0.5) * 6;
@@ -1418,10 +1418,10 @@ function loop(time) {
       // Pull the player toward the tornado only when the player is nearby.
       const pdx = player.x - cx, pdz = player.z - cz;
       const pdist = Math.hypot(pdx, pdz);
-      if (pdist < 12 && pdist > 0.05) {
-        const pinx = -pdx / pdist * 2.0;
-        const pinz = -pdz / pdist * 2.0;
-        const pforce = intensity * Math.min(1 + pdist * 0.08, 4);
+      if (pdist < 30 && pdist > 0.05) {
+        const pinx = -pdx / pdist * 2.5;
+        const pinz = -pdz / pdist * 2.5;
+        const pforce = intensity * Math.min(1 + pdist * 0.12, 7);
         let moveX = pinx;
         let moveZ = pinz;
         if (pdist > 1) {
