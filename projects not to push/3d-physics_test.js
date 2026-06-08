@@ -329,6 +329,8 @@ function pieceBlocks(px, py, pz) {
 // Floor
 const floorData = createBox(floorSize, 0.2, floorSize, ...floorGrey);
 const floorBuf = createBuffer(floorData);
+// Stud overlay: 1x1 plates spaced 1 unit apart on the baseplate.
+const studBuf = createBuffer(createBox(1, 0.08, 1, 0.35, 0.35, 0.37));
 
 // Room walls
 const wallNSData = createBox(
@@ -1659,6 +1661,19 @@ if (sunY > -5) {
 
 // Floor
 drawMesh(floorBuf, 36, mat4Multiply(vp, mat4Translate(0, -0.1, 0)));
+
+// Baseplate studs: 1x1 plates on a 1-unit grid across the whole floor.
+const studRange = Math.floor(floorSize / 2);
+const studY = 0.04;
+for (let sx = -studRange; sx < studRange; sx++) {
+  for (let sz = -studRange; sz < studRange; sz++) {
+    drawMesh(
+      studBuf,
+      36,
+      mat4Multiply(vp, mat4Translate(sx + 0.5, studY, sz + 0.5)),
+    );
+  }
+}
 
 // Underground solid (visible when sinking)
 if (player.y < 0) {
