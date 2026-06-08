@@ -685,12 +685,16 @@ const btnEarthquake = addPanelButton("2. Tornado", () => {
   earthquake.intensity = size.intensity;
   earthquake.timeLeft = size.dur;
   earthquake.active = true;
-  // Anchor the tornado center in world space at the player's current position
-  tornadoVisual.anchorX = player.x;
-  tornadoVisual.anchorZ = player.z;
+  // Spawn the tornado randomly up to 50 units away from the player.
+  const angle = Math.random() * Math.PI * 2;
+  const dist = Math.random() * 50;
+  tornadoVisual.anchorX = player.x + Math.cos(angle) * dist;
+  tornadoVisual.anchorZ = player.z + Math.sin(angle) * dist;
   tornadoVisual.anchorY = 0.15;
   tornadoVisual.cy = tornadoVisual.anchorY;
-  console.log("Tornado " + size.name + " activated at (" + player.x.toFixed(1) + ", " + player.z.toFixed(1) + ")");
+  console.log(
+    "Tornado " + size.name + " activated at (" + tornadoVisual.anchorX.toFixed(1) + ", " + tornadoVisual.anchorZ.toFixed(1) + ")",
+  );
   flashStatus("Tornado " + size.name + "!");
 });
 // Event 3: zero-gravity — flip gravity off for 4 seconds, then slam back
