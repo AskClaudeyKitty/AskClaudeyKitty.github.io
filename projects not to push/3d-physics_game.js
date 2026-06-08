@@ -1406,7 +1406,7 @@ function loop(time) {
           b.vx = b.vx / spd * 25;
           b.vz = b.vz / spd * 25;
         }
-        if (dist > 5) {
+        if (dist > 1) {
           if (isBlock) {
             b.vrx += (Math.random() - 0.5) * 6;
             b.vrz += (Math.random() - 0.5) * 6;
@@ -1425,7 +1425,7 @@ function loop(time) {
         const pforce = intensity * Math.min(1 + pdist * 0.08, 4);
         let moveX = pinx;
         let moveZ = pinz;
-        if (pdist > 5) {
+        if (pdist > 1) {
           const ptnx = -pdz / pdist;
           const ptnz = pdx / pdist;
           moveX += ptnx * pforce;
