@@ -56,14 +56,14 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 1px;
+    width: 2px;
     height: 320px;
-    background: rgba(255, 0, 110, 0.95);
-    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 0, 110, 0.6);
+    background: #ff006e;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 14px rgba(255, 0, 110, 0.9);
     pointer-events: none;
-    display: none;
-    z-index: 2;
-    transform: translateX(0);
+    display: block;
+    z-index: 5;
+    transform: translateX(0px);
   }
   .progress-track {
     width: min(92vw, 900px);
@@ -228,6 +228,7 @@
     // specBgDirty:       whether specBg needs to be re-rendered
     let precomputedFrames = null;
     let precomputedWidth = 0;
+    let precomputedBuffer = null;
     let specBg = null;
     let specBgCtx = null;
     let specBgDirty = true;
@@ -257,15 +258,18 @@
     async function decodeUrl(url) {
       setStatus('Downloading audio…');
       const r = await fetch(url);
-      const ab = await r.arrayBuffer();
+        const ab = await r.arrayBuffer();
       setStatus('Decoding audio…');
       const ctx = getAudioCtx();
       return await ctx.decodeAudioData(ab);
     }
 
     // ── Viridis-flame color map (matches the original look) ──
+    // Silence (v=0) must look black, not bright blue, otherwise the
+    // "no audio" right side of the spectrogram looks like background.
     function magToRGB(v) {
       const t = v / 255;
+      if (t <= 0.02) return [0, 0, 0];
       const r = Math.min(255, Math.floor(20 + t * t * 920));
       const g = Math.min(255, Math.floor(t * 230 + (1 - Math.abs(2 * t - 1)) * 60));
       const b = Math.min(255, Math.floor(180 * (1 - t) * (1 - t) + 20));
@@ -299,17 +303,18 @@
         window[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1)));
       }
 
-      // Decide how many frames we will compute. Sample frames evenly
-      // across the FULL audio so the whole file (including any leading
-      // or trailing silence) fits N_COLS columns exactly. The very
-      // last column lands at the last sample of the file, not one
-      // stride short of it.
+      // Decide how many frames we will compute. We want the painted
+      // spectrogram to always span the FULL canvas width, so column 0
+      // = first frame of the audio and column (N_COLS - 1) = the last
+      // sample's frame. That means the stride is FRAMES / (N_COLS-1)
+      // regardless of how many frames the audio yields. A short file
+      // simply paints sparser columns; a long file paints denser ones.
       const totalFramesAvail = Math.max(1, Math.floor((totalSamples - FFT_SIZE) / HOP_SIZE) + 1);
-      // We have N_COLS - 1 intervals between the first and last column.
-      // Use a fractional stride so the last column = totalFramesAvail - 1.
+      // Fractional frame stride so column (N_COLS-1) lands on the
+      // very last frame. Always >= 1 sample offset per column so we
+      // never paint the same frame twice.
       const frameStrideF = (totalFramesAvail - 1) / Math.max(1, N_COLS - 1);
-      const frameStride = Math.max(1, frameStrideF);
-      const colsToFill = Math.min(N_COLS, totalFramesAvail);
+      const colsToFill = N_COLS;
       precomputedWidth = 0;
 
       // Precompute sin/cos tables for the DFT
@@ -452,8 +457,13 @@
         const buffer = source instanceof Blob
           ? await decodeFile(source)
           : await decodeUrl(source);
+        precomputedBuffer = buffer;
         setStatus('Computing spectrogram…');
         precomputedFrames = await precomputeSpectrogram(buffer);
+        // Final paint so the very last columns are committed to the
+        // offscreen buffer once the async chunks have all finished.
+        specBgDirty = true;
+        paintSpectrogram();
         setStatus('Done! Press play.', true);
         playBtn.disabled = false;
         // Reset to first frame
@@ -505,29 +515,34 @@
     });
 
     audio.addEventListener('timeupdate', () => {
-      timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
-      if (audio.duration > 0) {
-        const pct = (audio.currentTime / audio.duration) * 100;
+      const dur = precomputedBuffer && isFinite(precomputedBuffer.duration) ? precomputedBuffer.duration : (isFinite(audio.duration) ? audio.duration : 0);
+      const t = getCurrentTime();
+      timeEl.textContent = fmt(t) + ' / ' + fmt(dur);
+      if (dur > 0) {
+        const pct = (t / dur) * 100;
         progressFill.style.width = pct + '%';
         progressHandle.style.left = pct + '%';
       }
     });
 
-    // Convert a currentTime (seconds) to a spectrogram column index using
-    // the same fractional-stride geometry as the precompute pass.
-    // Returns the canvas-space x coordinate.
+    // Convert a currentTime (seconds) to a canvas-space x coordinate
+    // using the precomputed buffer's duration as the timeline. We
+    // deliberately do NOT use audio.duration because for some sources
+    // (e.g. a long wav) it can be Infinity or NaN, which would clamp
+    // the playhead to 0 or the right edge.
     function timeToColumnX(t) {
-      if (!precomputedBuffer) return 0;
-      const sr = precomputedBuffer.sampleRate;
-      const HOP_SIZE = 512;
-      const totalSamples = precomputedBuffer.length;
-      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - 1024) / HOP_SIZE) + 1);
-      // Use the fractional stride so the last column = totalFramesAvail - 1
-      // and the playhead at audio.duration lands on the very last column.
-      const N_COLS = specCanvas.width;
-      const frameStrideF = (totalFramesAvail - 1) / Math.max(1, N_COLS - 1);
-      const colFloat = (t * sr) / (frameStrideF * HOP_SIZE);
-      return Math.max(0, Math.min(specCanvas.width - 1, Math.round(colFloat)));
+      if (!precomputedBuffer || !isFinite(precomputedBuffer.duration) || precomputedBuffer.duration <= 0) return 0;
+      const ratio = Math.max(0, Math.min(1, t / precomputedBuffer.duration));
+      return Math.round(ratio * (specCanvas.width - 1));
+    }
+
+    // Read the current play position. Prefer the audio element when it
+    // reports a finite value, otherwise fall back to 0. audio.currentTime
+    // can briefly be NaN on slow loads.
+    function getCurrentTime() {
+      const t = audio.currentTime;
+      if (typeof t === 'number' && isFinite(t)) return Math.max(0, t);
+      return 0;
     }
 
     // The maximum time represented by the precomputed spectrogram
@@ -550,21 +565,13 @@
     // covers) as the denominator so the bar lines up perfectly with
     // the painted spectrogram.
     function seekFromEvent(e) {
-      if (!audio.duration || isUploading) return;
+      if (!precomputedBuffer || !isFinite(precomputedBuffer.duration) || precomputedBuffer.duration <= 0 || isUploading) return;
       const rect = progress.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
       const pct = x / rect.width;
-      // Map click fraction to a column, then to a time. This way the
-      // seek lands exactly on the column the user clicked.
-      const targetCol = Math.round(pct * (specCanvas.width - 1));
-      const sr = precomputedBuffer ? precomputedBuffer.sampleRate : 44100;
-      const HOP_SIZE = 512;
-      const totalSamples = precomputedBuffer ? precomputedBuffer.length : 0;
-      const totalFramesAvail = Math.max(1, Math.floor((totalSamples - 1024) / HOP_SIZE) + 1);
-      const frameStrideF = (totalFramesAvail - 1) / Math.max(1, specCanvas.width - 1);
-      const targetTime = (targetCol * frameStrideF * HOP_SIZE) / sr;
-      audio.currentTime = Math.min(targetTime, audio.duration);
+      const targetTime = pct * precomputedBuffer.duration;
+      try { audio.currentTime = Math.min(targetTime, precomputedBuffer.duration); } catch (_) {}
     }
     progress.addEventListener('click', seekFromEvent);
     progress.addEventListener('touchstart', seekFromEvent, { passive: true });
@@ -576,33 +583,26 @@
     // The playhead is a vertical line that moves smoothly with the
     // current play position, not just at timeupdate intervals.
     function renderLoop() {
-      // Always draw the playhead when the spectrogram is loaded, even
-      // if precomputedBuffer is still null (just show a "0" marker
-      // until the audio buffer is decoded).
       if (precomputedFrames && !specBgDirty) {
         specCtx.drawImage(specBg, 0, 0);
-        // Compute the playhead x position from the audio. Fall back
-        // to 0 when no buffer is loaded yet.
-        let x = 0;
-        if (precomputedBuffer && audio.duration > 0) {
-          const t = Math.max(0, Math.min(audio.duration, audio.currentTime || 0));
-          x = timeToColumnX(t);
-        }
-        // Position the DOM playhead element over the canvas. This is
-        // a separate element so it is always visible regardless of
-        // canvas drawing issues.
+        const t = getCurrentTime();
+        const x = timeToColumnX(t);
         const wrapRect = specWrap.getBoundingClientRect();
         const canvasRect = specCanvas.getBoundingClientRect();
         const offsetX = canvasRect.left - wrapRect.left;
-        const displayX = (x / specCanvas.width) * canvasRect.width + offsetX;
+        const displayX = (x / (specCanvas.width - 1)) * canvasRect.width + offsetX;
         playheadEl.style.display = 'block';
         playheadEl.style.transform = 'translateX(' + displayX + 'px)';
-        playheadEl.style.opacity = audio.paused ? '0.55' : '0.95';
+        playheadEl.style.opacity = audio.paused ? '0.6' : '1';
+        if (precomputedBuffer && isFinite(precomputedBuffer.duration) && precomputedBuffer.duration > 0) {
+          const pct = (t / precomputedBuffer.duration) * 100;
+          progressFill.style.width = pct + '%';
+          progressHandle.style.left = pct + '%';
+          timeEl.textContent = fmt(t) + ' / ' + fmt(precomputedBuffer.duration);
+        }
       } else if (precomputedFrames === null) {
         playheadEl.style.display = 'none';
       } else if (specBgDirty) {
-        // Still analyzing: paint whatever frames we have so the user
-        // sees the spectrogram grow in real time.
         paintSpectrogram();
       }
       requestAnimationFrame(renderLoop);
