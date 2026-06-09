@@ -453,6 +453,18 @@
       }
       nowPlay.textContent = label;
 
+      // Clear any previously computed spectrogram so the canvas shows
+      // the new one growing in from scratch, not the old one finishing.
+      precomputedFrames = null;
+      precomputedWidth = 0;
+      precomputedBuffer = null;
+      specBgDirty = true;
+      paintSpectrogram();
+      playheadEl.style.display = 'none';
+      progressFill.style.width = '0%';
+      progressHandle.style.left = '0%';
+      timeEl.textContent = '0:00 / 0:00';
+
       try {
         const buffer = source instanceof Blob
           ? await decodeFile(source)
