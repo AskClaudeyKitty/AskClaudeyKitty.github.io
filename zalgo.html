@@ -2,136 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Zalgo</title>
+<title>Zalgo Text</title>
 <style>
-  body { margin: 0; background: linear-gradient(135deg, #1a0b2e, #0a1a3a); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-height: 100vh; padding: 1rem; box-sizing: border-box; }
-  h1 { text-align: center; letter-spacing: 6px; background: linear-gradient(90deg, #ff006e, #ffbe0b, #00f5d4); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 0 0 1rem; }
-  #wrap { display: flex; gap: 1rem; max-width: 1400px; margin: 0 auto; }
-  .panel { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; }
-  .panel h2 { margin: 0 0 0.5rem; font-size: 1rem; opacity: 0.8; letter-spacing: 2px; }
-  textarea { flex: 1; min-height: 400px; background: #0a0a1a; color: #00f5d4; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.75rem; font-family: 'Courier New', monospace; font-size: 0.95rem; resize: vertical; word-break: break-all; }
-  #render { flex: 1; min-height: 400px; background: #0a0a1a; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 1rem; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 1.5rem; line-height: 1.2; color: #fff; }
-  .controls { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; align-items: center; }
-  button { background: #ff006e; color: #fff; border: none; padding: 8px 16px; border-radius: 16px; cursor: pointer; font-weight: 600; letter-spacing: 1px; }
-  button.secondary { background: rgba(255,255,255,0.1); }
-  input[type=range] { width: 160px; }
-  label { font-size: 0.85rem; opacity: 0.8; }
-  #intensityVal { color: #ffbe0b; font-weight: 600; min-width: 2ch; display: inline-block; text-align: center; }
-  .color-row { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
-  .color-row input[type=color] { width: 36px; height: 28px; border: none; background: none; cursor: pointer; }
+  body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; padding: 2rem; }
+  pre { font-size: 2rem; line-height: 1.4; white-space: pre-wrap; word-break: break-all; margin: 0; }
 </style>
 </head>
 <body>
-  <h1>Z̸̢A̵L̷G̵O̴ ̶T̷E̵X̶T̴</h1>
-  <div id="wrap">
-    <div class="panel">
-      <h2>INPUT</h2>
-      <textarea id="input" placeholder="Type or paste zalgo here…"></textarea>
-      <div class="controls">
-        <label>Intensity: <span id="intensityVal">8</span></label>
-        <input type="range" id="intensity" min="0" max="30" value="8">
-        <button id="zalgofy">ZALGOFY</button>
-        <button id="copy" class="secondary">COPY</button>
-        <button id="clear" class="secondary">CLEAR</button>
-      </div>
-      <div class="color-row">
-        <label>Color:</label>
-        <input type="color" id="color" value="#ffffff">
-        <label><input type="checkbox" id="rainbow"> Rainbow</label>
-      </div>
-    </div>
-    <div class="panel">
-      <h2>OUTPUT</h2>
-      <div id="render"></div>
-    </div>
-  </div>
-
+<pre id="text"></pre>
 <script>
-  // ── Combining marks used by zalgo ──
-  const ABOVE = ['\u0300','\u0301','\u0302','\u0303','\u0304','\u0305','\u0306','\u0307','\u0308','\u0309','\u030A','\u030B','\u030C','\u030D','\u030E','\u030F','\u0310','\u0311','\u0312','\u0313','\u0314','\u0315','\u031A','\u031B','\u033D','\u033E','\u033F','\u0340','\u0341','\u0342','\u0343','\u0344','\u034A','\u034B','\u034C','\u0350','\u0351','\u0352','\u0357','\u0358','\u0359','\u035A','\u0363','\u0364','\u0365','\u0366','\u0367','\u0368','\u0369','\u036A','\u036B','\u036C','\u036D','\u036E','\u036F'];
-  const BELOW = ['\u0316','\u0317','\u0318','\u0319','\u031C','\u031D','\u031E','\u031F','\u0320','\u0321','\u0322','\u0323','\u0324','\u0325','\u0326','\u0327','\u0328','\u0329','\u032A','\u032B','\u032C','\u032D','\u032E','\u032F','\u0330','\u0331','\u0332','\u0333','\u0339','\u033A','\u033B','\u033C','\u0345','\u0347','\u0348','\u0349','\u034D','\u034E','\u034F','\u0353','\u0354','\u0355','\u0356','\u035B','\u035C','\u035D','\u035E','\u035F','\u0360','\u0361','\u0362'];
-  const STACK = ['\u0334','\u0335','\u0336','\u0337','\u0338'];
-
-  const inputEl  = document.getElementById('input');
-  const renderEl = document.getElementById('render');
-  const intensityEl = document.getElementById('intensity');
-  const intensityVal = document.getElementById('intensityVal');
-  const colorEl = document.getElementById('color');
-  const rainbowEl = document.getElementById('rainbow');
-
-  function rand(n) { return Math.floor(Math.random() * n); }
-  function pick(a) { return a[rand(a.length)]; }
-
-  // Zalgofy: add n random combining marks above, below, and middle-stacked
-  // after every non-space character.
-  function zalgofy(text, n) {
-    let out = '';
-    for (const ch of text) {
-      out += ch;
-      if (ch === ' ' || ch === '\n' || ch === '\t') continue;
-      for (let i = 0; i < n; i++) out += pick(ABOVE);
-      for (let i = 0; i < n; i++) out += pick(BELOW);
-      for (let i = 0; i < Math.min(2, n); i++) out += pick(STACK);
-    }
-    return out;
-  }
-
-  // Render: if rainbow is on, wrap each char in a span with a hue color.
-  // For very long text we fall back to plain textContent because
-  // building one <span> per char can lock the browser up.
-  function render() {
-    const text = inputEl.value;
-    const LONG = 5000;
-    if (rainbowEl.checked && text.length <= LONG) {
-      let html = '';
-      for (const ch of text) {
-        if (ch === '\n') html += '<br>';
-        else html += '<span style="color:hsl(' + (Math.random() * 360) + ',90%,65%)">' + ch + '</span>';
-      }
-      renderEl.innerHTML = html;
-    } else {
-      renderEl.style.color = colorEl.value;
-      renderEl.textContent = text;
-    }
-  }
-
-  // Buttons
-  document.getElementById('zalgofy').addEventListener('click', () => {
-    const n = parseInt(intensityEl.value, 10);
-    inputEl.value = zalgofy(inputEl.value, n);
-    render();
-  });
-  document.getElementById('copy').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(inputEl.value);
-      flash('Copied!');
-    } catch (e) { flash('Copy failed'); }
-  });
-  document.getElementById('clear').addEventListener('click', () => {
-    inputEl.value = '';
-    render();
-  });
-  intensityEl.addEventListener('input', () => {
-    intensityVal.textContent = intensityEl.value;
-  });
-  colorEl.addEventListener('input', render);
-  rainbowEl.addEventListener('change', render);
-  // Debounce input so very large pastes don't fire a render per keystroke.
-  let renderTimer = null;
-  inputEl.addEventListener('input', () => {
-    if (renderTimer) clearTimeout(renderTimer);
-    renderTimer = setTimeout(render, 80);
-  });
-
-  function flash(msg) {
-    const old = document.title;
-    document.title = msg;
-    setTimeout(() => { document.title = old; }, 800);
-  }
-
-  // Seed with a small demo so the page isn't empty.
-  inputEl.value = 'He cometh.';
-  render();
+  // Type your zalgo / text between the backticks below. Whatever you put
+  // here will be displayed on the page.
+  const text = `H̷̢̛E̴̡͙ ̷̰̎C̶̡Ȯ̶̱M̵̜̊E̷͉͝T̴̰̕H̶̰̕.̷͉͝`;
+  document.getElementById('text').textContent = text;
 </script>
 </body>
 </html>
