@@ -406,11 +406,18 @@
         const img = specBgCtx.createImageData(W, H);
         const data = img.data;
         const binsToShow = Math.min(N_BINS, H);
+        // Logarithmic frequency axis. y=0 (top) = high freq, y=H-1
+        // (bottom) = low freq. Maps canvas-y -> bin index so each
+        // row of pixels covers a doubling of frequency (octave).
+        // bin = (1 - t)^exp * (N-1) where t = y/H. Higher exp = more
+        // log-like (more bins squeezed near the top).
+        const LOG_EXP = 2.0;
         for (let x = 0; x < W; x++) {
           const frame = x < precomputedWidth ? precomputedFrames[x] : null;
           for (let y = 0; y < H; y++) {
             // y=0 top of canvas = high frequency; y=H-1 = low frequency
-            const bin = Math.floor((1 - y / H) * (binsToShow - 1));
+            const t = 1 - y / H;            // 1 at top, 0 at bottom
+            const bin = Math.floor(Math.pow(t, LOG_EXP) * (binsToShow - 1));
             let v = 0;
             if (frame) v = frame[bin] || 0;
             const [r, g, b] = magToRGB(v);
