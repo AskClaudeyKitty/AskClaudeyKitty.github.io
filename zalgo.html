@@ -77,9 +77,12 @@
   }
 
   // Render: if rainbow is on, wrap each char in a span with a hue color.
+  // For very long text we fall back to plain textContent because
+  // building one <span> per char can lock the browser up.
   function render() {
     const text = inputEl.value;
-    if (rainbowEl.checked) {
+    const LONG = 5000;
+    if (rainbowEl.checked && text.length <= LONG) {
       let html = '';
       for (const ch of text) {
         if (ch === '\n') html += '<br>';
@@ -113,7 +116,12 @@
   });
   colorEl.addEventListener('input', render);
   rainbowEl.addEventListener('change', render);
-  inputEl.addEventListener('input', render);
+  // Debounce input so very large pastes don't fire a render per keystroke.
+  let renderTimer = null;
+  inputEl.addEventListener('input', () => {
+    if (renderTimer) clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 80);
+  });
 
   function flash(msg) {
     const old = document.title;
