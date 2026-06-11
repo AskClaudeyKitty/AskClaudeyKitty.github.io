@@ -1484,41 +1484,37 @@ function loop(time) {
       // the pull is stronger than the lift and the player gets stuck.
       const heightAboveGround = Math.max(0, player.y);
       const pullScale = Math.max(0, 1 - heightAboveGround / Math.max(1, tornadoTop));
-      if (pdist < 30 && player.y + 1.8 >= flingThreshold) {
-        // One-shot fling: only fire the impulse once when the player
-        // crosses the threshold. After that, the impulse carries the
-        // player out of the tornado range naturally.
-        if (!player.flinging) {
-          let outX = -pdx / Math.max(pdist, 0.01);
-          let outZ = -pdz / Math.max(pdist, 0.01);
-          if (pdist < 0.05) {
-            outX = Math.cos(player.angle);
-            outZ = Math.sin(player.angle);
-          }
-          player.vy = 0;
-          // Fling velocity is set high enough that the player travels
-          // past the 30u tornado range in a fraction of a second.
-          player.vx = outX * flingOut;
-          player.vz = outZ * flingOut;
-          player.flinging = true;
-        } else {
-          // Keep the outward push strong every frame so the player
-          // doesn't get yanked back into the funnel core.
-          const outX = -pdx / Math.max(pdist, 0.01);
-          const outZ = -pdz / Math.max(pdist, 0.01);
-          const outSpeed = Math.hypot(player.vx ?? 0, player.vz ?? 0);
-          if (outSpeed < flingOut) {
-            player.vx = outX * flingOut;
-            player.vz = outZ * flingOut;
-          }
+      // Clear the fling flag only once the player has fully escaped the
+      // tornado's 30u range. While inside the range, do NOT touch the
+      // flag (the previous `else if (pdist < 30)` was clobbering it and
+      // re-firing the impulse every frame, which made the player ping-
+      // pong back and forth).
+      if (player.flinging && pdist >= 30) {
+        player.flinging = false;
+      }
+      if (player.flinging) {
+        // Coasting out: the player rides the initial impulse. Just
+        // damp the velocity a touch so they slow down naturally and
+        // don't slide forever, but never add inward or tangential
+        // forces. This is what breaks the back-and-forth loop.
+        player.vx *= 0.995;
+        player.vz *= 0.995;
+        if (Math.abs(player.vx) < 0.05) player.vx = 0;
+        if (Math.abs(player.vz) < 0.05) player.vz = 0;
+      } else if (pdist < 30 && player.y + 1.8 >= flingThreshold) {
+        // Fire the one-shot fling impulse.
+        let outX = -pdx / Math.max(pdist, 0.01);
+        let outZ = -pdz / Math.max(pdist, 0.01);
+        if (pdist < 0.05) {
+          outX = Math.cos(player.angle);
+          outZ = Math.sin(player.angle);
         }
-      } else if (player.flinging && pdist >= 30) {
-        // Player has cleared the tornado range: reset flag.
-        player.flinging = false;
+        player.vy = 0;
+        player.vx = outX * flingOut;
+        player.vz = outZ * flingOut;
+        player.flinging = true;
       } else if (pdist < 30) {
-        player.flinging = false;
-        // Apply tangential swirl via velocity so the position is updated
-        // in one place (the jump physics block) and never doubled.
+        // Below fling height: apply the normal swirl + center pull.
         if (pdist > 1) {
           const ptnx = -pdz / pdist;
           const ptnz = pdx / pdist;
