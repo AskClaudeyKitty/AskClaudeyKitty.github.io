@@ -952,15 +952,15 @@ function makeStudSpawnedBuf(r, g, b) {
 function makeSpikeBuf() {
   // Base: 1x0.2x1 dark gray. Tip: 4 triangular faces meeting at the top.
   const verts = [];
-  const baseY = 0, topY = 1.0;
+  const baseY = 0, topY = 1.2;
   const half = 0.5;
-  const cBase = [0.18, 0.18, 0.2];
-  const cTip  = [0.95, 0.2, 0.2];
-  // Base (4 faces, top and bottom)
-  // Bottom: y=0
+  const cBase = [0.25, 0.25, 0.3];
+  const cTip  = [1.0, 0.25, 0.25];
+  // Base (2 triangles forming the square bottom)
   verts.push(-half, baseY, -half,  ...cBase,  half, baseY, -half,  ...cBase,  half, baseY,  half);
   verts.push(-half, baseY, -half,  ...cBase,  half, baseY,  half,  ...cBase, -half, baseY,  half);
-  // 4 pyramid sides (triangles): from base corners to apex (0, topY, 0)
+  // 4 pyramid sides: from base corners to apex (0, topY, 0). Use
+  // bright tip color so the spike is clearly visible.
   const apex = [0, topY, 0];
   const corners = [
     [-half, baseY, -half],
@@ -970,12 +970,12 @@ function makeSpikeBuf() {
   ];
   for (let i = 0; i < 4; i++) {
     const a = corners[i];
-    const b = corners[(i + 1) % 4];
+    const c = corners[(i + 1) % 4];
     // Gradient: darker at base, brighter at tip
-    const darken = 0.7 + 0.3 * (i / 4);
+    const darken = 0.6 + 0.4 * (i / 4);
     const colorA = cTip.map(v => v * darken);
-    const colorB = cTip.map(v => v * (darken + 0.15));
-    verts.push(...a, ...colorA,  ...apex, ...cTip,  ...b, ...colorB);
+    const colorB = cTip.map(v => v * (darken + 0.2));
+    verts.push(...a, ...colorA,  ...apex, ...cTip,  ...c, ...colorB);
   }
   return createBuffer(new Float32Array(verts));
 }
