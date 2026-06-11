@@ -1478,7 +1478,7 @@ function loop(time) {
       // tornado size is escapable.
       const tornadoTop = tornadoVisual.maxHeight ?? 12.0;
       const flingOut = tornadoVisual.flingOut ?? 60;
-      const flingThreshold = tornadoTop * 0.4;
+      const flingThreshold = tornadoTop * 0.9;
       // Weaken the inward pull as the player approaches the top so they
       // can actually climb and trigger the fling. Without this scaling,
       // the pull is stronger than the lift and the player gets stuck.
