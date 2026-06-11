@@ -855,7 +855,7 @@ function togglePanel() {
 
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
-  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", "stud", null, null], // 9 slots
+  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", "spike", null, null], // 9 slots
   selected: 0, // 0-8
 };
 const invHud = document.createElement("div");
@@ -869,7 +869,7 @@ const slotIcons = {
   heavy: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#555,#222);border-radius:3px;box-shadow:inset -2px -2px 3px rgba(0,0,0,0.6);"></div>',
   immovable: '<div style="width:22px;height:22px;background:repeating-linear-gradient(45deg,#888,#888 4px,#555 4px,#555 8px);border-radius:3px;border:1px solid #222;"></div>',
   wall: '<div style="width:22px;height:22px;background:repeating-linear-gradient(0deg,#a85,#a85 3px,#864 3px,#864 6px);border-radius:2px;"></div>',
-  stud: '<div style="width:22px;height:22px;background:linear-gradient(135deg,#bbb,#888);border-radius:3px;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #444;"></div>',
+  spike: '<div style="width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:20px solid #ef4444;filter:drop-shadow(0 0 4px #ef4444);"></div>',
   _default: '<div style="font-size:18px;opacity:0.4;">·</div>',
 };
 for (let i = 0; i < 9; i++) {
@@ -947,6 +947,39 @@ function makeStudPlayerBufs(r, g, b) {
 function makeStudSpawnedBuf(r, g, b) {
   return createBuffer(createBox(1, 1, 1, r, g, b));
 }
+// Spike (slot 7) mesh: a 4-sided pyramid standing on a small dark base.
+// Procedurally generated so we don't need a new createBox variant.
+function makeSpikeBuf() {
+  // Base: 1x0.2x1 dark gray. Tip: 4 triangular faces meeting at the top.
+  const verts = [];
+  const baseY = 0, topY = 1.0;
+  const half = 0.5;
+  const cBase = [0.18, 0.18, 0.2];
+  const cTip  = [0.95, 0.2, 0.2];
+  // Base (4 faces, top and bottom)
+  // Bottom: y=0
+  verts.push(-half, baseY, -half,  ...cBase,  half, baseY, -half,  ...cBase,  half, baseY,  half);
+  verts.push(-half, baseY, -half,  ...cBase,  half, baseY,  half,  ...cBase, -half, baseY,  half);
+  // 4 pyramid sides (triangles): from base corners to apex (0, topY, 0)
+  const apex = [0, topY, 0];
+  const corners = [
+    [-half, baseY, -half],
+    [ half, baseY, -half],
+    [ half, baseY,  half],
+    [-half, baseY,  half],
+  ];
+  for (let i = 0; i < 4; i++) {
+    const a = corners[i];
+    const b = corners[(i + 1) % 4];
+    // Gradient: darker at base, brighter at tip
+    const darken = 0.7 + 0.3 * (i / 4);
+    const colorA = cTip.map(v => v * darken);
+    const colorB = cTip.map(v => v * (darken + 0.15));
+    verts.push(...a, ...colorA,  ...apex, ...cTip,  ...b, ...colorB);
+  }
+  return createBuffer(new Float32Array(verts));
+}
+const spikeBuf = makeSpikeBuf();
 const blockColors = [
   [0.9, 0.2, 0.2], [0.2, 0.7, 0.2], [0.2, 0.4, 0.9],
   [0.9, 0.7, 0.2], [0.7, 0.2, 0.9], [0.2, 0.9, 0.9],
@@ -1112,19 +1145,16 @@ function useInventorySlot(idx) {
       }
     }
   } else if (idx === 6) {
-    // Slot 7: 1x1x1 stud block — same kind as a normal spawned block, just 1 unit
-    const c = blockColors[Math.floor(Math.random() * blockColors.length)];
-    const buf = makeStudSpawnedBuf(c[0], c[1], c[2]);
-    const studHalf = 0.5;
+    // Slot 7: spike — 1x1x1 pyramid that hurts the player on touch.
     const gx = Math.round(spawnX);
     const gz = Math.round(spawnZ);
     spawnedBlocks.push({
-      x: gx, z: gz, y: studHalf,
+      x: gx, z: gz, y: 0.5,
       vx: 0, vy: 0, vz: 0,
       rx: 0, ry: 0, rz: 0,
       vrx: 0, vry: 0, vrz: 0,
-      buf, color: c, settled: true,
-      kind: "block", mass: 1, half: studHalf,
+      buf: spikeBuf, color: [0.95, 0.2, 0.2], settled: true,
+      kind: "spike", mass: 1, half: 0.5,
     });
   }
 }
@@ -2687,6 +2717,29 @@ if (!firstPerson && !player.dead) {
       ref: b,
       mass: b.mass ?? 1,
     });
+    // Spike damage: when the player touches a spike, hurt and bounce
+    // them away. A small cooldown on the spike prevents repeated
+    // damage while overlapping.
+    if (!player.dead && b.kind === "spike") {
+      const dxh = b.x - player.x, dzh = b.z - player.z;
+      const horiz = Math.hypot(dxh, dzh);
+      const spikeTop = b.y + 0.5; // pyramid apex y
+      const spikeBaseY = b.y - (b.half ?? 0.5);
+      if (horiz < 0.6 && player.y < spikeTop + 0.4 && player.y + 1.8 > spikeBaseY) {
+        const now = performance.now();
+        if ((b.lastSpikeHit || 0) < now - 350) {
+          b.lastSpikeHit = now;
+          damagePlayer(8, 'spike');
+          // Bounce the player away from the spike.
+          if (horiz > 0.05) {
+            const nx = -dxh / horiz, nz = -dzh / horiz;
+            player.vx = nx * 6;
+            player.vz = nz * 6;
+            player.vy = 4; // little hop
+          }
+        }
+      }
+    }
   }
   resolveDynamicCollisions();
   // Write resolved positions back to wrapped objects (pieces, spawned balls, spawned blocks)
