@@ -1484,13 +1484,15 @@ function loop(time) {
       // the pull is stronger than the lift and the player gets stuck.
       const heightAboveGround = Math.max(0, player.y);
       const pullScale = Math.max(0, 1 - heightAboveGround / Math.max(1, tornadoTop));
-      // Clear the fling flag only once the player has fully escaped the
-      // tornado's 30u range. While inside the range, do NOT touch the
-      // flag (the previous `else if (pdist < 30)` was clobbering it and
-      // re-firing the impulse every frame, which made the player ping-
-      // pong back and forth).
-      if (player.flinging && pdist >= 30) {
-        player.flinging = false;
+      // Reset the fling flag if enough time has passed (so a new
+      // tornado can fling the player again) or if the player has
+      // clearly escaped. Without a time-based reset, a slow coasting
+      // player that never quite reaches pdist>=30 would stay
+      // flinging for the rest of the level.
+      if (player.flinging) {
+        player.flingTimer = (player.flingTimer || 0) + dt;
+        if (player.flingTimer > 2.0) player.flinging = false;
+        if (pdist >= 30) player.flinging = false;
       }
       if (player.flinging) {
         // Coasting out: the player rides the initial impulse. Just
@@ -1513,6 +1515,7 @@ function loop(time) {
         player.vx = outX * flingOut;
         player.vz = outZ * flingOut;
         player.flinging = true;
+        player.flingTimer = 0;
       } else if (pdist < 30) {
         // Below fling height: apply the normal swirl + center pull.
         if (pdist > 1) {
