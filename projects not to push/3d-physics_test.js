@@ -2324,6 +2324,14 @@ for (const w of brickWalls) {
   if (sp > 0.05) {
     const dirX = (mx / sp), dirZ = (mz / sp);
     unglueWall(w, dirX, dirZ, player.speed * 0.6);
+    // Running into a brick wall hurts. Scales with how hard you
+    // hit it (player speed). 0.5+ = noticeable, 2.0+ = painful.
+    const hitDmg = Math.max(2, (player.speed - 0.5) * 4);
+    damagePlayer(hitDmg, 'wall');
+  } else if (sp > 0.005) {
+    // Very slow contact: tiny chip damage so a long lean against
+    // a wall isn't free.
+    damagePlayer(0.5, 'wall');
   }
 }
 // Court invisible walls (ball only) + goal nets
