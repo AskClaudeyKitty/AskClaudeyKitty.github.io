@@ -3,6 +3,12 @@ console.log("3d-physics_game.js v2026-06-07-tornado-v8 loaded");
 const cheerSound = new Audio("assets/cheer.wav");
 cheerSound.volume = 0.6;
 cheerSound.preload = "auto";
+// Oof sound for fall / hit damage. Cached and reused; cooldown avoids
+// stacking duplicate plays when many objects hit the player in one
+// frame.
+const oofSound = new Audio("assets/oof.mp3");
+oofSound.volume = 0.7;
+oofSound.preload = "auto";
 const gl = canvas.getContext("webgl", { antialias: true });
 if (!gl || gl.isContextLost()) {
   console.warn("WebGL context unavailable or lost; aborting init.");
@@ -583,14 +589,49 @@ function killPlayer() {
       buf: i,
     });
   }
-  // Respawn after a moment
+  // Respawn after a moment and restore full HP
   setTimeout(() => {
     player.x = 0;
     player.y = 0;
     player.z = 0;
     player.vy = 0;
     player.dead = false;
+    player.hp = player.maxHp;
+    player.peakFallSpeed = 0;
+    updateHpHud();
   }, 2000);
+}
+
+// ── Damage system ──
+// Apply damage from any source. Updates the HP HUD and triggers the
+// death sequence when HP drops to 0.
+function damagePlayer(amount, sourceLabel) {
+  if (player.dead) return;
+  player.hp = Math.max(0, player.hp - amount);
+  flashDamage(amount, sourceLabel);
+  updateHpHud();
+  // Play the oof, with a short cooldown so a flurry of hits doesn't
+  // stack into a wall of audio.
+  const now = performance.now();
+  if (oofSound && (player.lastOofTime || 0) < now - 120) {
+    player.lastOofTime = now;
+    // Clone so overlapping plays can each play through.
+    const s = oofSound.cloneNode();
+    s.volume = 0.7;
+    s.play().catch(() => {});
+  }
+  if (player.hp <= 0) killPlayer();
+}
+
+// Slow HP regen so the player can recover from a few small hits.
+function regenPlayer(dt) {
+  if (player.dead) return;
+  if (player.hp >= player.maxHp) return;
+  // Only regen when the player is on the ground (not flying through
+  // a tornado or flinging).
+  if (!player.grounded) return;
+  player.hp = Math.min(player.maxHp, player.hp + 4 * dt); // 4 HP/sec
+  updateHpHud();
 }
 
 // ── Character parts ──
@@ -604,7 +645,52 @@ const eyeData = createBox(0.08, 0.08, 0.05, 0.13, 0.13, 0.13); // dark eyes
 const eyeBuf = createBuffer(eyeData);
 
 // ── Player state ──
-const player = { x: 0, y: 0, z: 0, angle: 0, speed: 6, vy: 0, grounded: true };
+const player = { x: 0, y: 0, z: 0, angle: 0, speed: 6, vy: 0, grounded: true,
+                 hp: 100, maxHp: 100, peakFallSpeed: 0,
+                 lastDamage: 0 };
+
+// ── HP HUD (DOM overlay) ──
+const hpHud = document.createElement('div');
+hpHud.id = 'hp-hud';
+hpHud.style.cssText = 'position:fixed;left:18px;bottom:18px;z-index:10;font-family:monospace;color:#fff;user-select:none;pointer-events:none;';
+hpHud.innerHTML = '<div style="font-size:11px;letter-spacing:2px;opacity:0.7;margin-bottom:2px;">HEALTH</div>'
+  + '<div style="position:relative;width:220px;height:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.25);border-radius:7px;overflow:hidden;">'
+  +   '<div id="hp-fill" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#22c55e,#84cc16);transition:width 0.15s ease-out;"></div>'
+  + '</div>'
+  + '<div id="hp-text" style="position:absolute;left:0;right:0;top:0;font-size:11px;font-weight:bold;text-align:center;line-height:14px;text-shadow:0 1px 2px rgba(0,0,0,0.8);">100 / 100</div>';
+document.body.appendChild(hpHud);
+
+const hpFill = document.getElementById('hp-fill');
+const hpText = document.getElementById('hp-text');
+function updateHpHud() {
+  if (!hpFill || !hpText) return;
+  const pct = Math.max(0, Math.min(1, player.hp / player.maxHp)) * 100;
+  hpFill.style.width = pct + '%';
+  if (pct > 60)      hpFill.style.background = 'linear-gradient(90deg,#22c55e,#84cc16)';
+  else if (pct > 30) hpFill.style.background = 'linear-gradient(90deg,#eab308,#f59e0b)';
+  else               hpFill.style.background = 'linear-gradient(90deg,#ef4444,#b91c1c)';
+  hpText.textContent = Math.ceil(player.hp) + ' / ' + player.maxHp;
+}
+
+// Floating damage number shown briefly on hit.
+const dmgFloat = document.createElement('div');
+dmgFloat.id = 'hp-dmg';
+dmgFloat.style.cssText = 'position:fixed;left:18px;bottom:46px;z-index:11;font-family:monospace;font-weight:bold;font-size:1.4rem;color:#ff4444;text-shadow:0 0 8px rgba(0,0,0,0.9),0 2px 4px rgba(0,0,0,0.9);opacity:0;transition:opacity 0.3s,transform 1.2s;pointer-events:none;user-select:none;';
+document.body.appendChild(dmgFloat);
+let dmgFloatTimer = null;
+function flashDamage(amount, label) {
+  dmgFloat.textContent = '-' + Math.round(amount) + (label ? ' ' + label : '');
+  dmgFloat.style.opacity = '1';
+  dmgFloat.style.transform = 'translateY(0)';
+  if (dmgFloatTimer) clearTimeout(dmgFloatTimer);
+  // Drift up and fade.
+  requestAnimationFrame(() => {
+    dmgFloat.style.transform = 'translateY(-32px)';
+  });
+  dmgFloatTimer = setTimeout(() => {
+    dmgFloat.style.opacity = '0';
+  }, 700);
+}
 const keys = {};
 let camDist = 6;
 let camPitch = 0.5;
@@ -1633,6 +1719,13 @@ function loop(time) {
     }
     if (!playerInTornado) player.vy -= 20 * dt;
     player.y += player.vy * dt;
+    // Track how fast the player is falling. Used at impact to compute
+    // fall damage. Reset to 0 when grounded.
+    if (player.vy < 0) {
+      if (-player.vy > player.peakFallSpeed) player.peakFallSpeed = -player.vy;
+    } else if (player.grounded) {
+      player.peakFallSpeed = 0;
+    }
     const velX = player.vx ?? 0;
     const velZ = player.vz ?? 0;
     if (velX !== 0 || velZ !== 0) {
@@ -1650,12 +1743,21 @@ function loop(time) {
       if (Math.abs(player.vz) < 0.05) player.vz = 0;
     }
     if (player.y <= 0) {
+      // Fall damage on ground impact: scales with peakFallSpeed.
+      // peakFallSpeed of 10 = safe, 25 = big hit, 40+ = lethal-ish.
+      if (player.peakFallSpeed > 10) {
+        const dmg = Math.max(5, (player.peakFallSpeed - 10) * 2.5);
+        damagePlayer(dmg, 'fall');
+      }
+      player.peakFallSpeed = 0;
       player.y = 0;
       player.vy = 0;
       player.grounded = true;
     } else {
       player.grounded = false;
     }
+    // Slow passive HP regen.
+    regenPlayer(dt);
   }
 
   const newX = player.x + mx * player.speed * dt;
@@ -1681,6 +1783,12 @@ function loop(time) {
     if (!onTopX || !onTopZ) continue;
     // Falling onto it
     if (player.vy <= 0 && player.y >= topY - 0.05 && player.y <= topY + 0.6) {
+      // Same fall-damage rule as ground impact.
+      if (player.peakFallSpeed > 10) {
+        const dmg = Math.max(5, (player.peakFallSpeed - 10) * 2.5);
+        damagePlayer(dmg, 'fall');
+      }
+      player.peakFallSpeed = 0;
       player.y = topY;
       player.vy = 0;
       player.grounded = true;
