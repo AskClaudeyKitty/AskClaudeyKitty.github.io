@@ -979,6 +979,8 @@ function makeSpikeBuf() {
   }
   return createBuffer(new Float32Array(verts));
 }
+// Vertex count of the spike mesh (2 base triangles + 4 pyramid triangles = 18 verts).
+const SPIKE_VERTS = 18;
 const spikeBuf = makeSpikeBuf();
 const blockColors = [
   [0.9, 0.2, 0.2], [0.2, 0.7, 0.2], [0.2, 0.4, 0.9],
@@ -1155,6 +1157,7 @@ function useInventorySlot(idx) {
       vrx: 0, vry: 0, vrz: 0,
       buf: spikeBuf, color: [0.95, 0.2, 0.2], settled: true,
       kind: "spike", mass: 1, half: 0.5,
+      bufCount: SPIKE_VERTS,
     });
   }
 }
@@ -2851,7 +2854,7 @@ if (!firstPerson && !player.dead) {
     r[8] = cx * sy * cz + sx * sz;
     r[9] = cx * sy * sz - sx * cz;
     r[10] = cx * cy;
-    drawMesh(b.buf, 36, mat4Multiply(m, r));
+    drawMesh(b.buf, b.bufCount || 36, mat4Multiply(m, r));
   }
   // Render brick walls (glued = axis-aligned, loose = tumbling)
   for (const w of brickWalls) {
