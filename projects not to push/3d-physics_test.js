@@ -1149,10 +1149,10 @@ function useInventorySlot(idx) {
     }
   } else if (idx === 6) {
     // Slot 7: spike — 1x1x1 pyramid that hurts the player on touch.
-    const gx = Math.round(spawnX);
-    const gz = Math.round(spawnZ);
+    // No snap to grid: spawn at the exact in-front position so the
+    // player can place it freely.
     spawnedBlocks.push({
-      x: gx, z: gz, y: 0.5,
+      x: spawnX, z: spawnZ, y: 0.5,
       vx: 0, vy: 0, vz: 0,
       rx: 0, ry: 0, rz: 0,
       vrx: 0, vry: 0, vrz: 0,
