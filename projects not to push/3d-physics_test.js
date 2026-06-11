@@ -952,13 +952,14 @@ function makeStudSpawnedBuf(r, g, b) {
 function makeSpikeBuf() {
   // Base: 1x0.2x1 dark gray. Tip: 4 triangular faces meeting at the top.
   const verts = [];
-  const baseY = 0, topY = 1.2;
+  const baseY = 0, topY = 2.0;
   const half = 0.5;
-  const cBase = [0.25, 0.25, 0.3];
-  const cTip  = [1.0, 0.25, 0.25];
-  // Base (2 triangles forming the square bottom)
-  verts.push(-half, baseY, -half,  ...cBase,  half, baseY, -half,  ...cBase,  half, baseY,  half);
-  verts.push(-half, baseY, -half,  ...cBase,  half, baseY,  half,  ...cBase, -half, baseY,  half);
+  const cBase = [0.9, 0.9, 0.0];
+  const cTip  = [1.0, 0.0, 0.7];
+  // Base (2 triangles forming the square bottom). Each triangle needs
+  // 3 verts × (pos + color) = 9 spread args.
+  verts.push(-half, baseY, -half,  ...cBase,  half, baseY, -half,  ...cBase,  half, baseY,  half,  ...cBase);
+  verts.push(-half, baseY, -half,  ...cBase,  half, baseY,  half,  ...cBase, -half, baseY,  half,  ...cBase);
   // 4 pyramid sides: from base corners to apex (0, topY, 0). Use
   // bright tip color so the spike is clearly visible.
   const apex = [0, topY, 0];
