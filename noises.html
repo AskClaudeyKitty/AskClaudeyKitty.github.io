@@ -202,7 +202,9 @@
 
   <div class="status" id="status">Analyzing audio…</div>
 
-  <audio id="audio" src="radio-station.wav" preload="auto"></audio>
+  <!-- Bundled audio. Only autoplay-able when served over http(s).
+       On file:// the user should pick a file via the UPLOAD button. -->
+  <audio id="audio" preload="auto"></audio>
 
   <script>
     // ── DOM refs ──
@@ -630,9 +632,14 @@
 
     // ── Initial idle state ──
     paintSpectrogram();
-    setStatus('Loading radio-station.wav…', true);
-    // Auto-load the bundled audio on page load
-    loadAndAnalyze('radio-station.wav', 'radio-station.wav');
+    // Autoload only works when served over http(s) — file:// URLs
+    // can't be fetched. On file://, just tell the user to upload.
+    if (location.protocol === 'file:') {
+      setStatus('Pick an audio file to analyze (autoload disabled on file://)', true);
+    } else {
+      setStatus('Loading radio-station.wav…', true);
+      loadAndAnalyze('radio-station.wav', 'radio-station.wav');
+    }
   </script>
 </body>
 </html>
