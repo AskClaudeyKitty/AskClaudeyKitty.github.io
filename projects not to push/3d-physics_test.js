@@ -1457,16 +1457,31 @@ function loop(time) {
             b.spinZ += (Math.random() - 0.5) * 3;
           }
         }
-        // Top-of-tornado fling for spawned objects: once they reach the funnel
-        // top, blast them hard outward so they leave the tornado range.
+        // Top-of-tornado fling for spawned objects: when they reach
+        // ~90% of the funnel top (matching the player threshold),
+        // blast them hard outward so they leave the tornado range.
+        // one-shot + timer so a new tornado can fling them again.
         const funnelTop = tornadoVisual.maxHeight ?? 12.0;
-        if (b.y >= funnelTop - 0.2) {
+        const flingThresholdObj = funnelTop * 0.9;
+        if (b.flingTimer === undefined) b.flingTimer = 0;
+        if (b.flinging) {
+          b.flingTimer += dt;
+          if (b.flingTimer > 2.0) b.flinging = false;
+          if (dist >= 30) b.flinging = false;
+          // Coasting out: just damp horizontal velocity a touch.
+          b.vx *= 0.995;
+          b.vz *= 0.995;
+          if (Math.abs(b.vx) < 0.05) b.vx = 0;
+          if (Math.abs(b.vz) < 0.05) b.vz = 0;
+        } else if (b.y >= flingThresholdObj) {
           const outX = -ddx / dist;
           const outZ = -ddz / dist;
           const flingOut = tornadoVisual.flingOut ?? 30;
           b.vy = 0;
           b.vx = outX * flingOut;
           b.vz = outZ * flingOut;
+          b.flinging = true;
+          b.flingTimer = 0;
         }
       };
       // Pull the player toward the tornado only when the player is nearby.
