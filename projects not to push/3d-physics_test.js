@@ -855,12 +855,16 @@ function togglePanel() {
 
 // ── Inventory HUD (9 slots, hotkeys 1-9) ──
 const playerInventory = {
-  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", "spike", null, null], // 9 slots
+  slots: ["ball", "block", "spring", "heavy", "immovable", "wall", "spike", "surprise", null], // 9 slots
   selected: 0, // 0-8
 };
 const invHud = document.createElement("div");
 invHud.id = "inventory-hud";
 invHud.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:10px;pointer-events:none;z-index:5;";
+// Spin animation for the surprise slot's '?' icon.
+const invAnim = document.createElement("style");
+invAnim.textContent = "@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}";
+document.head.appendChild(invAnim);
 const invSlots = [];
 const slotIcons = {
   ball: '<div style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0%,#ddd 25%,#888 80%);box-shadow:inset -2px -2px 4px rgba(0,0,0,0.4);"></div>',
@@ -870,6 +874,7 @@ const slotIcons = {
   immovable: '<div style="width:22px;height:22px;background:repeating-linear-gradient(45deg,#888,#888 4px,#555 4px,#555 8px);border-radius:3px;border:1px solid #222;"></div>',
   wall: '<div style="width:22px;height:22px;background:repeating-linear-gradient(0deg,#a85,#a85 3px,#864 3px,#864 6px);border-radius:2px;"></div>',
   spike: '<div style="width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:20px solid #ef4444;filter:drop-shadow(0 0 4px #ef4444);"></div>',
+  surprise: '<div style="font-size:18px;font-weight:bold;color:#a78bfa;animation:spin 1.5s linear infinite;text-shadow:0 0 6px #a78bfa;">?</div>',
   _default: '<div style="font-size:18px;opacity:0.4;">·</div>',
 };
 for (let i = 0; i < 9; i++) {
@@ -983,6 +988,32 @@ function makeSpikeBuf() {
 // Vertex count of the spike mesh (2 base triangles + 4 pyramid triangles = 18 verts).
 const SPIKE_VERTS = 18;
 const spikeBuf = makeSpikeBuf();
+// Separate buffer for the surprise spike. We rebuild it every frame
+// so the in-world color can cycle (purple -> magenta -> teal) until
+// the player touches it, then it shows the outcome color (green heal
+// or red kill). The regular spike keeps using the static spikeBuf.
+const surpriseSpikeBuf = makeSpikeBuf([0.7, 0.5, 0.95]);
+function rebuildSurpriseSpikeBuf(color) {
+  const verts = [];
+  const baseY = 0, topY = 2.0;
+  const half = 0.5;
+  verts.push(-half, baseY, -half,  ...color,  half, baseY, -half,  ...color,  half, baseY,  half,  ...color);
+  verts.push(-half, baseY, -half,  ...color,  half, baseY,  half,  ...color, -half, baseY,  half,  ...color);
+  const apex = [0, topY, 0];
+  const corners = [
+    [-half, baseY, -half],
+    [ half, baseY, -half],
+    [ half, baseY,  half],
+    [-half, baseY,  half],
+  ];
+  for (let i = 0; i < 4; i++) {
+    const a = corners[i];
+    const c = corners[(i + 1) % 4];
+    verts.push(...a, ...color,  ...apex, ...color,  ...c, ...color);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, surpriseSpikeBuf);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(verts));
+}
 const blockColors = [
   [0.9, 0.2, 0.2], [0.2, 0.7, 0.2], [0.2, 0.4, 0.9],
   [0.9, 0.7, 0.2], [0.7, 0.2, 0.9], [0.2, 0.9, 0.9],
@@ -1159,6 +1190,28 @@ function useInventorySlot(idx) {
       buf: spikeBuf, color: [0.95, 0.2, 0.2], settled: true,
       kind: "spike", mass: 1, half: 0.5,
       bufCount: SPIKE_VERTS,
+    });
+  } else if (idx === 7) {
+    // Slot 8: surprise spike — 50/50 heal-to-full or insta-kill on touch.
+    // Visually a purple spike that color-cycles; flips its result
+    // the moment the player actually touches it, so you can never
+    // know in advance which way it'll go.
+    spawnedBlocks.push({
+      x: spawnX, z: spawnZ, y: 0.5,
+      vx: 0, vy: 0, vz: 0,
+      rx: 0, ry: 0, rz: 0,
+      vrx: 0, vry: 0, vrz: 0,
+      // Color is the "neutral" purple at spawn; render overrides it
+      // with a cycling animation. On touch, a new color (green for
+      // heal, red for kill) is set.
+      buf: surpriseSpikeBuf, color: [0.7, 0.5, 0.95], settled: true,
+      kind: "surprise", mass: 1, half: 0.5,
+      bufCount: SPIKE_VERTS,
+      // The actual heal-or-kill outcome is rolled at touch time so
+      // the player can't predict it from looking at the spike.
+      outcome: null,
+      // 60ms color cycle for the visual "?"
+      colorPhase: Math.random() * Math.PI * 2,
     });
   }
 }
@@ -2724,7 +2777,7 @@ if (!firstPerson && !player.dead) {
     // Spike damage: when the player touches a spike, hurt and bounce
     // them away. A small cooldown on the spike prevents repeated
     // damage while overlapping.
-    if (!player.dead && b.kind === "spike") {
+    if (!player.dead && (b.kind === "spike" || b.kind === "surprise")) {
       const dxh = b.x - player.x, dzh = b.z - player.z;
       const horiz = Math.hypot(dxh, dzh);
       const spikeTop = b.y + 0.5; // pyramid apex y
@@ -2733,13 +2786,41 @@ if (!firstPerson && !player.dead) {
         const now = performance.now();
         if ((b.lastSpikeHit || 0) < now - 350) {
           b.lastSpikeHit = now;
-          damagePlayer(8, 'spike');
-          // Bounce the player away from the spike.
-          if (horiz > 0.05) {
-            const nx = -dxh / horiz, nz = -dzh / horiz;
-            player.vx = nx * 6;
-            player.vz = nz * 6;
-            player.vy = 4; // little hop
+          if (b.kind === "spike") {
+            damagePlayer(8, 'spike');
+            if (horiz > 0.05) {
+              const nx = -dxh / horiz, nz = -dzh / horiz;
+              player.vx = nx * 6;
+              player.vz = nz * 6;
+              player.vy = 4;
+            }
+          } else {
+            // Surprise: 50/50 outcome rolled NOW, the moment the
+            // player actually touches the spike. We bounce the player
+            // either way so they can see what happened.
+            if (b.outcome === null) b.outcome = Math.random() < 0.5 ? 'heal' : 'kill';
+            if (b.outcome === 'heal') {
+              // Full heal + green flash.
+              player.hp = player.maxHp;
+              updateHpHud();
+              dmgFloat.textContent = '+HEAL';
+              dmgFloat.style.color = '#22c55e';
+              dmgFloat.style.opacity = '1';
+              dmgFloat.style.transform = 'translateY(0)';
+              requestAnimationFrame(() => { dmgFloat.style.transform = 'translateY(-32px)'; });
+              setTimeout(() => { dmgFloat.style.opacity = '0'; dmgFloat.style.color = '#ff4444'; }, 700);
+              b.color = [0.2, 0.95, 0.3];
+            } else {
+              // Instant death. Plays the dedicated death oof.
+              damagePlayer(9999, 'surprise');
+              b.color = [1.0, 0.1, 0.1];
+            }
+            if (horiz > 0.05) {
+              const nx = -dxh / horiz, nz = -dzh / horiz;
+              player.vx = nx * 6;
+              player.vz = nz * 6;
+              player.vy = 4;
+            }
           }
         }
       }
@@ -2855,6 +2936,43 @@ if (!firstPerson && !player.dead) {
     r[8] = cx * sy * cz + sx * sz;
     r[9] = cx * sy * sz - sx * cz;
     r[10] = cx * cy;
+    // Spin the surprise spike's color phase so its in-world color
+    // cycles (purple -> magenta -> teal). Touched spikes get their
+    // outcome color set and stop cycling so the player sees the
+    // result.
+    if (b.kind === "surprise") {
+      if (b.outcome === null) {
+        b.colorPhase = (b.colorPhase || 0) + 0.08;
+        const t = (Math.sin(b.colorPhase) + 1) * 0.5; // 0..1
+        // Hue cycle from purple (280) through magenta (320) to teal (180)
+        const hue = 280 + t * 80;
+        // Convert HSV -> RGB for the color attribute.
+        const s = 0.7, v = 0.95;
+        const h = hue / 60;
+        const i = Math.floor(h);
+        const f = h - i;
+        const p = v * (1 - s);
+        const q = v * (1 - s * f);
+        const tt = v * (1 - s * (1 - f));
+        let r1, g1, b1;
+        if (i === 0)      { r1 = v; g1 = tt; b1 = p; }
+        else if (i === 1) { r1 = q; g1 = v; b1 = p; }
+        else if (i === 2) { r1 = p; g1 = v; b1 = tt; }
+        else if (i === 3) { r1 = p; g1 = q; b1 = v; }
+        else if (i === 4) { r1 = tt; g1 = p; b1 = v; }
+        else              { r1 = v; g1 = p; b1 = q; }
+        b.color = [r1, g1, b1];
+        // Rebuild the spike buffer with the new color so it shows
+        // up in the next drawMesh call.
+        rebuildSurpriseSpikeBuf(b.color);
+      } else if (b.outcome === 'heal') {
+        b.color = [0.2, 0.95, 0.3];
+        rebuildSurpriseSpikeBuf(b.color);
+      } else {
+        b.color = [1.0, 0.1, 0.1];
+        rebuildSurpriseSpikeBuf(b.color);
+      }
+    }
     drawMesh(b.buf, b.bufCount || 36, mat4Multiply(m, r));
   }
   // Render brick walls (glued = axis-aligned, loose = tumbling)
