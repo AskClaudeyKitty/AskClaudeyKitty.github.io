@@ -1476,7 +1476,10 @@ function loop(time) {
         } else if (b.y >= flingThresholdObj) {
           const outX = -ddx / dist;
           const outZ = -ddz / dist;
-          const flingOut = tornadoVisual.flingOut ?? 30;
+          // Spawned objects get a gentler fling so they stay near the
+          // player/camera and can be seen after being thrown. The
+          // player fling (separate code path) keeps the full speed.
+          const flingOut = (tornadoVisual.flingOut ?? 30) * 0.5;
           b.vy = 0;
           b.vx = outX * flingOut;
           b.vz = outZ * flingOut;
