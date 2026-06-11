@@ -554,6 +554,13 @@ function breakRedBlock(block) {
 function killPlayer() {
   if (player.dead) return;
   player.dead = true;
+  // Play the oof at full volume as the dedicated death sound, on top
+  // of whatever per-hit oof just fired. Bypasses the 120ms cooldown.
+  if (oofSound) {
+    const s = oofSound.cloneNode();
+    s.volume = 1.0;
+    s.play().catch(() => {});
+  }
   const colors = [
     [0.27, 0.47, 0.67], // body
     [0.93, 0.78, 0.53], // head
