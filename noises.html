@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -257,13 +258,19 @@
       return await ctx.decodeAudioData(ab);
     }
 
-    async function decodeUrl(url) {
-      setStatus('Downloading audio…');
-      const r = await fetch(url);
+    async function decodeUrl(url, signal) {
+      try {
+        setStatus('Downloading audio…');
+        const r = await fetch(url, { signal });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const ab = await r.arrayBuffer();
-      setStatus('Decoding audio…');
-      const ctx = getAudioCtx();
-      return await ctx.decodeAudioData(ab);
+        setStatus('Decoding audio…');
+        const ctx = getAudioCtx();
+        return await ctx.decodeAudioData(ab);
+      } catch (e) {
+        if (e && e.name === 'AbortError') return null;
+        throw e;
+      }
     }
 
     // ── Viridis-flame color map (matches the original look) ──
@@ -447,8 +454,19 @@
       return m + ':' + s;
     }
 
+    // In-flight load cancellation: when the user picks a new file
+    // while a previous decode is still running, abort the old one so
+    // it doesn't surface as an unhandled rejection.
+    let loadAbort = null;
+    function makeAbort() {
+      if (loadAbort) loadAbort.abort();
+      loadAbort = new AbortController();
+      return loadAbort.signal;
+    }
+
     // ── Load a source and precompute the spectrogram ──
     async function loadAndAnalyze(source, label) {
+      const signal = makeAbort();
       isUploading = true;
       playBtn.disabled = true;
       playBtn.textContent = '▶ PLAY';
@@ -477,10 +495,13 @@
       try {
         const buffer = source instanceof Blob
           ? await decodeFile(source)
-          : await decodeUrl(source);
+          : await decodeUrl(source, signal);
+        if (signal.aborted) return; // superseded by a newer load
+        if (!buffer) { setStatus('Load aborted', true); return; }
         precomputedBuffer = buffer;
         setStatus('Computing spectrogram…');
         precomputedFrames = await precomputeSpectrogram(buffer);
+        if (signal.aborted) return;
         // Final paint so the very last columns are committed to the
         // offscreen buffer once the async chunks have all finished.
         specBgDirty = true;
@@ -495,10 +516,14 @@
         paintSpectrogram();
         audio.volume = volEl.value / 100;
       } catch (e) {
+        if (signal.aborted) return;
+        if (e && e.name === 'AbortError') return;
         console.error(e);
         setStatus('Failed: ' + e.message);
       } finally {
-        isUploading = false;
+        if (loadAbort && loadAbort.signal === signal) {
+          isUploading = false;
+        }
       }
     }
 
