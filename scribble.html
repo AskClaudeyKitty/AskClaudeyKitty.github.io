@@ -869,6 +869,16 @@
     shiny:  { cl: 5 },
     cursed: { dm: 1.5, col: '#3a3a3a' },
     royal:  { cl: 10, col: '#e8c83a' },
+    // motion
+    moving:    { sd: 60 },          // constant horizontal drift
+    spinning:  { sd: 0, ang: 6 },   // rotate in place
+    bouncing:  { bo: 1, sd: 40 },   // bouncy drift
+    floating:  { fly: 1, sd: 30 },  // drifts upward-ish
+    sinking:   { sd: 20, fly: 0 },  // drifts down (sinks through floors — fun)
+    chasing:   { ag: 1, sd: 80 },   // homing
+    fleeing:   { fr: 1, sd: 80 },   // runs away
+    static_obj:{ sd: 0 },           // no motion
+    patrolling:{ sd: 50 },          // wander
   };
   const ADJ_NAMES = Object.keys(ADJ);
 
@@ -896,13 +906,15 @@
     if (!d) return null;
     const out = { ...d };
     let sizeMul = 1, hpMul = 1, sdMul = 1, dmMul = 1, hlAdd = 0, clAdd = 0;
-    let setAg = d.ag, setFr = d.fr, setFl = d.fl, setFz = d.fz, setSp = d.sp, setFly = d.fly;
+    let setAg = d.ag, setFr = d.fr, setFl = d.fl, setFz = d.fz, setSp = d.sp, setFly = d.fly, setBo = d.bo;
+    let motionSet = false;
     for (const a of adjs) {
       const adj = ADJ[a];
       if (!adj) continue;
       if (adj.sz) sizeMul *= adj.sz;
       if (adj.hp) hpMul *= adj.hp;
-      if (adj.sd) sdMul *= adj.sd;
+      if (adj.sd !== undefined && !motionSet) { out.sd = adj.sd; motionSet = true; }
+      else if (adj.sd) sdMul *= adj.sd;
       if (adj.dm) dmMul *= adj.dm;
       if (adj.hl) hlAdd += adj.hl;
       if (adj.cl) clAdd += adj.cl;
@@ -912,6 +924,8 @@
       if (adj.fl) setFl = 1;
       if (adj.fz) setFz = 1;
       if (adj.sp) setSp = 1;
+      if (adj.bo) setBo = 1;
+      if (adj.fly !== undefined) setFly = adj.fly;
     }
     if (sizeMul !== 1) {
       if (out.sz) out.sz = Math.max(2, Math.round(out.sz * sizeMul));
@@ -919,7 +933,7 @@
       if (out.h) out.h = Math.max(2, Math.round(out.h * sizeMul));
     }
     if (hpMul !== 1) out.hp = Math.round((out.hp || 10) * hpMul);
-    if (sdMul !== 1) out.sd = Math.round((out.sd || 60) * sdMul);
+    if (!motionSet && sdMul !== 1) out.sd = Math.round((out.sd || 60) * sdMul);
     if (dmMul !== 1) out.dm = Math.round((out.dm || 0) * dmMul);
     if (hlAdd) out.hl = (out.hl || 0) + hlAdd;
     if (clAdd) out.cl = (out.cl || 0) + clAdd;
@@ -928,6 +942,8 @@
     if (setFl) out.fl = setFl;
     if (setFz) out.fz = setFz;
     if (setSp) out.sp = setSp;
+    if (setBo) out.bo = setBo;
+    if (out.fly === undefined && setFly !== undefined) out.fly = setFly;
     return out;
   }
 
@@ -954,7 +970,7 @@
   }
   function buildAdjs() {
     // common adjectives for quick-pick
-    const common = ['big','small','red','blue','green','fire','ice','strong','fast','angry','healing','magic','dark','shiny','royal'];
+    const common = ['big','small','red','blue','green','fire','ice','strong','fast','angry','healing','magic','dark','shiny','royal','moving','spinning','bouncing','floating','chasing'];
     menuAdjs.innerHTML = common.map(a => `<div class="adjbtn" data-a="${a}">${a}</div>`).join('');
     [...menuAdjs.children].forEach(b => b.addEventListener('click', () => {
       b.classList.toggle('sel');
@@ -996,14 +1012,19 @@
     if (!base) { menuSearch.style.borderColor = '#aa3030'; return; }
     const d = adjs.length ? applyAdjs(base, adjs) : O[base];
     if (!d) return;
+    // pick motion mode from adjs
+    const motionAdjs = adjs.filter(a => ['moving','spinning','bouncing','floating','sinking','chasing','fleeing','static_obj','patrolling'].includes(a));
+    const motion = motionAdjs[motionAdjs.length-1] || (d.sd ? 'patrolling' : null);
+    const ang = (motion === 'spinning') ? 6 : 0;
     const o = {
       n: base + (adjs.length ? ' ('+adjs.join(' ')+')' : ''),
       def: d,
       x: player.x + (player.facing||1)*30,
       y: player.y - 30,
-      vx: 0, vy: 0, ang: 0, age: 0,
+      vx: 0, vy: 0, ang, age: 0,
       hp: d.hp || (d.al ? 10 : 1e9),
       reload: 0, onGround: false, facing: 1,
+      _motion: motion,
     };
     objs.push(o);
     spawnMenu.classList.remove('open');
@@ -1144,8 +1165,36 @@
         o.vy += GRAVITY * dt;
         if (o.vy > 900) o.vy = 900;
       }
+      // motion adjective behavior
+      if (o._motion) {
+        const sp = o.def.sd || 60;
+        if (o._motion === 'moving' || o._motion === 'bouncing' || o._motion === 'patrolling') {
+          if (!o._mvT || o._mvT < 0) { o._mvA = Math.random() < 0.5 ? 1 : -1; o._mvT = 2 + Math.random()*3; }
+          o._mvT -= dt;
+          o.vx = o._mvA * sp * (o._motion === 'patrolling' ? 0.5 : 1);
+        } else if (o._motion === 'spinning') {
+          o.ang += sp * dt;
+        } else if (o._motion === 'floating') {
+          o.vx = (o._mvA || (o._mvA = Math.random() < 0.5 ? 1 : -1, 1)) * sp;
+          o.vy = -sp * 0.3;
+        } else if (o._motion === 'sinking') {
+          o.vx = 0;
+          o.vy = sp * 0.5; // sink down
+        } else if (o._motion === 'chasing') {
+          const dx = player.x - o.x, dy = player.y - o.y;
+          const d = Math.hypot(dx, dy) || 1;
+          o.vx = (dx/d) * sp;
+          o.vy = (dy/d) * sp * 0.5;
+        } else if (o._motion === 'fleeing') {
+          const dx = o.x - player.x, dy = o.y - player.y;
+          const d = Math.hypot(dx, dy) || 1;
+          if (d < 300) { o.vx = (dx/d) * sp; o.vy = (dy/d) * sp * 0.3; }
+        } else if (o._motion === 'static_obj') {
+          o.vx = 0; o.vy = 0;
+        }
+      }
       // AI: chase/follow/wander
-      if (o.def.al) {
+      if (o.def.al && !o._motion) {
         const dx = player.x - o.x, dist = Math.abs(dx);
         if (o.def.ag && dist < 320) {
           o.vx = Math.sign(dx) * (o.def.sd||60);
