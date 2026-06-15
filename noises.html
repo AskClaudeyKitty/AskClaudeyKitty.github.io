@@ -203,9 +203,9 @@
 
   <div class="status" id="status">Analyzing audio…</div>
 
-  <!-- Bundled audio. Only autoplay-able when served over http(s).
-       On file:// the user should pick a file via the UPLOAD button. -->
-  <audio id="audio" preload="auto"></audio>
+  <!-- Bundled audio. Loads when served over http(s) (autoload skipped
+       on file://). The user can also pick a file via the UPLOAD button. -->
+  <audio id="audio" src="radio-station.wav" preload="auto"></audio>
 
   <script>
     // ── DOM refs ──
