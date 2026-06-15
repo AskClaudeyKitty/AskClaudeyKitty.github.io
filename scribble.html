@@ -19,8 +19,23 @@
   #suggest div:hover,#suggest div.sel{background:#2a3142}
   #suggest .cat{color:#7a8290;font-size:11px;margin-left:8px}
   #hint{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);color:#5a6271;font-size:11px;z-index:10;pointer-events:none;text-align:center;width:90vw}
-  canvas{display:block;background:#1a1d24;cursor:crosshair;outline:none}
-  canvas:focus{outline:none}
+  #spawnbtn{position:fixed;bottom:8px;right:12px;z-index:20;padding:10px 16px;background:#5a8aff;color:#fff;border:none;border-radius:6px;font:14px -apple-system,system-ui,monospace;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+  #spawnbtn:hover{background:#6a9aff}
+  #spawnbtn:active{background:#4a7aff}
+  #spawnmenu{position:fixed;bottom:60px;right:12px;z-index:20;width:min(480px,90vw);height:min(420px,70vh);background:rgba(20,23,30,0.98);border:1px solid #3a4150;border-radius:8px;display:none;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+  #spawnmenu.open{display:flex}
+  #spawnmenu #menuhead{padding:8px;border-bottom:1px solid #2c3142;display:flex;gap:6px}
+  #spawnmenu #menusearch{flex:1;background:#1b1f2a;color:#e8ecf2;border:1px solid #2c3142;border-radius:4px;padding:6px 10px;font:13px monospace;outline:none}
+  #spawnmenu #menusearch:focus{border-color:#5a8aff}
+  #spawnmenu #menuclose{background:#5a3030;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer}
+  #spawnmenu #cats{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;border-bottom:1px solid #2c3142}
+  #spawnmenu #cats .catbtn{background:#1b1f2a;color:#cdd5e3;border:1px solid #2c3142;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:11px}
+  #spawnmenu #cats .catbtn:hover{background:#2a3142}
+  #spawnmenu #cats .catbtn.sel{background:#5a8aff;color:#fff;border-color:#5a8aff}
+  #spawnmenu #items{flex:1;overflow-y:auto;padding:6px 8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px;align-content:start}
+  #spawnmenu #items .it{background:#1b1f2a;color:#cdd5e3;border:1px solid #2c3142;border-radius:3px;padding:6px 4px;cursor:pointer;font-size:11px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+  #spawnmenu #items .it:hover{background:#2a3142;border-color:#5a8aff}
+  #spawnmenu #items .it .sw{width:18px;height:18px;border-radius:2px;border:1px solid rgba(255,255,255,0.2)}
 </style>
 </head>
 <body>
@@ -33,10 +48,19 @@
 </div>
 <div id="hint">type a noun above to spawn at the right edge · drag objects · right-click delete · E mount/dismount</div>
 <div id="wordwrap">
-  <input id="word" placeholder="type a noun and press enter..." autocomplete="off" spellcheck="false">
+  <input id="word" placeholder="type noun + enter (or click 📦 spawn)..." autocomplete="off" spellcheck="false">
   <div id="suggest"></div>
 </div>
 <canvas id="c"></canvas>
+<button id="spawnbtn">📦 spawn</button>
+<div id="spawnmenu">
+  <div id="menuhead">
+    <input id="menusearch" placeholder="search..." autocomplete="off" spellcheck="false">
+    <button id="menuclose">✕</button>
+  </div>
+  <div id="cats"></div>
+  <div id="items"></div>
+</div>
 <script>
 (() => {
   const c = document.getElementById('c');
@@ -783,16 +807,9 @@
   c.addEventListener('mouseup', () => { mouse.down = false; mouse.drag = null; });
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
-    const textbox = document.activeElement === wordInput;
-    const moveKeys = ['a','d','arrowleft','arrowright','w','arrowup','s','arrowdown',' '];
-    // when typing, forward movement keys to game, swallow from textbox
-    if (textbox && moveKeys.includes(k)) {
-      e.preventDefault();
-      if (k === ' ') e.preventDefault();
-    }
     keys[k] = true;
     if (k === 'e') toggleRide();
-    if (k === 'escape') { wordInput.blur(); suggestEl.style.display='none'; }
+    if (k === 'escape') { wordInput.blur(); suggestEl.style.display='none'; spawnMenu.style.display='none'; }
   });
   window.addEventListener('keyup', e => {
     const k = e.key.toLowerCase();
@@ -823,6 +840,50 @@
       wordInput.value = ''; suggestEl.style.display = 'none'; wordInput.blur();
     }));
   }
+
+  // ---- spawn menu (scribblenauts-style) ----
+  const spawnBtn = $('spawnbtn');
+  const spawnMenu = $('spawnmenu');
+  const menuSearch = $('menusearch');
+  const menuClose = $('menuclose');
+  const menuCats = $('cats');
+  const menuItems = $('items');
+  let selCat = 'all';
+  // build category list from O
+  const CATS = ['all', ...new Set(Object.values(O).map(o => o.cat))];
+  function buildCats() {
+    menuCats.innerHTML = CATS.map(c => `<div class="catbtn" data-c="${c}">${c}</div>`).join('');
+    [...menuCats.children].forEach(b => b.addEventListener('click', () => {
+      selCat = b.dataset.c;
+      [...menuCats.children].forEach(x => x.classList.toggle('sel', x === b));
+      renderItems();
+    }));
+    menuCats.children[0].classList.add('sel');
+  }
+  function renderItems() {
+    const q = menuSearch.value.trim().toLowerCase();
+    let list = OBJECT_NAMES.filter(n => selCat === 'all' || O[n].cat === selCat);
+    if (q) list = list.filter(n => n.includes(q));
+    menuItems.innerHTML = list.slice(0, 200).map(n => {
+      const d = O[n];
+      return `<div class="it" data-n="${n}"><div class="sw" style="background:${d.col}"></div>${n}</div>`;
+    }).join('');
+    [...menuItems.children].forEach(it => it.addEventListener('click', () => {
+      spawn(it.dataset.n, player.x + (player.facing||1)*30, player.y - 30);
+      spawnMenu.classList.remove('open');
+    }));
+  }
+  spawnBtn.addEventListener('click', () => {
+    spawnMenu.classList.toggle('open');
+    if (spawnMenu.classList.contains('open')) {
+      renderItems();
+      setTimeout(() => menuSearch.focus(), 50);
+    }
+  });
+  menuClose.addEventListener('click', () => spawnMenu.classList.remove('open'));
+  menuSearch.addEventListener('input', renderItems);
+  buildCats();
+  renderItems();
 
   function hitObj(wx, wy) {
     for (let i = objs.length-1; i >= 0; i--) {
