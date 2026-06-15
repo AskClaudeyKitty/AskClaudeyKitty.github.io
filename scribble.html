@@ -1162,9 +1162,8 @@
         break;
       }
     }
-    // world ground clamp
+    // world ground clamp — only if not snapped onto a higher solid this frame
     if (!o._isPlayer) {
-      // clamp any non-flying obj (projectiles, bombs, rocks, etc)
       if (!o.def.fly && o.y > GROUND_Y - objH(o)/2) {
         o.y = GROUND_Y - objH(o)/2;
         o.vy = 0;
@@ -1172,9 +1171,12 @@
       }
     } else {
       if (o.y > GROUND_Y - 11) {
-        o.y = GROUND_Y - 11;
-        o.vy = 0;
-        o.onGround = true;
+        // if we just snapped onto a solid in the y-loop, allow it (don't override)
+        if (!o.onGround) {
+          o.y = GROUND_Y - 11;
+          o.vy = 0;
+          o.onGround = true;
+        }
       }
     }
   }
