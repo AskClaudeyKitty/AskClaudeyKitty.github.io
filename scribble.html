@@ -60,6 +60,7 @@
   <div id="menuhead">
     <input id="menusearch" placeholder="type a noun (e.g. 'big red ball', 'fire dragon')..." autocomplete="off" spellcheck="false">
     <button id="menuspawn">spawn</button>
+    <button id="menumodify" style="background:#aa6a3a">apply to sel</button>
     <button id="menuclose">✕</button>
   </div>
   <div id="adjs"></div>
@@ -879,6 +880,12 @@
     fleeing:   { fr: 1, sd: 80 },   // runs away
     static_obj:{ sd: 0 },           // no motion
     patrolling:{ sd: 50 },          // wander
+    rideable:  { rd: 1, hp: 1.2 },  // becomes mountable
+    solid:     { so: 1, hv: 1 },    // heavy solid
+    explosive: { ex: 1, xr: 60, xd: 25, lt: 5 },
+    heavy:     { hv: 1, hp: 1.5 },
+    light_adj: { hp: 0.5, bo: 1 },  // light + bouncy
+    magnetic:  { sd: 30 },          // pulls player if close
   };
   const ADJ_NAMES = Object.keys(ADJ);
 
@@ -906,7 +913,7 @@
     if (!d) return null;
     const out = { ...d };
     let sizeMul = 1, hpMul = 1, sdMul = 1, dmMul = 1, hlAdd = 0, clAdd = 0;
-    let setAg = d.ag, setFr = d.fr, setFl = d.fl, setFz = d.fz, setSp = d.sp, setFly = d.fly, setBo = d.bo;
+    let setAg = d.ag, setFr = d.fr, setFl = d.fl, setFz = d.fz, setSp = d.sp, setFly = d.fly, setBo = d.bo, setRd = d.rd, setSo = d.so, setHv = d.hv, setEx = d.ex;
     let motionSet = false;
     for (const a of adjs) {
       const adj = ADJ[a];
@@ -925,6 +932,10 @@
       if (adj.fz) setFz = 1;
       if (adj.sp) setSp = 1;
       if (adj.bo) setBo = 1;
+      if (adj.rd) setRd = 1;
+      if (adj.so) setSo = 1;
+      if (adj.hv !== undefined) setHv = adj.hv;
+      if (adj.ex) setEx = 1;
       if (adj.fly !== undefined) setFly = adj.fly;
     }
     if (sizeMul !== 1) {
@@ -943,6 +954,10 @@
     if (setFz) out.fz = setFz;
     if (setSp) out.sp = setSp;
     if (setBo) out.bo = setBo;
+    if (setRd) out.rd = setRd;
+    if (setSo) out.so = setSo;
+    if (setHv) out.hv = setHv;
+    if (setEx) out.ex = setEx;
     if (out.fly === undefined && setFly !== undefined) out.fly = setFly;
     return out;
   }
@@ -970,7 +985,7 @@
   }
   function buildAdjs() {
     // common adjectives for quick-pick
-    const common = ['big','small','red','blue','green','fire','ice','strong','fast','angry','healing','magic','dark','shiny','royal','moving','spinning','bouncing','floating','chasing'];
+    const common = ['big','small','red','blue','green','fire','ice','strong','fast','angry','healing','magic','dark','shiny','royal','moving','spinning','bouncing','floating','chasing','rideable','explosive'];
     menuAdjs.innerHTML = common.map(a => `<div class="adjbtn" data-a="${a}">${a}</div>`).join('');
     [...menuAdjs.children].forEach(b => b.addEventListener('click', () => {
       b.classList.toggle('sel');
@@ -1039,6 +1054,62 @@
   });
   menuClose.addEventListener('click', () => spawnMenu.classList.remove('open'));
   menuSpawn.addEventListener('click', doSpawn);
+  const menuModify = $('menumodify');
+  function doModify() {
+    if (!sel) { menuSearch.style.borderColor = '#aa6a3a'; return; }
+    const text = menuSearch.value.trim();
+    if (!text) return;
+    // parse adjs only (ignore noun part if any)
+    const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+    const adjs = words.filter(w => ADJ[w]);
+    if (!adjs.length) { menuSearch.style.borderColor = '#aa6a3a'; return; }
+    // apply to sel.def (mutate)
+    for (const a of adjs) {
+      const adj = ADJ[a];
+      if (!adj) continue;
+      if (adj.sz) {
+        if (sel.def.sz) sel.def.sz = Math.max(2, Math.round(sel.def.sz * adj.sz));
+        if (sel.def.w) sel.def.w = Math.max(2, Math.round(sel.def.w * adj.sz));
+        if (sel.def.h) sel.def.h = Math.max(2, Math.round(sel.def.h * adj.sz));
+      }
+      if (adj.hp) sel.def.hp = Math.round((sel.def.hp || sel.hp) * adj.hp);
+      if (adj.sd !== undefined) sel.def.sd = adj.sd;
+      if (adj.dm) sel.def.dm = Math.round((sel.def.dm || 0) * adj.dm);
+      if (adj.hl) sel.def.hl = (sel.def.hl || 0) + adj.hl;
+      if (adj.cl) sel.def.cl = (sel.def.cl || 0) + adj.cl;
+      if (adj.col) sel.def.col = adj.col;
+      if (adj.ag) sel.def.ag = 1;
+      if (adj.fr) sel.def.fr = 1;
+      if (adj.fl) sel.def.fl = 1;
+      if (adj.fz) sel.def.fz = 1;
+      if (adj.sp) sel.def.sp = 1;
+      if (adj.bo) sel.def.bo = 1;
+      if (adj.rd) sel.def.rd = 1;
+      if (adj.so) sel.def.so = 1;
+      if (adj.hv !== undefined) sel.def.hv = adj.hv;
+      if (adj.ex) { sel.def.ex = 1; sel.def.xr = sel.def.xr || 50; sel.def.xd = sel.def.xd || 20; sel.def.lt = 5; sel._armed = false; }
+      if (adj.fly !== undefined) sel.def.fly = adj.fly;
+    }
+    // refresh label
+    sel.n = sel.n.split(' (')[0] + ' (' + adjs.join(' ') + ')';
+    sel._motion = (['moving','spinning','bouncing','floating','sinking','chasing','fleeing','static_obj','patrolling'].filter(m => adjs.includes(m)).slice(-1)[0]) || sel._motion;
+    spawnMenu.classList.remove('open');
+  }
+  menuModify.addEventListener('click', doModify);
+  function updateModifyBtn() {
+    if (!menuModify) return;
+    if (sel) {
+      menuModify.disabled = false;
+      menuModify.textContent = `apply to: ${sel.n}`;
+      menuModify.style.opacity = '1';
+    } else {
+      menuModify.disabled = true;
+      menuModify.textContent = 'apply to sel (click an obj first)';
+      menuModify.style.opacity = '0.5';
+    }
+  }
+  // refresh on open
+  spawnBtn.addEventListener('click', () => setTimeout(updateModifyBtn, 60));
   menuSearch.addEventListener('input', renderItems);
   menuSearch.addEventListener('keydown', e => {
     if (e.key === 'Enter') doSpawn();
