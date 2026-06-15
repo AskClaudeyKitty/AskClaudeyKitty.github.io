@@ -176,7 +176,131 @@
     lamp:     {cat:'misc', sh:'r', w:8, h:18, col:'#e8c83a', so:1},
     mirror:   {cat:'misc', sh:'r', w:10, h:14, col:'#aae0ee', so:1},
     key:      {cat:'misc', sh:'o', sz:6, col:'#e8c83a', cl:100},
+
+    // weather (10)
+    cloud:    {cat:'weather', sh:'o', sz:24, col:'#dadada', so:1, fly:1, lt:60},
+    rain:     {cat:'weather', sh:'r', w:2, h:14, col:'#3a8acd', sp:1, lt:2},
+    snow:     {cat:'weather', sh:'o', sz:6, col:'#e8e8e8', sp:1, lt:10},
+    fog:      {cat:'weather', sh:'o', sz:30, col:'#888', so:1, sp:1, lt:30},
+    rainbow:  {cat:'weather', sh:'t', sz:40, col:'#e83a5a', lt:30, fly:1},
+    sun:      {cat:'weather', sh:'o', sz:30, col:'#e8c83a', dm:2, lt:60, fly:1, hl:-3},
+    moon:     {cat:'weather', sh:'o', sz:24, col:'#dadada', fly:1, lt:120},
+    star2:    {cat:'weather', sh:'t', sz:10, col:'#e8c83a', fly:1, cl:2},
+    comet:    {cat:'weather', sh:'t', sz:14, col:'#aae0ee', ex:1, xr:40, xd:20, fly:1, sd:300, lt:4},
+    meteor:   {cat:'weather', sh:'o', sz:16, col:'#ff5a1f', ex:1, xr:60, xd:35, fly:1, sd:240, lt:3},
+
+    // materials (10)
+    wood:     {cat:'material', sh:'r', w:24, h:10, col:'#8a6a4a', so:1, fl:1},
+    metal:    {cat:'material', sh:'r', w:14, h:14, col:'#7a7a7a', so:1, hv:1},
+    glass:    {cat:'material', sh:'r', w:14, h:14, col:'#aae0ee', so:1, br:1},
+    rubber:   {cat:'material', sh:'o', sz:14, col:'#3a3a3a', so:1, bo:1},
+    paper:    {cat:'material', sh:'r', w:10, h:14, col:'#e8e8e8', so:1, fl:1},
+    cloth:    {cat:'material', sh:'r', w:14, h:14, col:'#5a8acd', so:1, fl:1},
+    rope2:    {cat:'material', sh:'r', w:4, h:30, col:'#c8a06a', so:1},
+    chain2:   {cat:'material', sh:'r', w:6, h:24, col:'#7a7a7a', so:1, hv:1},
+    crystal:  {cat:'material', sh:'t', sz:14, col:'#aae0ee', so:1, cl:15},
+    coal:     {cat:'material', sh:'r', w:14, h:14, col:'#1a1a1a', so:1, fl:1},
+
+    // body parts (10)
+    heart2:   {cat:'body', sh:'o', sz:14, col:'#aa3030', hl:30},
+    brain:    {cat:'body', sh:'o', sz:14, col:'#e8a8a8', so:1, cl:5},
+    bone2:    {cat:'body', sh:'r', w:4, h:18, col:'#e8e8e8', so:1, dm:4},
+    skull:    {cat:'body', sh:'o', sz:14, col:'#e8e8e8', so:1, dm:6},
+    eye:      {cat:'body', sh:'o', sz:10, col:'#aae0ee', so:1, cl:2},
+    hand:     {cat:'body', sh:'r', w:8, h:10, col:'#e8c87a', so:1, dm:3},
+    foot:     {cat:'body', sh:'o', sz:10, col:'#e8c87a', so:1, dm:2},
+    wing:     {cat:'body', sh:'r', w:18, h:8, col:'#e8e8e8', so:1, fly:1},
+    tail:     {cat:'body', sh:'r', w:4, h:16, col:'#aa5a3a', so:1},
+    claw:     {cat:'body', sh:'t', sz:12, col:'#3a3a3a', so:1, dm:5},
+
+    // clothing (10)
+    hat:      {cat:'clothing', sh:'r', w:14, h:10, col:'#3a3a3a', so:1},
+    shirt:    {cat:'clothing', sh:'r', w:16, h:20, col:'#5a8acd', so:1},
+    pants:    {cat:'clothing', sh:'r', w:12, h:18, col:'#3a3a5a', so:1},
+    boot:     {cat:'clothing', sh:'r', w:10, h:14, col:'#6a4a3a', so:1},
+    glove:    {cat:'clothing', sh:'r', w:10, h:10, col:'#aa3030', so:1},
+    cape:     {cat:'clothing', sh:'r', w:20, h:24, col:'#aa3030', so:1, fly:1},
+    crown:    {cat:'clothing', sh:'t', sz:14, col:'#e8c83a', so:1, cl:50},
+    ring:     {cat:'clothing', sh:'o', sz:8, col:'#e8c83a', so:1, cl:20},
+    belt:     {cat:'clothing', sh:'r', w:18, h:4, col:'#6a4a3a', so:1},
+    mask:     {cat:'clothing', sh:'o', sz:12, col:'#dadada', so:1},
+
+    // time/space (10)
+    clock:    {cat:'time', sh:'o', sz:14, col:'#e8e8e8', so:1, cl:5},
+    hourglass:{cat:'time', sh:'r', w:10, h:18, col:'#c8a06a', so:1, cl:10},
+    watch:    {cat:'time', sh:'o', sz:8, col:'#5a5a5a', so:1, cl:5},
+    calendar: {cat:'time', sh:'r', w:14, h:18, col:'#e8e8e8', so:1, cl:3},
+    portal:   {cat:'time', sh:'o', sz:24, col:'#5a3a8a', fly:1, lt:10},
+    blackhole:{cat:'time', sh:'o', sz:20, col:'#1a1a1a', dm:20, lt:15, fly:1},
+    wormhole: {cat:'time', sh:'o', sz:20, col:'#3a3a5a', lt:5, fly:1},
+    timetravel:{cat:'time', sh:'r', w:14, h:14, col:'#e8c83a', so:1, cl:25},
+    gravity:  {cat:'time', sh:'o', sz:18, col:'#5a8a8a', lt:8},
+    speed:    {cat:'time', sh:'t', sz:14, col:'#e8c83a', lt:5, sd:300},
+
+    // fantasy (10)
+    magic:    {cat:'fantasy', sh:'o', sz:14, col:'#5a8acd', lt:5, dm:8},
+    spell:    {cat:'fantasy', sh:'r', w:4, h:30, col:'#5a8acd', lt:1, dm:10},
+    potion:   {cat:'fantasy', sh:'o', sz:10, col:'#aa3a8a', hl:30, lt:60},
+    scroll:   {cat:'fantasy', sh:'r', w:8, h:18, col:'#e8e0c0', so:1, cl:5},
+    wand:     {cat:'fantasy', sh:'r', w:2, h:20, col:'#6a4a3a', so:1, dm:6, rl:0.5},
+    staff:    {cat:'fantasy', sh:'r', w:4, h:30, col:'#6a4a3a', so:1, dm:8, rl:0.8},
+    crystal_ball:{cat:'fantasy', sh:'o', sz:14, col:'#aae0ee', so:1, cl:10},
+    rune:     {cat:'fantasy', sh:'o', sz:10, col:'#e8c83a', lt:8, cl:3},
+    curse:    {cat:'fantasy', sh:'o', sz:14, col:'#3a3a3a', dm:5, lt:20},
+    bless:    {cat:'fantasy', sh:'o', sz:14, col:'#e8e8e8', hl:20, lt:10},
+
+    // household (10)
+    chair:    {cat:'household', sh:'r', w:14, h:18, col:'#6a4a3a', so:1},
+    table:    {cat:'household', sh:'r', w:24, h:14, col:'#6a4a3a', so:1},
+    bed:      {cat:'household', sh:'r', w:30, h:24, col:'#5a8acd', so:1, hl:20},
+    lamp2:   {cat:'household', sh:'r', w:8, h:24, col:'#e8c83a', so:1, lt:60},
+    fridge:   {cat:'household', sh:'r', w:18, h:28, col:'#dadada', so:1, hv:1},
+    tv:       {cat:'household', sh:'r', w:24, h:14, col:'#1a1a1a', so:1},
+    toilet:   {cat:'household', sh:'r', w:14, h:18, col:'#dadada', so:1},
+    sink:     {cat:'household', sh:'r', w:20, h:14, col:'#dadada', so:1},
+    pillow:   {cat:'household', sh:'r', w:18, h:10, col:'#e8a8a8', so:1, bo:1},
+    plant:    {cat:'household', sh:'o', sz:14, col:'#4a8a3a', so:1, fl:1},
+
+    // emotions/abstract (10)
+    love:     {cat:'emotion', sh:'o', sz:14, col:'#e83a5a', hl:25, lt:10},
+    fear:     {cat:'emotion', sh:'o', sz:12, col:'#3a3a3a', dm:3, lt:10},
+    joy:      {cat:'emotion', sh:'o', sz:14, col:'#e8c83a', hl:15, lt:10},
+    anger:    {cat:'emotion', sh:'o', sz:14, col:'#aa3030', dm:5, ex:1, xr:30, xd:10, lt:10},
+    sad:      {cat:'emotion', sh:'o', sz:14, col:'#3a6ea5', dm:2, lt:10},
+    thought:  {cat:'emotion', sh:'o', sz:10, col:'#aae0ee', so:1, cl:3},
+    dream:    {cat:'emotion', sh:'o', sz:14, col:'#aa5a8a', fly:1, lt:15},
+    nightmare:{cat:'emotion', sh:'o', sz:14, col:'#1a1a1a', dm:5, fly:1, lt:15},
+    hope:     {cat:'emotion', sh:'o', sz:12, col:'#e8c83a', hl:20, lt:20},
+    void:     {cat:'emotion', sh:'o', sz:18, col:'#1a1a1a', dm:10, lt:8},
+
+    // internet/digital (10)
+    pixel:    {cat:'digital', sh:'r', w:4, h:4, col:'#e8c83a', so:1, cl:1},
+    wifi:     {cat:'digital', sh:'o', sz:12, col:'#5a8acd', so:1, cl:5},
+    battery:  {cat:'digital', sh:'r', w:10, h:18, col:'#4a8a3a', so:1, hl:10},
+    virus:    {cat:'digital', sh:'o', sz:12, col:'#3a8a3a', dm:4, sp:1, lt:30},
+    bug:      {cat:'digital', sh:'o', sz:8, col:'#aa3030', dm:2, sp:1, lt:30},
+    code:     {cat:'digital', sh:'r', w:14, h:10, col:'#5a5a5a', so:1, cl:5},
+    error:    {cat:'digital', sh:'r', w:14, h:14, col:'#aa3030', ex:1, xr:30, xd:15, lt:3},
+    mouse2:   {cat:'digital', sh:'o', sz:10, col:'#3a3a3a', so:1, rd:1, sd:120},
+    keyboard: {cat:'digital', sh:'r', w:24, h:8, col:'#3a3a3a', so:1},
+    monitor:  {cat:'digital', sh:'r', w:24, h:18, col:'#1a1a1a', so:1},
+
+    // vehicles+/vehicles_extra (10) - we already had 10. let me do misc more
+    frisbee:  {cat:'misc2', sh:'o', sz:14, col:'#aa5a3a', so:1, bo:1},
+    kite:     {cat:'misc2', sh:'t', sz:18, col:'#e83a5a', so:1, fly:1},
+    yoyo:     {cat:'misc2', sh:'o', sz:10, col:'#e8c83a', so:1},
+    dice:     {cat:'misc2', sh:'r', w:10, h:10, col:'#e8e8e8', so:1, cl:2},
+    card:     {cat:'misc2', sh:'r', w:8, h:14, col:'#e8e8e8', so:1, cl:1},
+    ball2:    {cat:'misc2', sh:'o', sz:14, col:'#3a8a3a', so:1, bo:1, hl:5},
+    needle:   {cat:'misc2', sh:'r', w:2, h:16, col:'#7a7a7a', so:1, dm:4},
+    thread:   {cat:'misc2', sh:'r', w:2, h:24, col:'#e8e8e8', so:1},
+    button:   {cat:'misc2', sh:'o', sz:10, col:'#5a5a5a', so:1, cl:1},
+    pin:      {cat:'misc2', sh:'o', sz:4, col:'#aa3030', so:1, dm:2},
   };
+  // category renames (avoid dupes with misc)
+  for (const k of Object.keys(O)) {
+    if (O[k].cat === 'misc2') O[k].cat = 'misc';
+  }
   const OBJECT_NAMES = Object.keys(O);
 
   // world
@@ -281,6 +405,13 @@
   c.addEventListener('mouseup', () => { mouse.down = false; mouse.drag = null; });
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
+    const textbox = document.activeElement === wordInput;
+    const moveKeys = ['a','d','arrowleft','arrowright','w','arrowup','s','arrowdown',' '];
+    // when typing, forward movement keys to game, swallow from textbox
+    if (textbox && moveKeys.includes(k)) {
+      e.preventDefault();
+      if (k === ' ') e.preventDefault();
+    }
     keys[k] = true;
     if (k === 'e') toggleRide();
     if (k === 'escape') { wordInput.blur(); suggestEl.style.display='none'; }
