@@ -1077,7 +1077,8 @@
         }
       }
       // elements spread
-      if (o.def.sp && Math.random() < dt * 0.5) {
+      if (o.def.sp && (!o.spreads || o.spreads < 3) && Math.random() < dt * 0.5) {
+        o.spreads = (o.spreads||0) + 1;
         const ang = Math.random()*Math.PI*2;
         spawn(o.n, o.x + Math.cos(ang)*12, o.y + Math.sin(ang)*12);
       }
