@@ -125,7 +125,7 @@
     sled:     {cat:'vehicle', sh:'r', w:20, h:10, col:'#aa3030', so:1, rd:1, sd:160, hp:10},
 
     // elements (10)
-    fire:     {cat:'element', sh:'o', sz:14, col:'#ff5a1f', dm:2, sp:1, lt:20, fl:1},
+    fire:     {cat:'element', sh:'o', sz:14, col:'#ff5a1f', dm:2, sp:1, lt:8, fl:1},
     water:    {cat:'element', sh:'o', sz:14, col:'#3a8acd', so:1, wt:1, sp:1, lt:60},
     ice:      {cat:'element', sh:'r', w:14, h:14, col:'#aae0ee', so:1, fz:1, lt:90},
     lightning:{cat:'element', sh:'r', w:4, h:60, col:'#ffee3a', dm:20, lt:0.4},
@@ -1337,14 +1337,15 @@
           }
         }
       }
-      // elements spread — capped per-obj (3) and globally (30 of same name)
-      if (o.def.sp && (!o.spreads || o.spreads < 3)) {
-        const n = o.n.split(' (')[0]; // base name
+      // elements spread — only the original (not from spread) spreads, capped per-obj (2) and globally (20 of same name)
+      if (o.def.sp && !o._fromSpread && (!o.spreads || o.spreads < 2)) {
+        const n = o.n.split(' (')[0];
         const count = objs.filter(x => x.n.split(' (')[0] === n).length;
-        if (count < 30 && Math.random() < dt * 0.5) {
+        if (count < 20 && Math.random() < dt * 0.3) {
           o.spreads = (o.spreads||0) + 1;
           const ang = Math.random()*Math.PI*2;
-          spawn(o.n, o.x + Math.cos(ang)*12, o.y + Math.sin(ang)*12);
+          const c = spawn(o.n, o.x + Math.cos(ang)*12, o.y + Math.sin(ang)*12);
+          if (c) c._fromSpread = true;
         }
       }
       // water vs fire / ice
