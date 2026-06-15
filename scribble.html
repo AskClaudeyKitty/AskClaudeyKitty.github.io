@@ -1142,11 +1142,13 @@
       if (b === o) continue;
       if (!b.def || !b.def.so) continue;
       if (b._ground) continue; // ground handled by clamp
+      if (b === o._standOn) continue; // standing on this — don't block X
       if (aabb(o, b)) {
         o.x -= dx; o.vx = 0; break;
       }
     }
     o.y += dy;
+    o._standOn = null;
     o.onGround = false;
     for (const b of objs) {
       if (b === o) continue;
@@ -1155,6 +1157,7 @@
       if (aabb(o, b)) {
         if (dy > 0) {
           o.onGround = true;
+          o._standOn = b;
           o.y = b.y - objH(b)/2 - objH(o)/2;
         } else {
           o.y -= dy;
