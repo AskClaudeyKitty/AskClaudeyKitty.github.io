@@ -1085,7 +1085,8 @@
     }
     // world ground clamp
     if (!o._isPlayer) {
-      if ((o.def.so || o.def.hv) && o.y > GROUND_Y - objH(o)/2) {
+      // clamp any non-flying obj (projectiles, bombs, rocks, etc)
+      if (!o.def.fly && o.y > GROUND_Y - objH(o)/2) {
         o.y = GROUND_Y - objH(o)/2;
         o.vy = 0;
         o.onGround = true;
