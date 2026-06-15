@@ -935,15 +935,33 @@
       player.onGround = false;
       if (player.riding) player.riding = null;
     }
-    if (!player.riding) {
+    if (player.riding) {
+      // ride: player follows mount, mount moves with input
+      const m = player.riding;
+      m.vx = player.vx;
+      if (mouse.drag !== m) {
+        moveWith(m, m.vx*dt, m.vy*dt);
+      }
+      m.vx *= 0.9;
+      player.x = m.x;
+      player.y = m.y - objH(player)/2 - objH(m)/2;
+      // flying mount: no gravity for mount
+      if (!m.def.fly) {
+        m.vy += GRAVITY * dt;
+        if (m.vy > 900) m.vy = 900;
+      }
+      // clamp mount to ground
+      if (!m.def.fly && m.y > GROUND_Y - objH(m)/2) {
+        m.y = GROUND_Y - objH(m)/2;
+        m.vy = 0;
+        m.onGround = true;
+      }
+    } else {
       player.vy += GRAVITY * dt;
       if (player.vy > 900) player.vy = 900;
-    } else {
-      player.x = player.riding.x;
-      player.y = player.riding.y - objH(player)/2 - objH(player.riding)/2;
-    }
-    if (mouse.drag !== player) {
-      moveWith(player, player.vx*dt, player.vy*dt);
+      if (mouse.drag !== player) {
+        moveWith(player, player.vx*dt, player.vy*dt);
+      }
     }
     // out of world (below)
     if (player.y > WORLD_H) { player.hp -= 30; player.y = GROUND_Y - 30; player.vy = 0; }
