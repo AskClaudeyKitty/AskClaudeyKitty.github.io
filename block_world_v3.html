@@ -1859,15 +1859,13 @@ function handleClick() {
     // mine
     const held = getHeldTool();
     const tier = pickTier(held);
-    if (held >= I.WOOD_SWORD && held <= I.RUBY_SWORD) {
-      // sword hits mobs not blocks
-      return;
-    }
     if (held === I.BOW) {
       // handled by charge loop
       return;
     }
-    if (!canMine(t, tier)) { showMsg('need better tool'); return; }
+    // swords can mine too (slower / lower tier). use 1 for tier
+    const mineTier = tier > 0 ? tier : (held >= I.WOOD_SWORD && held <= I.RUBY_SWORD) ? 1 : 0;
+    if (!canMine(t, mineTier)) { showMsg('need better tool'); return; }
     const drop = mineDrop(t);
     invAdd(drop, 1);
     setTile(tx, ty, T.AIR);
