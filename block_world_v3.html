@@ -807,18 +807,16 @@ function getSprite(kind, id) {
   return spriteCache[k];
 }
 
-// draw sprite to ctx
-function drawSprite(spr, x, y, size=16) {
-  if (!spr) return;
-  for (let py=0;py<16;py++) for (let px=0;px<16;px++) {
-    const c = spr[py*16+px];
-    if (c) ctx.fillStyle = c, ctx.fillRect(x+px*size/16, y+py*size/16, size/16, size/16);
-  }
+// draw sprite to ctx (solid color block, no pixel art)
+function drawSprite(spr, x, y, size, color) {
+  if (!color) return;
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, size, size);
 }
 
 // draw sprite as swatch (for hotbar/inventory)
-function drawSwatch(spr, x, y, size=32) {
-  drawSprite(spr, x, y, size);
+function drawSwatch(spr, x, y, size, color) {
+  drawSprite(spr, x, y, size, color);
 }
 
 // biome types
@@ -1436,7 +1434,11 @@ function updateHotbar() {
     const item = player.inventory[i];
     s.innerHTML = '';
     if (item) {
-      drawSwatch(getSprite('item', item.id), parseInt(s.style.left||4), 4, 32);
+      const cv = document.createElement('canvas');
+      cv.width = 32; cv.height = 32;
+      const cx = cv.getContext('2d'); cx.imageSmoothingEnabled = false;
+      drawSpriteInto(item, cx, 0, 0, 32);
+      s.appendChild(cv);
       const c = document.createElement('div');
       c.className = 'count';
       c.textContent = item.count > 1 ? item.count : '';
@@ -1462,12 +1464,11 @@ function updateHotbar() {
   });
 }
 function drawSpriteInto(item, ctx, x, y, size) {
-  const spr = getSprite('item', item.id || item);
-  if (!spr) return;
-  for (let py=0;py<16;py++) for (let px=0;px<16;px++) {
-    const c = spr[py*16+px];
-    if (c) { ctx.fillStyle = c; ctx.fillRect(x+px*size/16, y+py*size/16, size/16+1, size/16+1); }
-  }
+  const id = (item && item.id !== undefined) ? item.id : item;
+  const c = itemColor(id);
+  if (!c) return;
+  ctx.fillStyle = c;
+  ctx.fillRect(x, y, size, size);
 }
 function toggleInventory() {
   showInventory = !showInventory;
@@ -2049,19 +2050,14 @@ function draw() {
       if (y < 0 || y >= WORLD_H) continue;
       const t = getTile(x, y);
       if (t === T.AIR) continue;
-      const spr = getSprite('tile', t);
-      drawSprite(spr, x*TILE - cam.x, y*TILE - cam.y, TILE);
+      drawSprite(null, x*TILE - cam.x, y*TILE - cam.y, TILE, TILE_COL[t]);
     }
   }
   // mobs
   for (const m of mobs) {
     if (m.x < cam.x - 30 || m.x > cam.x + W + 30) continue;
-    const spr = mobSprites[m.name];
-    ctx.save();
-    ctx.translate(m.x - cam.x - 8, m.y - cam.y - 16);
-    if (m.facing < 0) { ctx.scale(-1, 1); ctx.translate(-16, 0); }
-    if (spr) drawSprite(spr, 0, 0, 16);
-    ctx.restore();
+    ctx.fillStyle = m.col;
+    ctx.fillRect(m.x - cam.x - 8, m.y - cam.y - 16, 16, 16);
     // hp bar
     if (m.hpT) {
       const mx = m.x - cam.x - 12, my = m.y - cam.y - 24;
@@ -2143,13 +2139,10 @@ function drawPlayer() {
   // held tool
   const held = getHeldTool();
   if (held) {
-    const spr = getSprite('item', held);
-    if (spr) {
-      ctx.save();
-      ctx.translate(4, -2);
-      ctx.scale(0.7, 0.7);
-      drawSprite(spr, 0, 0, 16);
-      ctx.restore();
+    const col = itemColor(held);
+    if (col) {
+      ctx.fillStyle = col;
+      ctx.fillRect(4, -2, 11, 11);
     }
   }
   ctx.restore();
