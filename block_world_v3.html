@@ -1237,12 +1237,26 @@ function getTile(x, y) {
   if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return T.BEDROCK;
   return world[y][x];
 }
-function setTile(x, y, t) {
+const placedTiles = new Set();
+function setTile(x, y, t, placed) {
   if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return;
   world[y][x] = t;
+  const k = x + ',' + y;
+  if (placed) placedTiles.add(k);
+  else placedTiles.delete(k);
 }
+function isPlaced(x, y) { return placedTiles.has(x + ',' + y); }
 function isSolid(t) {
-  return [T.DIRT,T.GRASS,T.STONE,T.SAND,T.SNOW,T.ICE,T.WOOD,T.LEAF,T.SANDSTONE,T.CACTUS,T.SNOWY_GRASS,T.JUNGLE_GRASS,T.MUSHROOM,T.MUD,T.COAL,T.IRON,T.GOLD,T.DIAMOND,T.RUBY,T.EMERALD,T.COBBLE,T.PLANKS,T.GLASS,T.BRICK,T.LAVA_ROCK,T.MOSSY_STONE,T.JUNGLE_WOOD,T.BAMBOO,T.SANDSTONE_RED,T.PACKED_ICE,T.ASH,T.MARBLE,T.PUMICE,T.CORAL,T.PUMICE,T.PACKED_ICE,T.WORKBENCH,T.FURNACE,T.CHEST,T.DOOR,T.LADDER,T.BEDROCK].includes(t);
+  // trees walkable when natural, solid when placed
+  return [T.DIRT,T.GRASS,T.STONE,T.SAND,T.SNOW,T.ICE,T.SANDSTONE,T.CACTUS,T.SNOWY_GRASS,T.JUNGLE_GRASS,T.MUD,T.COAL,T.IRON,T.GOLD,T.DIAMOND,T.RUBY,T.EMERALD,T.COBBLE,T.PLANKS,T.GLASS,T.BRICK,T.LAVA_ROCK,T.MOSSY_STONE,T.SANDSTONE_RED,T.PACKED_ICE,T.ASH,T.MARBLE,T.PUMICE,T.CORAL,T.PUMICE,T.PACKED_ICE,T.WORKBENCH,T.FURNACE,T.CHEST,T.DOOR,T.LADDER,T.BEDROCK].includes(t);
+}
+// wrapper used for collision: natural trees are not solid
+function isSolidAt(x, y) {
+  const t = getTile(x, y);
+  if (t === T.WOOD || t === T.JUNGLE_WOOD || t === T.LEAF || t === T.MUSHROOM || t === T.BAMBOO) {
+    return isPlaced(x, y);
+  }
+  return isSolid(t);
 }
 function isLiquid(t) { return t === T.WATER || t === T.LAVA; }
 
@@ -1257,7 +1271,7 @@ function aabbBlocks(ax, ay, aw, ah) {
   const yMax = Math.floor((py - 1) / TILE);
   for (let xi=xMin; xi<=xMax; xi++) for (let yi=yMin; yi<=yMax; yi++) {
     const t = getTile(xi, yi);
-    if (isSolid(t) && t !== T.LADDER) return true;
+    if (isSolidAt(xi, yi) && t !== T.LADDER) return true;
   }
   return false;
 }
@@ -1848,7 +1862,7 @@ function handleClick() {
       // can't place where player is
       const playertx = Math.floor(player.x / TILE), playerty = Math.floor(player.y / TILE);
       if (tx === playertx && (ty === playerty || ty === playerty - 1 || ty === Math.floor((player.y - 1) / TILE))) return;
-      setTile(tx, ty, placeToTile(it.id));
+      setTile(tx, ty, placeToTile(it.id), true);
       it.count--;
       if (it.count <= 0) player.inventory[player.selectedSlot] = null;
       buildHotbar();
@@ -1924,7 +1938,7 @@ function handleClick() {
       } else if (it.id === I.WATER_BUCKET || it.id === I.LAVA_BUCKET) {
         // place
         if (t === T.AIR) {
-          setTile(tx, ty, it.id === I.WATER_BUCKET ? T.WATER : T.LAVA);
+          setTile(tx, ty, it.id === I.WATER_BUCKET ? T.WATER : T.LAVA, true);
           it.id = I.BUCKET; it.count = 1; showMsg('placed ' + itemName(it.id));
           buildHotbar();
         }
