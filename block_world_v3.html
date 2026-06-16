@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Block World v3</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' fill='%23aa7a3a'/%3E%3Crect x='2' y='2' width='12' height='4' fill='%234a8a3a'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -118,7 +119,7 @@
       <div id="inv-crafting"><h4>Recipes</h4><div id="recipes"></div></div>
     </div>
   </div>
-  <div id="minimap"></div>
+  <canvas id="minimap" width="180" height="120"></canvas>
   <div id="biome-label"></div>
   <div id="armor-panel">
     <div class="armor-slot" data-slot="head" title="Helmet">H</div>
