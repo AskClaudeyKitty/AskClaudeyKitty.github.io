@@ -245,6 +245,276 @@ const WORLD_SIZES = {
 };
 const DAY_LEN = 24000;
 
+// block texture patterns. Each pattern is an 8x8 string array using:
+//   . = base color
+//   b = darker (-25%)
+//   d = darkest (-45%)
+//   l = lighter (+15%)
+//   w = white
+//   k = black
+//   s = saturated (+20% saturation)
+//   * = accent (block-specific color)
+// patterns are tiled across the world
+const PATTERNS = {
+  // dirt: brown specks
+  1: [
+    '.b.d..db',
+    'd..b.d..',
+    '..d.b.d.',
+    'b..d..b.',
+    'd.b..d.b',
+    '..d.b.d.',
+    'b.d..b.d',
+    '.b.d..b.',
+  ],
+  // stone: gray with cracks
+  2: [
+    '..b..b..',
+    'b..b..b.',
+    '..k....b',
+    '....b...',
+    'b...b..b',
+    '...k....',
+    '..b...b.',
+    'b....b..',
+  ],
+  // grass top: green w/ texture
+  3: [
+    'gGg.GgGg',
+    'GgG..GgG',
+    'gG.gGg.G',
+    'GgG..gGg',
+    'g.Gg.Gg.',
+    'GgG..GgG',
+    'gG.gGg.G',
+    'GgG..GgG',
+  ],
+  // wood: vertical grain
+  4: [
+    'l..l..l.',
+    '..l..l..',
+    'd..d..d.',
+    '..d..d..',
+    'l..l..l.',
+    '..l..l..',
+    'd..d..d.',
+    '..d..d..',
+  ],
+  31: null,
+  // leaves: green clumps
+  5: [
+    'gG.gG.gG',
+    '.gG.gG.g',
+    'gG.gG.gG',
+    '.gG.gG.g',
+    'gG.gG.gG',
+    '.gG.gG.g',
+    'gG.gG.gG',
+    '.gG.gG.g',
+  ],
+  // sand: yellow specks
+  6: [
+    '..l..l..',
+    '.l..l..l',
+    '..s..s..',
+    '.s..s..s',
+    '..l..l..',
+    '.l..l..l',
+    '..s..s..',
+    '.s..s..s',
+  ],
+  // coal: dark w/ shiny black
+  7: [
+    '..k..k..',
+    'k.KKK.k.',
+    '..k..k..',
+    '.kkk.kk.',
+    '..k..k..',
+    'k.K.K.k.',
+    '..k..k..',
+    '.kk.kkk.',
+  ],
+  // iron
+  8: [
+    '..b..b..',
+    'b.RRR.b.',
+    '..b..b..',
+    '.bbb.bb.',
+    '..b..b..',
+    'b.R.b.b.',
+    '..b..b..',
+    '.b.bb.b.',
+  ],
+  // gold
+  9: [
+    '..l..l..',
+    'l.YYY.l.',
+    '..l..l..',
+    '.lll.ll.',
+    '..l..l..',
+    'l.Y.l.l.',
+    '..l..l..',
+    '.l.ll.l.',
+  ],
+  // torch: special
+  10: null,
+  // plank
+  11: [
+    'l..l..l.',
+    'l..l..l.',
+    'b..b..b.',
+    'l..l..l.',
+    'l..l..l.',
+    'b..b..b.',
+    'l..l..l.',
+    'l..l..l.',
+  ],
+  // crafting table
+  12: [
+    'll..ll..',
+    '..b..b..',
+    'lll.lll.',
+    'bWWbWWbW',
+    'bWWbWWbW',
+    'bkkbkkbk',
+    'lll.lll.',
+    'lll.lll.',
+  ],
+  // furnace
+  13: [
+    'b..b..b.',
+    'bWWbWWb.',
+    'bkkbkkb.',
+    'bYYYYb..',
+    'bYOOYb..',
+    'bYOOYb..',
+    'bYYYYb..',
+    'bbbbbb..',
+  ],
+  // glass
+  14: null,
+  // brick
+  15: [
+    'RRRR....',
+    'RRRR....',
+    '....RRRR',
+    '....RRRR',
+    'RRRR....',
+    'RRRR....',
+    '....RRRR',
+    '....RRRR',
+  ],
+  // mossy stone
+  16: [
+    '..b..b..',
+    'b.GG.b..',
+    '..b..b.G',
+    '.GGb..b.',
+    '..b.GG..',
+    'b..b..b.',
+    '.GG..b.G',
+    '..b..b..',
+  ],
+  // snow
+  17: [
+    '....w...',
+    '..l....l',
+    '.......l',
+    '.l......',
+    '..l.....',
+    '....l...',
+    '.......l',
+    '.l......',
+  ],
+  // ice
+  18: [
+    'b..b..b.',
+    '.ww.ww..',
+    'b..b..b.',
+    '.w..w...',
+    'b..b..b.',
+    '..ww.ww.',
+    'b..b..b.',
+    '.w...w..',
+  ],
+  19: null,
+  20: null, // cactus
+  21: null,
+  22: null,
+  23: null, // chest
+  24: null, // water
+  25: null, // lava
+  26: null, // hellstone
+  27: null, // obsidian
+  28: null, // platform
+  29: null, // door
+  30: null, // bed
+  32: null,
+  33: [
+    '..b..b.d',
+    'b..d..b.',
+    '..d.b.d.',
+    'b..d..b.',
+    'd.b..d.b',
+    '..d.b.d.',
+    'b.d..b.d',
+    '.b.d..b.',
+  ],
+  34: null,
+  35: null,
+  36: null, // bamboo
+  37: null,
+  38: null,
+  39: null,
+  40: null,
+  41: null,
+  42: null,
+  43: null,
+  44: null,
+  45: null,
+  62: null,
+  63: null,
+};
+
+// assign same-as patterns
+PATTERNS[31] = PATTERNS[4];
+PATTERNS[19] = PATTERNS[3]; // snow grass uses grass top pattern
+PATTERNS[21] = PATTERNS[3]; // corruption grass similar
+PATTERNS[22] = PATTERNS[2]; // ebonstone = stone pattern
+PATTERNS[34] = PATTERNS[4]; // jungle wood = wood
+PATTERNS[35] = PATTERNS[5]; // jungle leaves = leaves
+
+// parse a pattern char into rgb modifier
+function patColor(baseCol, ch) {
+  if (!ch || ch === '.') return baseCol;
+  // base to rgb
+  let r, g, b, a = 1;
+  const c = baseCol;
+  if (c.length === 4) {
+    r = parseInt(c[1] + c[1], 16);
+    g = parseInt(c[2] + c[2], 16);
+    b = parseInt(c[3] + c[3], 16);
+  } else if (c.length === 7 || c.length === 9) {
+    r = parseInt(c.slice(1, 3), 16);
+    g = parseInt(c.slice(3, 5), 16);
+    b = parseInt(c.slice(5, 7), 16);
+    if (c.length === 9) a = parseInt(c.slice(7, 9), 16) / 255;
+  }
+  if (ch === 'b') { r = Math.floor(r * 0.75); g = Math.floor(g * 0.75); b = Math.floor(b * 0.75); }
+  else if (ch === 'd') { r = Math.floor(r * 0.55); g = Math.floor(g * 0.55); b = Math.floor(b * 0.55); }
+  else if (ch === 'l') { r = Math.min(255, Math.floor(r * 1.18)); g = Math.min(255, Math.floor(g * 1.18)); b = Math.min(255, Math.floor(b * 1.18)); }
+  else if (ch === 'w') { r = 255; g = 255; b = 255; }
+  else if (ch === 'k') { r = 0; g = 0; b = 0; }
+  else if (ch === 'G') { r = Math.floor(r * 0.6); g = Math.min(255, Math.floor(g * 1.4)); b = Math.floor(b * 0.6); }
+  else if (ch === 'g') { r = Math.floor(r * 0.7); g = Math.floor(g * 1.1); b = Math.floor(b * 0.7); }
+  else if (ch === 'R') { r = Math.min(255, Math.floor(r * 1.4)); g = Math.floor(g * 0.6); b = Math.floor(b * 0.6); }
+  else if (ch === 'Y') { r = Math.min(255, Math.floor(r * 1.4)); g = Math.min(255, Math.floor(g * 1.4)); b = Math.floor(b * 0.4); }
+  else if (ch === 'O') { r = Math.min(255, Math.floor(r * 1.6)); g = Math.floor(g * 0.6); b = 0; }
+  else if (ch === 'K') { r = Math.min(255, Math.floor(r * 1.6)); g = Math.min(255, Math.floor(g * 1.4)); b = 0; }
+  else if (ch === 's') { r = Math.min(255, Math.floor(r * 1.2)); g = Math.min(255, Math.floor(g * 1.2)); b = Math.min(255, Math.floor(b * 1.2)); }
+  return { r, g, b, a };
+}
+
 const BLOCKS = {
   0: { name: 'Air', solid: false },
   1: { name: 'Dirt', color: '#8a5a2a', solid: true, hp: 2 },
@@ -2624,19 +2894,26 @@ function draw() {
       if (PIX === 1) {
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       } else {
-        // subdivide tile into PIX x PIX grid with slight color variation
+        // subdivide tile into PIX x PIX grid using deterministic pattern per block type
         const cell = TILE / PIX;
-        for (let py = 0; py < PIX; py++) {
-          for (let ppx = 0; ppx < PIX; ppx++) {
-            // pseudo-random shade per cell based on block + cell
-            const seed = ((x * 73856093) ^ (y * 19349663) ^ (py * 83492791) ^ (ppx * 15485863)) & 0xff;
-            const shade = 0.85 + ((seed % 30) / 100); // 0.85 - 1.15
-            const cr = Math.min(255, Math.floor(r * l * shade));
-            const cg = Math.min(255, Math.floor(g * l * shade));
-            const cb = Math.min(255, Math.floor(bval * l * shade));
-            ctx.fillStyle = `rgba(${cr},${cg},${cb},${a})`;
-            ctx.fillRect(x * TILE + ppx * cell, y * TILE + py * cell, Math.ceil(cell) + 1, Math.ceil(cell) + 1);
+        const pat = PATTERNS[b];
+        if (pat) {
+          // map pixel to pattern coord
+          for (let py = 0; py < PIX; py++) {
+            for (let ppx = 0; ppx < PIX; ppx++) {
+              const patRow = pat[py % 8];
+              const ch = patRow ? patRow[(ppx) % 8] : '.';
+              const col = patColor(block.color, ch);
+              const cr = Math.min(255, Math.floor(col.r * l));
+              const cg = Math.min(255, Math.floor(col.g * l));
+              const cb = Math.min(255, Math.floor(col.b * l));
+              ctx.fillStyle = `rgba(${cr},${cg},${cb},${col.a})`;
+              ctx.fillRect(x * TILE + ppx * cell, y * TILE + py * cell, Math.ceil(cell) + 1, Math.ceil(cell) + 1);
+            }
           }
+        } else {
+          // fallback: solid
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
         }
       }
       
