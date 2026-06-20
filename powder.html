@@ -154,8 +154,8 @@ function step() {
   const dir = Math.random() < 0.5 ? -1 : 1;
 
   for (let y = GH - 2; y >= 0; y--) {
-    const xStart = dir < 0 ? 0 : GW - 1;
-    const xEnd = dir < 0 ? GW : -1;
+    const xStart = dir < 0 ? GW - 1 : 0;
+    const xEnd = dir < 0 ? -1 : GW;
     for (let xi = 0; xi < GW; xi++) {
       const x = xStart + xi * dir;
       const i = idx(x, y);
@@ -451,19 +451,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-
-// DEBUG: place a single sand at top, log position each second
-setTimeout(() => {
-  for (let y = 0; y < 5; y++) set(50, y, E.SAND);
-  console.log('placed sand, grid[50,0]=' + grid[idx(50, 0)]);
-}, 500);
-let stepCount = 0;
-const origStep = step;
-window.step = function() { stepCount++; origStep(); };
-setInterval(() => {
-  console.log('steps=' + stepCount + ' paused=' + paused);
-  for (let y = 0; y < GH; y++) if (grid[idx(50, y)] === E.SAND) console.log('  sand at y=' + y);
-}, 1000);
 </script>
 </body>
 </html>
