@@ -394,46 +394,30 @@ function paint(gx, gy, e) {
       const x = gx + dx, y = gy + dy;
       if (inBounds(x, y)) {
         const prev = get(x, y);
+        // skip non-empty cells (don't overwrite other elements)
+        if (prev !== E.EMPTY) continue;
         set(x, y, e);
         if (DEFS[e].lifetime) life[idx(x, y)] = DEFS[e].lifetime;
-        // immediate ignite flammable neighbors when placing fire
-        if (e === E.FIRE) {
-          const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-          for (const [dx2, dy2] of dirs) {
-            const nx = x + dx2, ny = y + dy2;
-            if (inBounds(nx, ny)) {
-              const ne = get(nx, ny);
-              if (ne === E.WOOD || ne === E.PLANT || ne === E.OIL || ne === E.GUNPOWDER) {
-                set(nx, ny, E.FIRE);
-                life[idx(nx, ny)] = 100;
-              }
-            }
-          }
-        }
-        // lava+water interaction
-        if (e === E.LAVA) {
-          const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-          for (const [dx2, dy2] of dirs) {
-            const nx = x + dx2, ny = y + dy2;
-            if (inBounds(nx, ny) && get(nx, ny) === E.WATER) {
-              set(nx, ny, E.STEAM); life[idx(nx, ny)] = 200;
-              set(x, y, E.STONE);
-            }
-          }
-        }
-        // water+fire interaction
-        if (e === E.WATER) {
-          const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-          for (const [dx2, dy2] of dirs) {
-            const nx = x + dx2, ny = y + dy2;
-            if (inBounds(nx, ny) && get(nx, ny) === E.FIRE) {
-              if (Math.random() < 0.5) {
-                set(nx, ny, E.STEAM); life[idx(nx, ny)] = 200;
-                set(x, y, E.SMOKE); life[idx(x, y)] = 200;
-              }
-            }
-          }
-        }
+      }
+    }
+  }
+  // immediate ignite/boil outside brush region too
+  if (e === E.FIRE) {
+    igniteFlammables(gx, gy, brushSize + 2);
+  }
+}
+
+// separate function: ignite flammables near a center
+function igniteFlammables(gx, gy, radius) {
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx*dx + dy*dy > radius*radius) continue;
+      const x = gx + dx, y = gy + dy;
+      if (!inBounds(x, y)) continue;
+      const ne = get(x, y);
+      if (ne === E.WOOD || ne === E.PLANT || ne === E.OIL || ne === E.GUNPOWDER) {
+        set(x, y, E.FIRE);
+        life[idx(x, y)] = 100;
       }
     }
   }
