@@ -161,6 +161,7 @@ function step() {
       const i = idx(x, y);
       const e = grid2[i];
       if (e === E.EMPTY) continue;
+      if (!DEFS[e]) continue;
       const def = DEFS[e];
       // gas: rise
       if (def.density < 5 && (e === E.SMOKE || e === E.STEAM || e === E.FIRE)) {
@@ -326,6 +327,7 @@ function render() {
   for (let y = 0; y < GH; y++) {
     for (let x = 0; x < GW; x++) {
       const e = grid[idx(x, y)];
+      if (!DEFS[e]) continue;
       const col = DEFS[e].color;
       const r = (col) & 0xff;
       const g = (col >> 8) & 0xff;
