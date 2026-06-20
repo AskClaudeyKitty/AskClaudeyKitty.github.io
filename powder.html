@@ -392,7 +392,10 @@ function paint(gx, gy, e) {
     for (let dx = -brushSize; dx <= brushSize; dx++) {
       if (dx*dx + dy*dy > brushSize*brushSize) continue;
       const x = gx + dx, y = gy + dy;
-      if (inBounds(x, y)) set(x, y, e);
+      if (inBounds(x, y)) {
+        set(x, y, e);
+        if (DEFS[e].lifetime) life[idx(x, y)] = DEFS[e].lifetime;
+      }
     }
   }
 }
