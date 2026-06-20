@@ -80,23 +80,23 @@ function def(id, opts) {
   DEFS[id] = Object.assign({ id, color: '#ffffff', density: 1, flammable: false, lifetime: 0, react: null }, opts);
 }
 def(E.EMPTY, { color: '#000000', density: 0 });
-def(E.SAND, { color: '#d4a85a', density: 60 });
-def(E.WATER, { color: '#4488cc', density: 40 });
+def(E.SAND, { color: '#d4a85a', density: 80 });
+def(E.WATER, { color: '#4488cc', density: 50 });
 def(E.STONE, { color: '#888888', density: 100 });
-def(E.WOOD, { color: '#8a5a2a', density: 80, flammable: true });
+def(E.WOOD, { color: '#8a5a2a', density: 95, flammable: true });
 def(E.FIRE, { color: '#ff4400', density: 1, lifetime: 60, flammable: false });
-def(E.PLANT, { color: '#44aa44', density: 70, flammable: true });
-def(E.OIL, { color: '#664422', density: 30, flammable: true });
-def(E.SALT, { color: '#eeeeff', density: 55 });
-def(E.GUNPOWDER, { color: '#222222', density: 65, flammable: true, explosive: true });
+def(E.PLANT, { color: '#44aa44', density: 75, flammable: true });
+def(E.OIL, { color: '#664422', density: 40, flammable: true });
+def(E.SALT, { color: '#eeeeff', density: 85 });
+def(E.GUNPOWDER, { color: '#222222', density: 78, flammable: true, explosive: true });
 def(E.STEAM, { color: '#cccccc', density: 1, lifetime: 200 });
 def(E.SMOKE, { color: '#666666', density: 1, lifetime: 300 });
-def(E.ICE, { color: '#aaddff', density: 90 });
-def(E.LAVA, { color: '#ff5a1f', density: 95, lifetime: 500 });
-def(E.ACID, { color: '#aaff44', density: 45 });
-def(E.SALT_WATER, { color: '#2244aa', density: 42 });
-def(E.CLONE, { color: '#ffff', density: 1 });
-def(E.DIRT, { color: '#6a3a1a', density: 65 });
+def(E.ICE, { color: '#aaddff', density: 100 });
+def(E.LAVA, { color: '#ff5a1f', density: 60, lifetime: 500 });
+def(E.ACID, { color: '#aaff44', density: 55 });
+def(E.SALT_WATER, { color: '#2244aa', density: 52 });
+def(E.CLONE, { color: '#ffffff', density: 1 });
+def(E.DIRT, { color: '#6a3a1a', density: 82 });
 def(E.GLASS, { color: '#aaddff', density: 100 });
 
 // palette for UI
@@ -176,15 +176,13 @@ function step() {
         }
         continue;
       }
-      // liquid: fall
-      if (def.density < 90) {
-        // try down
+      // liquid: flow down + sideways (water, oil, acid)
+      if (def.density < 70) {
         if (inBounds(x, y + 1)) {
           const below = get(x, y + 1);
           if (below === E.EMPTY || (DEFS[below].density < def.density && below !== e)) {
             set(x, y + 1, e); set(x, y, E.EMPTY); continue;
           }
-          // try diagonal
           const ddx = Math.random() < 0.5 ? -1 : 1;
           if (inBounds(x + ddx, y + 1)) {
             const dbelow = get(x + ddx, y + 1);
@@ -192,7 +190,6 @@ function step() {
               set(x + ddx, y + 1, e); set(x, y, E.EMPTY); continue;
             }
           }
-          // try side
           if (inBounds(x + ddx, y)) {
             const side = get(x + ddx, y);
             if (side === E.EMPTY || (DEFS[side].density < def.density && side !== e)) {
@@ -200,11 +197,14 @@ function step() {
             }
           }
         }
-      } else {
-        // powder: fall only if below is empty or less dense
+      } else if (def.density < 90) {
+        // powder: fall + diagonal spread (sand, dirt, salt, gunpowder)
         if (inBounds(x, y + 1)) {
           const below = get(x, y + 1);
-          if (below === E.EMPTY || (DEFS[below].density < def.density && below !== e)) {
+          if (below === E.EMPTY) {
+            set(x, y + 1, e); set(x, y, E.EMPTY); continue;
+          }
+          if (DEFS[below].density < def.density) {
             set(x, y + 1, e); set(x, y, E.EMPTY); continue;
           }
           const ddx = Math.random() < 0.5 ? -1 : 1;
@@ -213,6 +213,7 @@ function step() {
           }
         }
       }
+      // solids (90+): never move
 
       // reactions
       if (e === E.FIRE) {
