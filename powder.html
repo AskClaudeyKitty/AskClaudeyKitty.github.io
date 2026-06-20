@@ -79,25 +79,25 @@ const DEFS = {};
 function def(id, opts) {
   DEFS[id] = Object.assign({ id, color: '#ffffff', density: 1, flammable: false, lifetime: 0, react: null }, opts);
 }
-def(E.EMPTY, { color: '#0000', density: 0 });
-def(E.SAND, { color: '#a85a', density: 60 });
-def(E.WATER, { color: '#88cc', density: 40 });
-def(E.STONE, { color: '#8888', density: 100 });
-def(E.WOOD, { color: '#5a2a', density: 80, flammable: true });
-def(E.FIRE, { color: '#4400', density: 1, lifetime: 60, flammable: false });
-def(E.PLANT, { color: '#aa44', density: 70, flammable: true });
-def(E.OIL, { color: '#4422', density: 30, flammable: true });
-def(E.SALT, { color: '#eeff', density: 55 });
-def(E.GUNPOWDER, { color: '#2222', density: 65, flammable: true, explosive: true });
-def(E.STEAM, { color: '#cccc', density: 1, lifetime: 200 });
-def(E.SMOKE, { color: '#6666', density: 1, lifetime: 300 });
-def(E.ICE, { color: '#ddff', density: 90 });
-def(E.LAVA, { color: '#5a1f', density: 95, lifetime: 500 });
-def(E.ACID, { color: '#ff44', density: 45 });
-def(E.SALT_WATER, { color: '#44aa', density: 42 });
+def(E.EMPTY, { color: '#000000', density: 0 });
+def(E.SAND, { color: '#d4a85a', density: 60 });
+def(E.WATER, { color: '#4488cc', density: 40 });
+def(E.STONE, { color: '#888888', density: 100 });
+def(E.WOOD, { color: '#8a5a2a', density: 80, flammable: true });
+def(E.FIRE, { color: '#ff4400', density: 1, lifetime: 60, flammable: false });
+def(E.PLANT, { color: '#44aa44', density: 70, flammable: true });
+def(E.OIL, { color: '#664422', density: 30, flammable: true });
+def(E.SALT, { color: '#eeeeff', density: 55 });
+def(E.GUNPOWDER, { color: '#222222', density: 65, flammable: true, explosive: true });
+def(E.STEAM, { color: '#cccccc', density: 1, lifetime: 200 });
+def(E.SMOKE, { color: '#666666', density: 1, lifetime: 300 });
+def(E.ICE, { color: '#aaddff', density: 90 });
+def(E.LAVA, { color: '#ff5a1f', density: 95, lifetime: 500 });
+def(E.ACID, { color: '#aaff44', density: 45 });
+def(E.SALT_WATER, { color: '#2244aa', density: 42 });
 def(E.CLONE, { color: '#ffff', density: 1 });
-def(E.DIRT, { color: '#3a1a', density: 65 });
-def(E.GLASS, { color: '#ddff', density: 100 });
+def(E.DIRT, { color: '#6a3a1a', density: 65 });
+def(E.GLASS, { color: '#aaddff', density: 100 });
 
 // palette for UI
 const PALETTE = [
