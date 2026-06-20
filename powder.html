@@ -451,6 +451,14 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+// DEBUG: place a single sand at top, log position each second
+setTimeout(() => {
+  for (let y = 0; y < 5; y++) set(50, y, E.SAND);
+}, 500);
+setInterval(() => {
+  for (let y = 0; y < GH; y++) if (grid[idx(50, y)] === E.SAND) console.log('sand at y=' + y);
+}, 1000);
 </script>
 </body>
 </html>
