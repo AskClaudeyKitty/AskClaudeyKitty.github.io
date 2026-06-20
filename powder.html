@@ -227,6 +227,13 @@ function step() {
             if (Math.random() < 0.05) {
               set(nx, ny, E.FIRE);
               life[idx(nx, ny)] = 80;
+              if (Math.random() < 0.3) {
+                // produce smoke above
+                if (inBounds(nx, ny - 1) && get(nx, ny - 1) === E.EMPTY) {
+                  set(nx, ny - 1, E.SMOKE);
+                  life[idx(nx, ny - 1)] = 200;
+                }
+              }
             }
           } else if (ne === E.GUNPOWDER) {
             if (Math.random() < 0.3) {
@@ -240,7 +247,12 @@ function step() {
         for (const [dx, dy] of dirs) {
           const nx = x + dx, ny = y + dy;
           if (inBounds(nx, ny) && get(nx, ny) === E.WATER) {
-            if (Math.random() < 0.1) { set(nx, ny, E.STEAM); set(x, y, E.SMOKE); }
+            if (Math.random() < 0.1) {
+              set(nx, ny, E.STEAM);
+              life[idx(nx, ny)] = 200;
+              set(x, y, E.SMOKE);
+              life[i] = 200;
+            }
           }
         }
       } else if (e === E.LAVA) {
@@ -252,10 +264,14 @@ function step() {
           if (ne === E.WATER) {
             if (Math.random() < 0.3) {
               set(nx, ny, E.STEAM);
+              life[idx(nx, ny)] = 200;
               set(x, y, E.STONE);
             }
           } else if (ne === E.WOOD || ne === E.PLANT || ne === E.OIL) {
-            if (Math.random() < 0.05) { set(nx, ny, E.FIRE); }
+            if (Math.random() < 0.05) {
+              set(nx, ny, E.FIRE);
+              life[idx(nx, ny)] = 80;
+            }
           }
         }
         if (life[i] > 0) life[i]--;
