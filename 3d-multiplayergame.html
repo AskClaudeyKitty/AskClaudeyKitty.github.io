@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Multiplayer Game</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: monospace; color: #fff; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #ui { position: fixed; top: 8px; left: 8px; z-index: 10; pointer-events: none; font-size: 12px; text-shadow: 1px 1px 0 #000; }
+  #inv { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 10; pointer-events: none; }
+  .slot { width: 36px; height: 36px; background: rgba(0,0,0,0.5); border: 1px solid #555; }
+</style>
+</head>
+<body>
+<div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
+<div id="pos" style="position:fixed;top:40px;left:8px;z-index:10;pointer-events:none;font-family:monospace;font-size:12px;color:#0f0;background:rgba(0,0,0,0.5);padding:4px 6px;"></div>
+<div id="compass" style="position:fixed;top:50%;right:8px;transform:translateY(-50%);z-index:10;pointer-events:none;font-family:monospace;font-size:14px;color:#fff;text-shadow:1px 1px 0 #000;text-align:center;background:rgba(0,0,0,0.4);padding:8px 6px;border-radius:6px;">
+  <div id="cN" style="color:#ff5555;">N</div>
+  <div style="display:flex;justify-content:space-between;"><span id="cW" style="color:#888;">W</span><span style="opacity:0.3;">·</span><span id="cE" style="color:#888;">E</span></div>
+  <div id="cS" style="color:#88aaff;">S</div>
+</div>
+<div id="inv">
+  <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+  <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl', { antialias: true });
+if (!gl) throw new Error('no webgl');
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resize();
+addEventListener('resize', resize);
+
+const vs = gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vs, `attribute vec3 a_pos; attribute vec3 a_color; attribute vec3 a_normal;
+uniform mat4 u_mvp; varying vec3 v_color; varying float v_lit;
+void main(){
+  gl_Position = u_mvp * vec4(a_pos, 1.0);
+  v_color = a_color;
+  v_lit = clamp(a_normal.y * 0.3 + 0.85, 0.7, 1.2);
+}`);
+gl.compileShader(vs);
+const fs = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fs, `precision mediump float; varying vec3 v_color; varying float v_lit;
+void main(){ gl_FragColor = vec4(v_color * v_lit, 1.0); }`);
+gl.compileShader(fs);
+const prog = gl.createProgram();
+gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+gl.linkProgram(prog); gl.useProgram(prog);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+const aColor = gl.getAttribLocation(prog, 'a_color');
+const aNormal = gl.getAttribLocation(prog, 'a_normal');
+const uMVP = gl.getUniformLocation(prog, 'u_mvp');
+gl.enable(gl.DEPTH_TEST);
+gl.enable(gl.CULL_FACE);
+
+function mat4Identity(){ return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); }
+function mat4Multiply(a, b){
+  const m = new Float32Array(16);
+  for (let i=0;i<4;i++) for (let j=0;j<4;j++)
+    m[i+j*4] = a[i]*b[j*4] + a[i+4]*b[j*4+1] + a[i+8]*b[j*4+2] + a[i+12]*b[j*4+3];
+  return m;
+}
+function mat4Translate(x,y,z){
+  const m = mat4Identity();
+  m[12]=x; m[13]=y; m[14]=z; return m;
+}
+function mat4Perspective(fov, aspect, near, far){
+  const f = 1/Math.tan(fov/2), m = new Float32Array(16);
+  m[0]=f/aspect; m[5]=f; m[10]=(far+near)/(near-far); m[11]=-1;
+  m[14]=(2*far*near)/(near-far); return m;
+}
+function mat4RotateY(a){
+  const c=Math.cos(a), s=Math.sin(a), m=mat4Identity();
+  m[0]=c; m[2]=-s; m[8]=s; m[10]=c; return m;
+}
+function mat4LookAt(eye, target, up){
+  const zx=eye[0]-target[0], zy=eye[1]-target[1], zz=eye[2]-target[2];
+  const lz=Math.hypot(zx,zy,zz);
+  const zx2=zx/lz, zy2=zy/lz, zz2=zz/lz;
+  const xx=up[1]*zz2-up[2]*zy2, xy=up[2]*zx2-up[0]*zz2, xz=up[0]*zy2-up[1]*zx2;
+  const lx=Math.hypot(xx,xy,xz)||1;
+  const xx2=xx/lx, xy2=xy/lx, xz2=xz/lx;
+  const yx=zy2*xz2-zz2*xy2, yy=zz2*xx2-zx2*xz2, yz=zx2*xy2-zy2*xx2;
+  const m=new Float32Array(16);
+  m[0]=xx2; m[4]=xy2; m[8]=xz2;
+  m[1]=yx;  m[5]=yy;  m[9]=yz;
+  m[2]=zx2; m[6]=zy2; m[10]=zz2;
+  m[12]=-(xx2*eye[0]+xy2*eye[1]+xz2*eye[2]);
+  m[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+  m[14]=-(zx2*eye[0]+zy2*eye[1]+zz2*eye[2]);
+  m[15]=1;
+  return m;
+}
+
+function createBox(w, h, d, r, g, b) {
+  const hw = w / 2, hh = h / 2, hd = d / 2;
+  const verts = [];
+  function face(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, nx, ny, nz) {
+    const c = [r, g, b];
+    verts.push(
+      x1, y1, z1, ...c, nx, ny, nz,
+      x2, y2, z2, ...c, nx, ny, nz,
+      x3, y3, z3, ...c, nx, ny, nz,
+      x1, y1, z1, ...c, nx, ny, nz,
+      x3, y3, z3, ...c, nx, ny, nz,
+      x4, y4, z4, ...c, nx, ny, nz,
+    );
+  }
+  face(-hw, -hh,  hd,  hw, -hh,  hd,  hw,  hh,  hd, -hw,  hh,  hd,  0, 0, 1);
+  face( hw, -hh, -hd, -hw, -hh, -hd, -hw,  hh, -hd,  hw,  hh, -hd,  0, 0,-1);
+  face(-hw,  hh,  hd,  hw,  hh,  hd,  hw,  hh, -hd, -hw,  hh, -hd,  0, 1, 0);
+  face(-hw, -hh, -hd,  hw, -hh, -hd,  hw, -hh,  hd, -hw, -hh,  hd,  0,-1, 0);
+  face( hw, -hh,  hd,  hw, -hh, -hd,  hw,  hh, -hd,  hw,  hh,  hd,  1, 0, 0);
+  face(-hw, -hh, -hd, -hw, -hh,  hd, -hw,  hh,  hd, -hw,  hh, -hd, -1, 0, 0);
+  return new Float32Array(verts);
+}
+function createBuffer(arr){
+  const b = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, b);
+  gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+  return b;
+}
+function drawMesh(buf, count, mvp){
+  gl.uniformMatrix4fv(uMVP, false, mvp);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 36, 0);
+  gl.enableVertexAttribArray(aColor); gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 36, 12);
+  gl.enableVertexAttribArray(aNormal); gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 36, 24);
+  gl.drawArrays(gl.TRIANGLES, 0, count);
+}
+const MAP = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+const MW = MAP[0].length, MH = MAP.length;
+
+function makeBrickTex(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a0e08'; g.fillRect(0, 0, 64, 64);
+  for (let row = 0; row < 8; row++) {
+    const y = row * 8;
+    const off = (row % 2) * 16;
+    for (let col = -1; col < 5; col++) {
+      const x = col * 16 + off;
+      const s = 100 + ((row*7+col*13) % 50);
+      g.fillStyle = `rgb(${s+40},${s},${s-20})`;
+      g.fillRect(x+1, y+1, 14, 6);
+      g.fillStyle = 'rgba(0,0,0,0.2)';
+      g.fillRect(x+2+(row*5+col*3)%5, y+2+(row*3+col*7)%2, 2, 1);
+    }
+  }
+  return c;
+}
+const brickCanvas = makeBrickTex();
+function getWallColor(x, y){
+  const p = brickCanvas.getContext('2d').getImageData(((x*7+y*13)%64), ((x*13+y*7)%64), 1, 1).data;
+  return [p[0]/255, p[1]/255, p[2]/255];
+}
+const floorBuf = createBuffer(createBox(MW, 0.1, MH, 0.30, 0.20, 0.12));
+const ceilBuf  = createBuffer(createBox(MW, 0.1, MW, 0.14, 0.14, 0.18));
+
+const wallBufs = [];
+for (let y = 0; y < MH; y++) {
+  for (let x = 0; x < MW; x++) {
+    if (MAP[y][x]) {
+      const c = getWallColor(x, y);
+      wallBufs.push({ buf: createBuffer(createBox(1, 2.5, 1, c[0], c[1], c[2])), x, y });
+    }
+  }
+}
+
+// debug: red transparent box over player cell
+const debugBuf = createBuffer(createBox(0.8, 0.05, 0.8, 1, 0, 0));
+
+// Player model (same as 3d-physics_test)
+const bodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.65, 0.25, 0.18));
+const pheadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.93, 0.78, 0.53));
+const limbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.45, 0.18, 0.12));
+const eyeBuf = createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13));
+
+const player = { x: 18.5, y: 0.45, z: 1.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
+const EYE = 1.6;
+const SPEED = 4.5;
+const ACCEL = 30;
+const RADIUS = 0.25;
+let pitch = 0, firstPerson = true;
+let camDist = 3.5, camHeight = 2.0;
+const keys = {};
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 'v') firstPerson = !firstPerson;
+});
+addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+canvas.addEventListener('mousedown', () => canvas.requestPointerLock());
+document.addEventListener('pointerlockchange', () => { /* keep yaw */ });
+addEventListener('mousemove', e => {
+  if (document.pointerLockElement === canvas) {
+    player.yaw += e.movementX * 0.003;
+    pitch -= e.movementY * 0.003;
+    pitch = Math.max(-0.8, Math.min(0.8, pitch));
+  }
+});
+
+function wallBlocksAt(testX, testZ, cx, cy) {
+  if (cx < 0 || cy < 0 || cx >= MW || cy >= MH) return true;
+  if (!MAP[cy][cx]) return false;
+  const px = Math.max(cx, Math.min(testX, cx + 1));
+  const pz = Math.max(cy, Math.min(testZ, cy + 1));
+  const dx = testX - px, dz = testZ - pz;
+  return dx*dx + dz*dz < RADIUS*RADIUS;
+}
+function canMoveTo(nx, nz){
+  const r = RADIUS;
+  // sample 8 points around player
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const x = nx + Math.cos(a) * r;
+    const z = nz + Math.sin(a) * r;
+    if (wallBlocksAt(nx, nz, Math.floor(x), Math.floor(z))) return false;
+  }
+  return true;
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  let dx = 0, dz = 0;
+  if (keys['w']) { dx +=  Math.sin(player.yaw); dz +=  Math.cos(player.yaw); }
+  if (keys['s']) { dx += -Math.sin(player.yaw); dz += -Math.cos(player.yaw); }
+  if (keys['a']) { dx +=  Math.cos(player.yaw); dz += -Math.sin(player.yaw); }
+  if (keys['d']) { dx += -Math.cos(player.yaw); dz +=  Math.sin(player.yaw); }
+  const len = Math.hypot(dx, dz);
+  if (len) { dx /= len; dz /= len; }
+  const tvx = dx * SPEED, tvz = dz * SPEED;
+  player.vx += (tvx - player.vx) * Math.min(1, ACCEL * dt / SPEED);
+  player.vz += (tvz - player.vz) * Math.min(1, ACCEL * dt / SPEED);
+  const stepX = player.vx * dt, stepZ = player.vz * dt;
+  if (canMoveTo(player.x + stepX, player.z)) player.x += stepX; else player.vx = 0;
+  if (canMoveTo(player.x, player.z + stepZ)) player.z += stepZ; else player.vz = 0;
+  if (len) player.walkT += dt * 8; else player.walkT *= 0.9;
+  player.y = 0.45;
+  if (len > 0.01) player.faceYaw = Math.atan2(dx, dz);
+  // safety: if inside a wall, push out
+  if (wallBlocksAt(player.x, player.z, Math.floor(player.x), Math.floor(player.z))) {
+    // find nearest open cell
+    let best = null, bd = 1e9;
+    for (let yy = 0; yy < MH; yy++) for (let xx = 0; xx < MW; xx++) {
+      if (!MAP[yy][xx]) {
+        const dx = player.x - (xx+0.5), dz = player.z - (yy+0.5);
+        const d = dx*dx + dz*dz;
+        if (d < bd) { bd = d; best = { xx, yy }; }
+      }
+    }
+    if (best) { player.x = best.xx + 0.5; player.z = best.yy + 0.5; }
+  }
+
+  let eyeX, eyeY, eyeZ, tx, ty, tz;
+  if (firstPerson) {
+    eyeX = player.x; eyeY = 1.6; eyeZ = player.z;
+    tx = eyeX + Math.sin(player.yaw) * Math.cos(pitch) * 10;
+    ty = eyeY + Math.sin(-pitch) * 10;
+    tz = eyeZ + Math.cos(player.yaw) * Math.cos(pitch) * 10;
+  } else {
+    eyeX = player.x - Math.sin(player.yaw) * camDist;
+    eyeZ = player.z - Math.cos(player.yaw) * camDist;
+    eyeY = 2.0;
+    tx = player.x;
+    ty = 1.2;
+    tz = player.z;
+  }
+  const view = mat4LookAt([eyeX, eyeY, eyeZ], [tx, ty, tz], [0, 1, 0]);
+  const proj = mat4Perspective(Math.PI/3, innerWidth/innerHeight, 0.05, 100);
+  const vp = mat4Multiply(proj, view);
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clearColor(0.04, 0.04, 0.08, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  drawMesh(floorBuf, 36, mat4Multiply(vp, mat4Translate(MW/2, -0.05, MH/2)));
+  for (const w of wallBufs) {
+    drawMesh(w.buf, 36, mat4Multiply(vp, mat4Translate(w.x + 0.5, 1.25, w.y + 0.5)));
+  }
+  // debug: red box at player cell
+  drawMesh(debugBuf, 36, mat4Multiply(vp, mat4Translate(Math.floor(player.x) + 0.5, 0.01, Math.floor(player.z) + 0.5)));
+  if (!firstPerson) {
+    const isMoving = len > 0.01;
+    const walkPhase = player.walkT;
+    const charRot = mat4RotateY(player.faceYaw);
+    const charTrans = mat4Translate(player.x, 0, player.z);
+    const charMat = mat4Multiply(vp, mat4Multiply(charTrans, charRot));
+    const walkBob = isMoving ? Math.sin(walkPhase) * 0.05 : 0;
+    drawMesh(bodyBuf, 36, mat4Multiply(charMat, mat4Translate(0, 0.85 + walkBob, 0)));
+    drawMesh(pheadBuf, 36, mat4Multiply(charMat, mat4Translate(0, 1.6 + walkBob, 0)));
+    drawMesh(eyeBuf, 36, mat4Multiply(charMat, mat4Translate(-0.1, 1.65 + walkBob, 0.22)));
+    drawMesh(eyeBuf, 36, mat4Multiply(charMat, mat4Translate(0.1, 1.65 + walkBob, 0.22)));
+    const swing = isMoving ? Math.sin(walkPhase) * 0.35 : 0;
+    const attachedTweak = isMoving ? Math.abs(Math.sin(walkPhase)) * 0.05 : 0;
+    drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(-0.35, 1.05 - attachedTweak, swing)));
+    drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05 - attachedTweak, -swing)));
+    drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(-0.15, 0.35 - attachedTweak, -swing)));
+    drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.15, 0.35 - attachedTweak, swing)));
+  }
+
+  // compass: which direction is forward
+  const ym = (player.yaw % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+  // 0 = +z (south). atan2(sin, cos) approach
+  // yaw angle relative to each cardinal: forward is yaw direction (0 = +z, +PI/2 = +x east, etc.)
+  const dirs = [
+    { name: 'S', ang: 0 },          // +z
+    { name: 'W', ang: Math.PI/2 },  // +x (we'll say west is +x? in image: -x west, +x east)
+    { name: 'N', ang: Math.PI },
+    { name: 'E', ang: -Math.PI/2 },
+  ];
+  // forward = +z at yaw 0. yaw 0 means looking +z. yaw=PI/2 means looking +x (east if east=+x).
+  // we want the highlighted letter to be the one player is facing
+  const facing = ((player.yaw % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  // Map facing angle to nearest cardinal: 0→S, PI/2→E, PI→N, 3PI/2→W
+  let fwd = 'S';
+  if (facing < Math.PI/4 || facing > 7*Math.PI/4) fwd = 'S';
+  else if (facing < 3*Math.PI/4) fwd = 'E';
+  else if (facing < 5*Math.PI/4) fwd = 'N';
+  else fwd = 'W';
+  document.getElementById('cN').style.color = fwd==='N' ? '#ff5555' : '#888';
+  document.getElementById('cS').style.color = fwd==='S' ? '#88aaff' : '#888';
+  document.getElementById('cE').style.color = fwd==='E' ? '#88ff88' : '#888';
+  document.getElementById('cW').style.color = fwd==='W' ? '#ffaa44' : '#888';
+
+  document.getElementById('pos').textContent = `x:${player.x.toFixed(2)} z:${player.z.toFixed(2)} cell:(${Math.floor(player.x)},${Math.floor(player.z)}) yaw:${(player.yaw*180/Math.PI).toFixed(0)}°`;
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
