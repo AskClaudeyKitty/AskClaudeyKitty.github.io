@@ -84,7 +84,7 @@ def(E.SAND, { color: '#d4a85a', density: 80 });
 def(E.WATER, { color: '#4488cc', density: 50 });
 def(E.STONE, { color: '#888888', density: 100 });
 def(E.WOOD, { color: '#8a5a2a', density: 95, flammable: true });
-def(E.FIRE, { color: '#ff4400', density: 1, lifetime: 60, flammable: false });
+def(E.FIRE, { color: '#ff4400', density: 1, lifetime: 150, flammable: false });
 def(E.PLANT, { color: '#44aa44', density: 75, flammable: true });
 def(E.OIL, { color: '#664422', density: 40, flammable: true });
 def(E.SALT, { color: '#eeeeff', density: 85 });
@@ -166,7 +166,19 @@ function step() {
       // gas: rise
       if (def.density < 5 && (e === E.SMOKE || e === E.STEAM || e === E.FIRE)) {
         if (life[i] > 0) life[i]--;
-        if (life[i] === 0) { set(x, y, E.EMPTY); continue; }
+        if (life[i] === 0) {
+          if (e === E.FIRE) {
+            // fire dies → smoke puff
+            if (inBounds(x, y - 1) && get(x, y - 1) === E.EMPTY) {
+              set(x, y - 1, E.SMOKE);
+              life[idx(x, y - 1)] = 100;
+            }
+            set(x, y, E.EMPTY);
+          } else {
+            set(x, y, E.EMPTY);
+          }
+          continue;
+        }
         if (inBounds(x, y - 1) && (get(x, y - 1) === E.EMPTY || (DEFS[get(x, y-1)].density < def.density && get(x,y-1) !== e))) {
           set(x, y - 1, e); set(x, y, E.EMPTY); continue;
         }
@@ -224,14 +236,13 @@ function step() {
           if (!inBounds(nx, ny)) continue;
           const ne = get(nx, ny);
           if (ne === E.WOOD || ne === E.PLANT || ne === E.OIL) {
-            if (Math.random() < 0.4) {
+            if (Math.random() < 0.3) {
               set(nx, ny, E.FIRE);
-              life[idx(nx, ny)] = 100;
-              if (Math.random() < 0.4) {
-                // produce smoke above
+              life[idx(nx, ny)] = 200;
+              if (Math.random() < 0.5) {
                 if (inBounds(nx, ny - 1) && get(nx, ny - 1) === E.EMPTY) {
                   set(nx, ny - 1, E.SMOKE);
-                  life[idx(nx, ny - 1)] = 200;
+                  life[idx(nx, ny - 1)] = 300;
                 }
               }
             }
