@@ -89,8 +89,8 @@ def(E.PLANT, { color: '#44aa44', density: 75, flammable: true });
 def(E.OIL, { color: '#664422', density: 40, flammable: true });
 def(E.SALT, { color: '#eeeeff', density: 85 });
 def(E.GUNPOWDER, { color: '#222222', density: 78, flammable: true, explosive: true });
-def(E.STEAM, { color: '#cccccc', density: 1, lifetime: 200 });
-def(E.SMOKE, { color: '#666666', density: 1, lifetime: 300 });
+def(E.STEAM, { color: '#cccccc', density: 1, lifetime: 1000 });
+def(E.SMOKE, { color: '#666666', density: 1, lifetime: 1000 });
 def(E.ICE, { color: '#aaddff', density: 100 });
 def(E.LAVA, { color: '#ff5a1f', density: 60, lifetime: 500 });
 def(E.ACID, { color: '#aaff44', density: 55 });
@@ -182,9 +182,14 @@ function step() {
         if (inBounds(x, y - 1) && (get(x, y - 1) === E.EMPTY || (DEFS[get(x, y-1)].density < def.density && get(x,y-1) !== e))) {
           set(x, y - 1, e); set(x, y, E.EMPTY); continue;
         }
+        // at top: spread sideways, linger forever
         const dx = Math.random() < 0.5 ? -1 : 1;
         if (inBounds(x + dx, y) && (get(x + dx, y) === E.EMPTY || DEFS[get(x + dx, y)].density < def.density)) {
           set(x + dx, y, e); set(x, y, E.EMPTY); continue;
+        }
+        // at top + blocked sides: persist indefinitely
+        if (y === 0 || y === 1) {
+          life[i] = 1000; // cloud lingers
         }
         continue;
       }
