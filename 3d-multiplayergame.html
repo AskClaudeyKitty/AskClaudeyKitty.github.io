@@ -13,12 +13,6 @@
 </head>
 <body>
 <div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
-<div id="pos" style="position:fixed;top:40px;left:8px;z-index:10;pointer-events:none;font-family:monospace;font-size:12px;color:#0f0;background:rgba(0,0,0,0.5);padding:4px 6px;"></div>
-<div id="compass" style="position:fixed;top:50%;right:8px;transform:translateY(-50%);z-index:10;pointer-events:none;font-family:monospace;font-size:14px;color:#fff;text-shadow:1px 1px 0 #000;text-align:center;background:rgba(0,0,0,0.4);padding:8px 6px;border-radius:6px;">
-  <div id="cN" style="color:#ff5555;">N</div>
-  <div style="display:flex;justify-content:space-between;"><span id="cW" style="color:#888;">W</span><span style="opacity:0.3;">·</span><span id="cE" style="color:#888;">E</span></div>
-  <div id="cS" style="color:#88aaff;">S</div>
-</div>
 <div id="inv">
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -185,8 +179,7 @@ for (let y = 0; y < MH; y++) {
   }
 }
 
-// debug: red transparent box over player cell
-const debugBuf = createBuffer(createBox(0.8, 0.05, 0.8, 1, 0, 0));
+// debug buf removed
 
 // Player model (same as 3d-physics_test)
 const bodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.65, 0.25, 0.18));
@@ -298,8 +291,6 @@ function frame(now){
   for (const w of wallBufs) {
     drawMesh(w.buf, 36, mat4Multiply(vp, mat4Translate(w.x + 0.5, 1.25, w.y + 0.5)));
   }
-  // debug: red box at player cell
-  drawMesh(debugBuf, 36, mat4Multiply(vp, mat4Translate(Math.floor(player.x) + 0.5, 0.01, Math.floor(player.z) + 0.5)));
   if (!firstPerson) {
     const isMoving = len > 0.01;
     const walkPhase = player.walkT;
@@ -318,32 +309,6 @@ function frame(now){
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(-0.15, 0.35 - attachedTweak, -swing)));
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.15, 0.35 - attachedTweak, swing)));
   }
-
-  // compass: which direction is forward
-  const ym = (player.yaw % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-  // 0 = +z (south). atan2(sin, cos) approach
-  // yaw angle relative to each cardinal: forward is yaw direction (0 = +z, +PI/2 = +x east, etc.)
-  const dirs = [
-    { name: 'S', ang: 0 },          // +z
-    { name: 'W', ang: Math.PI/2 },  // +x (we'll say west is +x? in image: -x west, +x east)
-    { name: 'N', ang: Math.PI },
-    { name: 'E', ang: -Math.PI/2 },
-  ];
-  // forward = +z at yaw 0. yaw 0 means looking +z. yaw=PI/2 means looking +x (east if east=+x).
-  // we want the highlighted letter to be the one player is facing
-  const facing = ((player.yaw % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-  // Map facing angle to nearest cardinal: 0→S, PI/2→E, PI→N, 3PI/2→W
-  let fwd = 'S';
-  if (facing < Math.PI/4 || facing > 7*Math.PI/4) fwd = 'S';
-  else if (facing < 3*Math.PI/4) fwd = 'E';
-  else if (facing < 5*Math.PI/4) fwd = 'N';
-  else fwd = 'W';
-  document.getElementById('cN').style.color = fwd==='N' ? '#ff5555' : '#888';
-  document.getElementById('cS').style.color = fwd==='S' ? '#88aaff' : '#888';
-  document.getElementById('cE').style.color = fwd==='E' ? '#88ff88' : '#888';
-  document.getElementById('cW').style.color = fwd==='W' ? '#ffaa44' : '#888';
-
-  document.getElementById('pos').textContent = `x:${player.x.toFixed(2)} z:${player.z.toFixed(2)} cell:(${Math.floor(player.x)},${Math.floor(player.z)}) yaw:${(player.yaw*180/Math.PI).toFixed(0)}°`;
 
   requestAnimationFrame(frame);
 }
