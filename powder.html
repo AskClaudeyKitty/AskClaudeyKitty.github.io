@@ -131,7 +131,6 @@ function idx(x, y) { return y * GW + x; }
 function inBounds(x, y) { return x >= 0 && x < GW && y >= 0 && y < GH; }
 function get(x, y) { return inBounds(x, y) ? grid[idx(x, y)] : E.STONE; }
 function set(x, y, e) { if (inBounds(x, y)) grid[idx(x, y)] = e; }
-
 // convert hex color to packed int (RGBA bytes for ImageData)
 function packColor(hex) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -179,7 +178,7 @@ function step() {
           }
           continue;
         }
-        if (inBounds(x, y - 1) && (get(x, y - 1) === E.EMPTY || (DEFS[get(x, y-1)].density < def.density && get(x,y-1) !== e))) {
+        if (inBounds(x, y - 1) && (get(x, y - 1) === E.EMPTY || (DEFS[get(x, y-1)].density < def.density && get(x,y-1) !== e) || get(x, y-1) === e)) {
           set(x, y - 1, e); set(x, y, E.EMPTY); continue;
         }
         // at top: spread sideways, linger forever
