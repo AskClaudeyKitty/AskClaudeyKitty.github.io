@@ -12,7 +12,16 @@
 </style>
 </head>
 <body>
+<div id="title" style="position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at center,#1a0e08 0%,#000 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;color:#fff;">
+  <h1 style="font-size:3rem;margin:0 0 24px;text-shadow:0 0 20px #ff8844,0 4px 0 #2a1a0a;letter-spacing:3px;">Fun Dungeon Game!</h1>
+  <div style="display:flex;gap:16px;margin-top:8px;">
+    <button id="playBtn" style="font-family:monospace;font-size:1.4rem;padding:12px 28px;background:#2a1a0a;color:#ffcc88;border:2px solid #8b5a2b;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #1a0e08;">Player</button>
+    <button id="dmBtn" style="font-family:monospace;font-size:1.4rem;padding:12px 28px;background:#2a1a0a;color:#ff8866;border:2px solid #8b2b2b;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #1a0e08;">Dungeon Master</button>
+  </div>
+  <p style="margin-top:24px;font-size:0.9rem;opacity:0.5;">WASD move • Mouse look • V toggle view</p>
+</div>
 <div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
+<canvas id="dm" width="300" height="300" style="position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,0.6);border:2px solid #8b5a2b;display:none;image-rendering:pixelated;"></canvas>
 <div id="inv">
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -21,6 +30,8 @@
 <script>
 const canvas = document.getElementById('c');
 const gl = canvas.getContext('webgl', { antialias: true });
+const dmCanvas = document.getElementById('dm');
+const dmCtx = dmCanvas.getContext('2d');
 if (!gl) throw new Error('no webgl');
 function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
 resize();
@@ -125,20 +136,30 @@ function drawMesh(buf, count, mvp){
   gl.drawArrays(gl.TRIANGLES, 0, count);
 }
 const MAP = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ];
 const MW = MAP[0].length, MH = MAP.length;
 
@@ -187,7 +208,7 @@ const pheadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.93, 0.78, 0.53));
 const limbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.45, 0.18, 0.12));
 const eyeBuf = createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13));
 
-const player = { x: 18.5, y: 0.45, z: 1.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
+const player = { x: 12.5, y: 0.45, z: 12.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
 const EYE = 1.6;
 const SPEED = 4.5;
 const ACCEL = 30;
@@ -205,7 +226,7 @@ canvas.addEventListener('mousedown', () => canvas.requestPointerLock());
 document.addEventListener('pointerlockchange', () => { /* keep yaw */ });
 addEventListener('mousemove', e => {
   if (document.pointerLockElement === canvas) {
-    player.yaw += e.movementX * 0.003;
+    player.yaw -= e.movementX * 0.003;
     pitch -= e.movementY * 0.003;
     pitch = Math.max(-0.8, Math.min(0.8, pitch));
   }
@@ -232,9 +253,42 @@ function canMoveTo(nx, nz){
 }
 
 let last = performance.now();
+let started = false;
+let mode = 'player';
+function start(m) {
+  mode = m;
+  document.getElementById('title').style.display = 'none';
+  started = true;
+  if (mode === 'dm') {
+    dmCanvas.style.display = 'block';
+    canvas.style.display = 'none';
+  } else {
+    canvas.requestPointerLock();
+  }
+}
+document.getElementById('playBtn').addEventListener('click', () => start('player'));
+document.getElementById('dmBtn').addEventListener('click', () => start('dm'));
 function frame(now){
+  if (!started) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  if (mode === 'dm') {
+    // DM: only render 2D map, no player logic
+    const W2 = dmCanvas.width, H2 = dmCanvas.height;
+    dmCtx.fillStyle = '#0a0a14';
+    dmCtx.fillRect(0, 0, W2, H2);
+    const sx = W2 / MW, sy = H2 / MH;
+    for (let y = 0; y < MH; y++) {
+      for (let x = 0; x < MW; x++) {
+        if (MAP[y][x]) {
+          dmCtx.fillStyle = '#6a4a2a';
+          dmCtx.fillRect(x * sx, y * sy, sx, sy);
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+    return;
+  }
   let dx = 0, dz = 0;
   if (keys['w']) { dx +=  Math.sin(player.yaw); dz +=  Math.cos(player.yaw); }
   if (keys['s']) { dx += -Math.sin(player.yaw); dz += -Math.cos(player.yaw); }
