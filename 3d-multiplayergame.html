@@ -20,7 +20,27 @@
   </div>
   <p style="margin-top:24px;font-size:0.9rem;opacity:0.5;">WASD move • Mouse look • V toggle view</p>
 </div>
+<div id="classPick" style="position:fixed;inset:0;z-index:101;background:radial-gradient(ellipse at center,#1a0e08 0%,#000 100%);display:none;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;color:#fff;">
+  <h2 style="font-size:2rem;margin:0 0 8px;">Choose Your Class</h2>
+  <p style="margin:0 0 24px;opacity:0.6;font-size:0.9rem;">Your choice shapes the journey.</p>
+  <div style="display:flex;gap:20px;">
+    <button class="classBtn" data-class="warrior" style="font-family:monospace;font-size:1.2rem;padding:20px 24px;background:#2a1a0a;color:#ff6666;border:2px solid #8b2b2b;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #1a0e08;width:160px;">
+      <div style="font-size:1.4rem;margin-bottom:8px;">⚔ Warrior</div>
+      <div style="font-size:0.75rem;opacity:0.7;line-height:1.4;">Strong &amp; tough. Hits hard.</div>
+    </button>
+    <button class="classBtn" data-class="mage" style="font-family:monospace;font-size:1.2rem;padding:20px 24px;background:#2a1a0a;color:#6688ff;border:2px solid #2b4b8b;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #1a0e08;width:160px;">
+      <div style="font-size:1.4rem;margin-bottom:8px;">✦ Mage</div>
+      <div style="font-size:0.75rem;opacity:0.7;line-height:1.4;">Casts spells. Glass cannon.</div>
+    </button>
+    <button class="classBtn" data-class="rogue" style="font-family:monospace;font-size:1.2rem;padding:20px 24px;background:#2a1a0a;color:#66ff88;border:2px solid #2b8b4b;border-radius:8px;cursor:pointer;box-shadow:0 4px 0 #1a0e08;width:160px;">
+      <div style="font-size:1.4rem;margin-bottom:8px;">✦ Rogue</div>
+      <div style="font-size:0.75rem;opacity:0.7;line-height:1.4;">Fast &amp; sneaky. Crits often.</div>
+    </button>
+  </div>
+  <button id="classBack" style="margin-top:20px;background:transparent;color:#888;border:1px solid #555;border-radius:4px;padding:6px 16px;cursor:pointer;font-family:monospace;">← back</button>
+</div>
 <div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
+<input id="dmCmd" placeholder="DM command (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:50;font-family:monospace;font-size:14px;padding:8px 12px;width:400px;background:rgba(0,0,0,0.8);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:none;">
 <canvas id="dm" width="300" height="300" style="position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,0.6);border:2px solid #8b5a2b;display:none;image-rendering:pixelated;"></canvas>
 <div id="inv">
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -207,13 +227,21 @@ const bodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.65, 0.25, 0.18));
 const pheadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.93, 0.78, 0.53));
 const limbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.45, 0.18, 0.12));
 const eyeBuf = createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13));
-
+// Weapon meshes
+const swordBlade = createBuffer(createBox(0.1, 0.12, 1.2, 0.85, 0.85, 0.95));
+const swordGuard = createBuffer(createBox(0.35, 0.08, 0.08, 0.6, 0.4, 0.15));
+const swordHilt  = createBuffer(createBox(0.12, 0.4, 0.12, 0.35, 0.2, 0.1));
+const staffShaft = createBuffer(createBox(0.08, 1.6, 0.08, 0.45, 0.3, 0.15));
+const staffOrb   = createBuffer(createBox(0.22, 0.22, 0.22, 0.4, 0.6, 1.0));
+const daggerBlade = createBuffer(createBox(0.08, 0.08, 0.5, 0.7, 0.7, 0.8));
+const daggerGuard = createBuffer(createBox(0.18, 0.06, 0.06, 0.4, 0.25, 0.1));
+const daggerHilt  = createBuffer(createBox(0.1, 0.25, 0.1, 0.25, 0.15, 0.08));
 const player = { x: 12.5, y: 0.45, z: 12.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
 const EYE = 1.6;
 const SPEED = 4.5;
 const ACCEL = 30;
 const RADIUS = 0.25;
-let pitch = 0, firstPerson = true;
+let pitch = 0, firstPerson = false;
 let camDist = 3.5, camHeight = 2.0;
 const keys = {};
 addEventListener('keydown', e => {
@@ -255,19 +283,81 @@ function canMoveTo(nx, nz){
 let last = performance.now();
 let started = false;
 let mode = 'player';
-function start(m) {
+let playerClass = 'warrior';
+function start(m, cls) {
   mode = m;
+  if (cls) playerClass = cls;
+  document.getElementById('classPick').style.display = 'none';
   document.getElementById('title').style.display = 'none';
   started = true;
   if (mode === 'dm') {
     dmCanvas.style.display = 'block';
     canvas.style.display = 'none';
+    document.getElementById('dmCmd').style.display = 'block';
   } else {
     canvas.requestPointerLock();
   }
 }
-document.getElementById('playBtn').addEventListener('click', () => start('player'));
+
+// DM command processing
+const dmInput = document.getElementById('dmCmd');
+addEventListener('keydown', e => {
+  if (mode !== 'dm') return;
+  if (e.key === 't' && document.activeElement !== dmInput) {
+    dmInput.focus();
+    e.preventDefault();
+  }
+});
+dmInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    runDmCommand(dmInput.value.trim());
+    dmInput.value = '';
+    dmInput.blur();
+    e.preventDefault();
+  } else if (e.key === 'Escape') {
+    dmInput.blur();
+  }
+});
+function runDmCommand(cmd) {
+  if (!cmd) return;
+  // safe parsing: only allow known actions, no eval
+  const parts = cmd.split(/\s+/);
+  const action = parts[0].toLowerCase();
+  try {
+    if (action === 'spawn' && parts.length >= 4) {
+      // spawn <type> <x> <z>  — type ignored for now, just logs
+      console.log('DM spawn:', parts[1], 'at', parts[2], parts[3]);
+    } else if (action === 'move' && parts.length >= 3) {
+      const x = parseFloat(parts[1]);
+      const z = parseFloat(parts[2]);
+      if (!isNaN(x) && !isNaN(z)) {
+        player.x = Math.max(1, Math.min(MW - 1, x));
+        player.z = Math.max(1, Math.min(MH - 1, z));
+        console.log('DM moved player to', player.x, player.z);
+      }
+    } else if (action === 'teleport' || action === 'tp') {
+      console.log('TP not implemented yet');
+    } else if (action === 'help') {
+      console.log('Commands: spawn <type> <x> <z>, move <x> <z>, help');
+    } else {
+      console.log('Unknown DM command:', cmd);
+    }
+  } catch (err) {
+    console.log('DM error:', err.message);
+  }
+}
+document.getElementById('playBtn').addEventListener('click', () => {
+  document.getElementById('title').style.display = 'none';
+  document.getElementById('classPick').style.display = 'flex';
+});
 document.getElementById('dmBtn').addEventListener('click', () => start('dm'));
+document.getElementById('classBack').addEventListener('click', () => {
+  document.getElementById('classPick').style.display = 'none';
+  document.getElementById('title').style.display = 'flex';
+});
+document.querySelectorAll('.classBtn').forEach(btn => {
+  btn.addEventListener('click', () => start('player', btn.dataset.class));
+});
 function frame(now){
   if (!started) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -345,6 +435,30 @@ function frame(now){
   for (const w of wallBufs) {
     drawMesh(w.buf, 36, mat4Multiply(vp, mat4Translate(w.x + 0.5, 1.25, w.y + 0.5)));
   }
+  // sword in first person (attached to camera)
+  if (firstPerson) {
+    const rightX = Math.cos(player.yaw), rightZ = -Math.sin(player.yaw);
+    const fwdX = Math.sin(player.yaw), fwdZ = Math.cos(player.yaw);
+    // base = camera position (use 1st person eye pos)
+    const cx = player.x, cy = 1.6, cz = player.z;
+    // hilt at right 0.35, down 0.9, forward 0.5
+    const hx = cx + rightX * 0.35 + fwdX * 0.5;
+    const hz = cz + rightZ * 0.35 + fwdZ * 0.5;
+    const hy = cy - 0.9;
+    if (playerClass === 'warrior') {
+      drawMesh(swordHilt, 36, mat4Multiply(vp, mat4Translate(hx, hy, hz)));
+      drawMesh(swordGuard, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.25, hy, hz + fwdZ*0.25)));
+      drawMesh(swordBlade, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.95, hy, hz + fwdZ*0.95)));
+    } else if (playerClass === 'mage') {
+      drawMesh(staffShaft, 36, mat4Multiply(vp, mat4Translate(hx, hy + 0.3, hz)));
+      drawMesh(staffOrb, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.1, hy + 1.2, hz + fwdZ*0.1)));
+    } else if (playerClass === 'rogue') {
+      drawMesh(daggerHilt, 36, mat4Multiply(vp, mat4Translate(hx, hy, hz)));
+      drawMesh(daggerGuard, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.15, hy, hz + fwdZ*0.15)));
+      drawMesh(daggerBlade, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.45, hy, hz + fwdZ*0.45)));
+    }
+  }
+
   if (!firstPerson) {
     const isMoving = len > 0.01;
     const walkPhase = player.walkT;
@@ -362,6 +476,20 @@ function frame(now){
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05 - attachedTweak, -swing)));
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(-0.15, 0.35 - attachedTweak, -swing)));
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.15, 0.35 - attachedTweak, swing)));
+    // weapon in right hand
+    if (playerClass === 'warrior') {
+      // sword in right hand, blade forward (+z)
+      drawMesh(swordHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing)));
+      drawMesh(swordGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.25)));
+      drawMesh(swordBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.95)));
+    } else if (playerClass === 'mage') {
+      drawMesh(staffShaft, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05 - attachedTweak, -swing)));
+      drawMesh(staffOrb, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.75 - attachedTweak, -swing)));
+    } else if (playerClass === 'rogue') {
+      drawMesh(daggerHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing)));
+      drawMesh(daggerGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.15)));
+      drawMesh(daggerBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.45)));
+    }
   }
 
   requestAnimationFrame(frame);
