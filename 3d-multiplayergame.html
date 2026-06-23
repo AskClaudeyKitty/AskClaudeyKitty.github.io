@@ -40,7 +40,7 @@
   <button id="classBack" style="margin-top:20px;background:transparent;color:#888;border:1px solid #555;border-radius:4px;padding:6px 16px;cursor:pointer;font-family:monospace;">← back</button>
 </div>
 <div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
-<input id="dmCmd" placeholder="DM command (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:50;font-family:monospace;font-size:14px;padding:8px 12px;width:400px;background:rgba(0,0,0,0.8);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:none;">
+<input id="dmCmd" placeholder="DM: type 'spawn zombie' or 'help' (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:50;font-family:monospace;font-size:14px;padding:8px 12px;width:480px;background:rgba(0,0,0,0.85);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:block;">
 <canvas id="dm" width="300" height="300" style="position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,0.6);border:2px solid #8b5a2b;display:none;image-rendering:pixelated;"></canvas>
 <div id="inv">
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -156,30 +156,54 @@ function drawMesh(buf, count, mvp){
   gl.drawArrays(gl.TRIANGLES, 0, count);
 }
 const MAP = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ];
 const MW = MAP[0].length, MH = MAP.length;
 
@@ -236,7 +260,20 @@ const staffOrb   = createBuffer(createBox(0.22, 0.22, 0.22, 0.4, 0.6, 1.0));
 const daggerBlade = createBuffer(createBox(0.08, 0.08, 0.5, 0.7, 0.7, 0.8));
 const daggerGuard = createBuffer(createBox(0.18, 0.06, 0.06, 0.4, 0.25, 0.1));
 const daggerHilt  = createBuffer(createBox(0.1, 0.25, 0.1, 0.25, 0.15, 0.08));
-const player = { x: 12.5, y: 0.45, z: 12.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
+const player = { x: 24.5, y: 0.45, z: 24.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
+// Enemy zombies
+const zombies = []; // {x, y, z, yaw, walkT, hp, hitTime}
+const zombieBodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.35, 0.55, 0.25));
+const zombieHeadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.55, 0.75, 0.45));
+const zombieLimbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.25, 0.4, 0.2));
+const zombieEyeBuf  = createBuffer(createBox(0.07, 0.07, 0.05, 0.85, 0.15, 0.15));
+const zombieHitBuf  = createBuffer(createBox(0.7, 1.8, 0.5, 1, 0.3, 0.3));
+// NPC list (smart player-like characters)
+const npcs = []; // {x, y, z, yaw, walkT, isPlayer, wanderT, wanderAng}
+const npcBodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.3, 0.4, 0.7));
+const npcHeadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.93, 0.78, 0.53));
+const npcLimbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.2, 0.15, 0.4));
+const npcEyeBuf  = createBuffer(createBox(0.07, 0.07, 0.05, 0.1, 0.1, 0.1));
 const EYE = 1.6;
 const SPEED = 4.5;
 const ACCEL = 30;
@@ -248,6 +285,21 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   keys[k] = true;
   if (k === 'v') firstPerson = !firstPerson;
+  if (k === 'e' && mode === 'player') {
+    // spawn zombie 5 units in front of player
+    const sx = player.x + Math.sin(player.yaw) * 5;
+    const sz = player.z + Math.cos(player.yaw) * 5;
+    zombies.push({ x: sx, y: 0.45, z: sz, yaw: 0, walkT: 0, hp: 30, hitTime: 0 });
+  }
+  if (k === ' ' && mode === 'player') {
+    // attack: hit nearest zombie in front of player
+    let best = null, bd = 1e9;
+    for (const z of zombies) {
+      const d = Math.hypot(z.x - player.x, z.z - player.z);
+      if (d < 2.0 && d < bd) { bd = d; best = z; }
+    }
+    if (best) { best.hp -= 10; best.hitTime = 0.2; }
+  }
 });
 addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 canvas.addEventListener('mousedown', () => canvas.requestPointerLock());
@@ -284,6 +336,7 @@ let last = performance.now();
 let started = false;
 let mode = 'player';
 let playerClass = 'warrior';
+const dmInput = document.getElementById('dmCmd');
 function start(m, cls) {
   mode = m;
   if (cls) playerClass = cls;
@@ -293,14 +346,17 @@ function start(m, cls) {
   if (mode === 'dm') {
     dmCanvas.style.display = 'block';
     canvas.style.display = 'none';
-    document.getElementById('dmCmd').style.display = 'block';
+    dmInput.disabled = false;
+    if (!npcs.find(n => n.isPlayer)) {
+      npcs.push({ x: player.x + 3, y: 0.45, z: player.z + 3, yaw: 0, walkT: 0, isPlayer: true, wanderT: 0, wanderAng: 0 });
+    }
   } else {
+    dmInput.disabled = true;
     canvas.requestPointerLock();
   }
 }
 
 // DM command processing
-const dmInput = document.getElementById('dmCmd');
 addEventListener('keydown', e => {
   if (mode !== 'dm') return;
   if (e.key === 't' && document.activeElement !== dmInput) {
@@ -324,10 +380,35 @@ function runDmCommand(cmd) {
   const parts = cmd.split(/\s+/);
   const action = parts[0].toLowerCase();
   try {
-    if (action === 'spawn' && parts.length >= 4) {
-      // spawn <type> <x> <z>  — type ignored for now, just logs
-      console.log('DM spawn:', parts[1], 'at', parts[2], parts[3]);
-    } else if (action === 'move' && parts.length >= 3) {
+    if (action === 'spawn' && parts.length >= 2) {
+      const what = parts[1].toLowerCase();
+      let x, z;
+      if (parts.length >= 4) {
+        x = parseFloat(parts[2]);
+        z = parseFloat(parts[3]);
+      } else {
+        x = player.x;
+        z = player.z;
+      }
+      if (isNaN(x) || isNaN(z)) { console.log('Bad spawn coords'); return; }
+      if (what === 'zombie') {
+        if (isNaN(x) || isNaN(z)) {
+          // random location 8-15 units from player
+          for (let tries = 0; tries < 30; tries++) {
+            const ang = Math.random() * Math.PI * 2;
+            const dist = 8 + Math.random() * 7;
+            x = player.x + Math.cos(ang) * dist;
+            z = player.z + Math.sin(ang) * dist;
+            if (x > 1 && x < MW-1 && z > 1 && z < MH-1 &&
+                !wallBlocksAt(x, z, Math.floor(x), Math.floor(z))) break;
+          }
+        }
+        zombies.push({ x, y: 0.45, z, yaw: 0, walkT: 0, hp: 30, hitTime: 0 });
+        console.log('DM spawned zombie at', x, z);
+      } else {
+        console.log('Unknown spawn type:', what);
+      }
+    }else if (action === 'move' && parts.length >= 3) {
       const x = parseFloat(parts[1]);
       const z = parseFloat(parts[2]);
       if (!isNaN(x) && !isNaN(z)) {
@@ -358,12 +439,81 @@ document.getElementById('classBack').addEventListener('click', () => {
 document.querySelectorAll('.classBtn').forEach(btn => {
   btn.addEventListener('click', () => start('player', btn.dataset.class));
 });
+function updateZombies(dt) {
+  for (const z of zombies) {
+    const dx = player.x - z.x, dz = player.z - z.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 0.8) {
+      z.yaw = Math.atan2(dx, dz);
+      const sp = 1.2;
+      const nx = z.x + (dx/d) * sp * dt;
+      const nz = z.z + (dz/d) * sp * dt;
+      if (!wallBlocksAt(nx, nz, Math.floor(nx), Math.floor(nz)) &&
+          !wallBlocksAt(nx, nz, Math.floor(nx + 0.3), Math.floor(nz)) &&
+          !wallBlocksAt(nx, nz, Math.floor(nx - 0.3), Math.floor(nz)) &&
+          !wallBlocksAt(nx, nz, Math.floor(nx), Math.floor(nz + 0.3)) &&
+          !wallBlocksAt(nx, nz, Math.floor(nx), Math.floor(nz - 0.3))) {
+        z.x = nx; z.z = nz;
+      }
+      z.walkT += dt * 4;
+    }
+    if (z.hitTime > 0) z.hitTime -= dt;
+  }
+  for (let i = zombies.length - 1; i >= 0; i--) {
+    if (zombies[i].hp <= 0) zombies.splice(i, 1);
+  }
+}
+function updateNpcs(dt) {
+  for (const n of npcs) {
+    let closestZ = null, czd = 1e9;
+    for (const z of zombies) {
+      const d = Math.hypot(z.x - n.x, z.z - n.z);
+      if (d < czd) { czd = d; closestZ = z; }
+    }
+    let dx, dz;
+    if (closestZ && czd < 6) {
+      dx = n.x - closestZ.x;
+      dz = n.z - closestZ.z;
+    } else {
+      n.wanderT -= dt;
+      if (n.wanderT <= 0) {
+        n.wanderAng = Math.random() * Math.PI * 2;
+        n.wanderT = 1 + Math.random() * 2;
+      }
+      dx = Math.sin(n.wanderAng);
+      dz = Math.cos(n.wanderAng);
+    }
+    const d = Math.hypot(dx, dz) || 1;
+    dx /= d; dz /= d;
+    const sp = 2.0;
+    let moved = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const a = attempt * 0.4;
+      const cs = Math.cos(a), sn = Math.sin(a);
+      const rdx = dx * cs - dz * sn;
+      const rdz = dx * sn + dz * cs;
+      const nx = n.x + rdx * sp * dt;
+      const nz = n.z + rdz * sp * dt;
+      if (nx > 1 && nx < MW-1 && nz > 1 && nz < MH-1 &&
+          !wallBlocksAt(nx, nz, Math.floor(nx), Math.floor(nz))) {
+        n.x = nx; n.z = nz; moved = true;
+        n.yaw = Math.atan2(rdx, rdz);
+        break;
+      }
+    }
+    if (moved) n.walkT += dt * 8; else n.walkT *= 0.9;
+  }
+}
+
 function frame(now){
   if (!started) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  // AI always runs (both modes)
+  updateZombies(dt);
+  updateNpcs(dt);
+  // DM: render 2D top-down map
   if (mode === 'dm') {
-    // DM: only render 2D map, no player logic
     const W2 = dmCanvas.width, H2 = dmCanvas.height;
     dmCtx.fillStyle = '#0a0a14';
     dmCtx.fillRect(0, 0, W2, H2);
@@ -375,6 +525,18 @@ function frame(now){
           dmCtx.fillRect(x * sx, y * sy, sx, sy);
         }
       }
+    }
+    for (const n of npcs) {
+      dmCtx.fillStyle = '#6688ff';
+      dmCtx.beginPath();
+      dmCtx.arc(n.x * sx, n.z * sy, 4, 0, Math.PI * 2);
+      dmCtx.fill();
+    }
+    for (const z of zombies) {
+      dmCtx.fillStyle = '#55cc55';
+      dmCtx.beginPath();
+      dmCtx.arc(z.x * sx, z.z * sy, 4, 0, Math.PI * 2);
+      dmCtx.fill();
     }
     requestAnimationFrame(frame);
     return;
@@ -435,6 +597,48 @@ function frame(now){
   for (const w of wallBufs) {
     drawMesh(w.buf, 36, mat4Multiply(vp, mat4Translate(w.x + 0.5, 1.25, w.y + 0.5)));
   }
+  for (const z of zombies) {
+    // draw zombie (same model as player but green)
+    const dx = player.x - z.x, dz = player.z - z.z;
+    const d = Math.hypot(dx, dz);
+    const isMoving = d > 0.8;
+    const wp = z.walkT;
+    const zRot = mat4RotateY(z.yaw);
+    const zTrans = mat4Translate(z.x, 0, z.z);
+    const zMat = mat4Multiply(vp, mat4Multiply(zTrans, zRot));
+    const bob = isMoving ? Math.sin(wp) * 0.05 : 0;
+    drawMesh(zombieBodyBuf, 36, mat4Multiply(zMat, mat4Translate(0, 0.85 + bob, 0)));
+    drawMesh(zombieHeadBuf, 36, mat4Multiply(zMat, mat4Translate(0, 1.6 + bob, 0)));
+    drawMesh(zombieEyeBuf, 36, mat4Multiply(zMat, mat4Translate(-0.1, 1.65 + bob, 0.22)));
+    drawMesh(zombieEyeBuf, 36, mat4Multiply(zMat, mat4Translate(0.1, 1.65 + bob, 0.22)));
+    const sw = isMoving ? Math.sin(wp) * 0.35 : 0;
+    const at = isMoving ? Math.abs(Math.sin(wp)) * 0.05 : 0;
+    drawMesh(zombieLimbBuf, 36, mat4Multiply(zMat, mat4Translate(-0.35, 1.05 - at, sw)));
+    drawMesh(zombieLimbBuf, 36, mat4Multiply(zMat, mat4Translate(0.35, 1.05 - at, -sw)));
+    drawMesh(zombieLimbBuf, 36, mat4Multiply(zMat, mat4Translate(-0.15, 0.35 - at, -sw)));
+    drawMesh(zombieLimbBuf, 36, mat4Multiply(zMat, mat4Translate(0.15, 0.35 - at, sw)));
+    if (z.hitTime > 0) {
+      drawMesh(zombieHitBuf, 36, mat4Multiply(zMat, mat4Translate(0, 0.9, 0)));
+    }
+  }
+
+  for (const n of npcs) {
+    const bob = Math.sin(n.walkT) * 0.05;
+    const nRot = mat4RotateY(n.yaw);
+    const nTrans = mat4Translate(n.x, 0, n.z);
+    const nMat = mat4Multiply(vp, mat4Multiply(nTrans, nRot));
+    drawMesh(npcBodyBuf, 36, mat4Multiply(nMat, mat4Translate(0, 0.85 + bob, 0)));
+    drawMesh(npcHeadBuf, 36, mat4Multiply(nMat, mat4Translate(0, 1.6 + bob, 0)));
+    drawMesh(npcEyeBuf, 36, mat4Multiply(nMat, mat4Translate(-0.1, 1.65 + bob, 0.22)));
+    drawMesh(npcEyeBuf, 36, mat4Multiply(nMat, mat4Translate(0.1, 1.65 + bob, 0.22)));
+    const sw = Math.sin(n.walkT) * 0.35;
+    const at = Math.abs(Math.sin(n.walkT)) * 0.05;
+    drawMesh(npcLimbBuf, 36, mat4Multiply(nMat, mat4Translate(-0.35, 1.05 - at, sw)));
+    drawMesh(npcLimbBuf, 36, mat4Multiply(nMat, mat4Translate(0.35, 1.05 - at, -sw)));
+    drawMesh(npcLimbBuf, 36, mat4Multiply(nMat, mat4Translate(-0.15, 0.35 - at, -sw)));
+    drawMesh(npcLimbBuf, 36, mat4Multiply(nMat, mat4Translate(0.15, 0.35 - at, sw)));
+  }
+
   // sword in first person (attached to camera)
   if (firstPerson) {
     const rightX = Math.cos(player.yaw), rightZ = -Math.sin(player.yaw);
