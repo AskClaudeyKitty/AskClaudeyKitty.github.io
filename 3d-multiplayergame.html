@@ -39,8 +39,20 @@
   </div>
   <button id="classBack" style="margin-top:20px;background:transparent;color:#888;border:1px solid #555;border-radius:4px;padding:6px 16px;cursor:pointer;font-family:monospace;">← back</button>
 </div>
-<div id="ui">WASD move | Mouse look | V toggle view | (no jump)</div>
-<input id="dmCmd" placeholder="DM: type 'spawn zombie' or 'help' (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:50;font-family:monospace;font-size:14px;padding:8px 12px;width:480px;background:rgba(0,0,0,0.85);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:block;">
+<div id="ui">WASD move | Mouse look | V toggle view | (no jump) | E spawn zombie | Space attack</div>
+<div id="spells" style="position:fixed;bottom:50px;left:50%;transform:translateX(-50%);display:none;gap:8px;z-index:10;pointer-events:none;font-family:monospace;font-size:12px;">
+  <div id="s1" class="spell" style="padding:6px 10px;background:rgba(0,0,0,0.5);border:1px solid #555;border-radius:4px;color:#ff8866;">1 Fire</div>
+  <div id="s2" class="spell" style="padding:6px 10px;background:rgba(0,0,0,0.5);border:1px solid #555;border-radius:4px;color:#88aaff;">2 Ice</div>
+  <div id="s3" class="spell" style="padding:6px 10px;background:rgba(0,0,0,0.5);border:1px solid #555;border-radius:4px;color:#88ff88;">3 Heal</div>
+</div>
+<div id="hp" style="position:fixed;bottom:50px;left:8px;z-index:10;pointer-events:none;font-family:monospace;color:#fff;">
+  <div style="font-size:11px;letter-spacing:2px;opacity:0.7;margin-bottom:2px;">HEALTH</div>
+  <div style="position:relative;width:220px;height:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.25);border-radius:7px;overflow:hidden;">
+    <div id="hpFill" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#22c55e,#84cc16);transition:width 0.15s;"></div>
+  </div>
+  <div id="hpText" style="position:absolute;left:0;right:0;top:0;font-size:11px;font-weight:bold;text-align:center;line-height:14px;text-shadow:0 1px 2px rgba(0,0,0,0.8);">100 / 100</div>
+</div>
+<input id="dmCmd" placeholder="DM: type 'spawn zombie' or 'help' (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:60;font-family:monospace;font-size:14px;padding:8px 12px;width:480px;background:rgba(0,0,0,0.9);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:none;">
 <canvas id="dm" width="300" height="300" style="position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,0.6);border:2px solid #8b5a2b;display:none;image-rendering:pixelated;"></canvas>
 <div id="inv">
   <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -99,6 +111,10 @@ function mat4Perspective(fov, aspect, near, far){
 function mat4RotateY(a){
   const c=Math.cos(a), s=Math.sin(a), m=mat4Identity();
   m[0]=c; m[2]=-s; m[8]=s; m[10]=c; return m;
+}
+function mat4RotateX(a){
+  const c=Math.cos(a), s=Math.sin(a), m=mat4Identity();
+  m[5]=c; m[6]=s; m[9]=-s; m[10]=c; return m;
 }
 function mat4LookAt(eye, target, up){
   const zx=eye[0]-target[0], zy=eye[1]-target[1], zz=eye[2]-target[2];
@@ -260,7 +276,12 @@ const staffOrb   = createBuffer(createBox(0.22, 0.22, 0.22, 0.4, 0.6, 1.0));
 const daggerBlade = createBuffer(createBox(0.08, 0.08, 0.5, 0.7, 0.7, 0.8));
 const daggerGuard = createBuffer(createBox(0.18, 0.06, 0.06, 0.4, 0.25, 0.1));
 const daggerHilt  = createBuffer(createBox(0.1, 0.25, 0.1, 0.25, 0.15, 0.08));
-const player = { x: 24.5, y: 0.45, z: 24.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0 };
+const player = { x: 24.5, y: 0.45, z: 24.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0, hp: 100, maxHp: 100, hitTime: 0 };
+// Projectiles (mage spells)
+const projectiles = []; // {x, y, z, vx, vz, life, type, hitTime}
+// Spell meshes
+const fireOrbBuf = createBuffer(createBox(0.25, 0.25, 0.25, 1, 0.5, 0.2));
+const iceOrbBuf  = createBuffer(createBox(0.25, 0.25, 0.25, 0.7, 0.9, 1));
 // Enemy zombies
 const zombies = []; // {x, y, z, yaw, walkT, hp, hitTime}
 const zombieBodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.35, 0.55, 0.25));
@@ -279,6 +300,9 @@ const SPEED = 4.5;
 const ACCEL = 30;
 const RADIUS = 0.25;
 let pitch = 0, firstPerson = false;
+let attackT = 0; // 0..1 swing animation
+let spell = 0; // for mage: 0=fire, 1=ice, 2=heal
+let healT = 0; // heal particle timer
 let camDist = 3.5, camHeight = 2.0;
 const keys = {};
 addEventListener('keydown', e => {
@@ -292,17 +316,43 @@ addEventListener('keydown', e => {
     zombies.push({ x: sx, y: 0.45, z: sz, yaw: 0, walkT: 0, hp: 30, hitTime: 0 });
   }
   if (k === ' ' && mode === 'player') {
-    // attack: hit nearest zombie in front of player
-    let best = null, bd = 1e9;
-    for (const z of zombies) {
-      const d = Math.hypot(z.x - player.x, z.z - player.z);
-      if (d < 2.0 && d < bd) { bd = d; best = z; }
+    if (attackT <= 0) {
+      attackT = 0.4;
+      if (playerClass === 'warrior' || playerClass === 'rogue') {
+        // melee: hit nearest zombie in range
+        let best = null, bd = 1e9;
+        for (const z of zombies) {
+          const d = Math.hypot(z.x - player.x, z.z - player.z);
+          if (d < 2.0 && d < bd) { bd = d; best = z; }
+        }
+        if (best) { best.hp -= 10; best.hitTime = 0.2; }
+      } else if (playerClass === 'mage') {
+        // cast spell — spawn projectile
+        const speed = 8;
+        const fx = Math.sin(player.yaw), fz = Math.cos(player.yaw);
+        if (spell === 0) {
+          projectiles.push({ x: player.x + fx * 0.5, y: 1.0, z: player.z + fz * 0.5, vx: fx * speed, vz: fz * speed, life: 1.5, type: 'fire', hitTime: 0 });
+        } else if (spell === 1) {
+          projectiles.push({ x: player.x + fx * 0.5, y: 1.0, z: player.z + fz * 0.5, vx: fx * speed, vz: fz * speed, life: 1.5, type: 'ice', hitTime: 0 });
+        } else if (spell === 2) {
+          player.hp = Math.min(player.maxHp, player.hp + 25);
+          healT = 1.0;
+        }
+      }
     }
-    if (best) { best.hp -= 10; best.hitTime = 0.2; }
+  }
+  // number keys for mage spell
+  if (mode === 'player' && playerClass === 'mage' && k >= '1' && k <= '3') {
+    spell = parseInt(k) - 1;
+    ['s1','s2','s3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) el.style.border = (i === spell) ? '2px solid #fff' : '1px solid #555';
+    });
   }
 });
 addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-canvas.addEventListener('mousedown', () => canvas.requestPointerLock());
+canvas.addEventListener('mousedown', () => { if (mode === 'player') canvas.requestPointerLock(); });
+dmCanvas.addEventListener('mousedown', e => e.stopPropagation());
 document.addEventListener('pointerlockchange', () => { /* keep yaw */ });
 addEventListener('mousemove', e => {
   if (document.pointerLockElement === canvas) {
@@ -343,14 +393,17 @@ function start(m, cls) {
   document.getElementById('classPick').style.display = 'none';
   document.getElementById('title').style.display = 'none';
   started = true;
+  document.getElementById('spells').style.display = (mode === 'player' && playerClass === 'mage') ? 'flex' : 'none';
   if (mode === 'dm') {
     dmCanvas.style.display = 'block';
     canvas.style.display = 'none';
+    dmInput.style.display = 'block';
     dmInput.disabled = false;
     if (!npcs.find(n => n.isPlayer)) {
-      npcs.push({ x: player.x + 3, y: 0.45, z: player.z + 3, yaw: 0, walkT: 0, isPlayer: true, wanderT: 0, wanderAng: 0 });
+      npcs.push({ x: player.x + 3, y: 0.45, z: player.z + 3, yaw: 0, walkT: 0, isPlayer: true, isNpc: true, wanderT: 0, wanderAng: 0, hp: 30 });
     }
   } else {
+    dmInput.style.display = 'none';
     dmInput.disabled = true;
     canvas.requestPointerLock();
   }
@@ -382,29 +435,34 @@ function runDmCommand(cmd) {
   try {
     if (action === 'spawn' && parts.length >= 2) {
       const what = parts[1].toLowerCase();
-      let x, z;
+      // default: random near player
+      let x = NaN, z = NaN;
       if (parts.length >= 4) {
         x = parseFloat(parts[2]);
         z = parseFloat(parts[3]);
-      } else {
-        x = player.x;
-        z = player.z;
       }
-      if (isNaN(x) || isNaN(z)) { console.log('Bad spawn coords'); return; }
-      if (what === 'zombie') {
-        if (isNaN(x) || isNaN(z)) {
-          // random location 8-15 units from player
-          for (let tries = 0; tries < 30; tries++) {
-            const ang = Math.random() * Math.PI * 2;
-            const dist = 8 + Math.random() * 7;
-            x = player.x + Math.cos(ang) * dist;
-            z = player.z + Math.sin(ang) * dist;
-            if (x > 1 && x < MW-1 && z > 1 && z < MH-1 &&
-                !wallBlocksAt(x, z, Math.floor(x), Math.floor(z))) break;
-          }
+      if (isNaN(x) || isNaN(z)) {
+        let found = false;
+        for (let tries = 0; tries < 80; tries++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = 15 + Math.random() * 10;
+          const tx = player.x + Math.cos(ang) * dist;
+          const tz = player.z + Math.sin(ang) * dist;
+          const cx = Math.floor(tx), cz = Math.floor(tz);
+          if (cx < 2 || cx >= MW-2 || cz < 2 || cz >= MH-2) continue;
+          if (MAP[cz][cx]) continue;
+          let ok = true;
+          for (let ddz = -1; ddz <= 1 && ok; ddz++)
+            for (let ddx = -1; ddx <= 1 && ok; ddx++)
+              if (MAP[cz+ddz][cx+ddx]) ok = false;
+          if (!ok) continue;
+          x = tx; z = tz; found = true; break;
         }
+        if (!found) { console.log('No valid spawn spot'); return; }
+      }
+      if (what === 'zombie') {
         zombies.push({ x, y: 0.45, z, yaw: 0, walkT: 0, hp: 30, hitTime: 0 });
-        console.log('DM spawned zombie at', x, z);
+        console.log('DM spawned zombie at', x.toFixed(1), z.toFixed(1));
       } else {
         console.log('Unknown spawn type:', what);
       }
@@ -418,8 +476,18 @@ function runDmCommand(cmd) {
       }
     } else if (action === 'teleport' || action === 'tp') {
       console.log('TP not implemented yet');
+    } else if (action === 'kill') {
+      let killed = 0;
+      for (const z of zombies) { z.hp = 0; killed++; }
+      console.log('Killed', killed, 'zombies');
+    } else if (action === 'damage' && parts.length >= 2) {
+      const dmg = parseFloat(parts[1]);
+      if (!isNaN(dmg)) { player.hp = Math.max(0, player.hp - dmg); console.log('Damaged player', dmg); }
+    } else if (action === 'heal' && parts.length >= 2) {
+      const h = parseFloat(parts[1]);
+      if (!isNaN(h)) { player.hp = Math.min(player.maxHp, player.hp + h); console.log('Healed', h); }
     } else if (action === 'help') {
-      console.log('Commands: spawn <type> <x> <z>, move <x> <z>, help');
+      console.log('Commands: spawn <type> [x z], move <x> <z>, kill, damage <n>, heal <n>, help');
     } else {
       console.log('Unknown DM command:', cmd);
     }
@@ -440,11 +508,44 @@ document.querySelectorAll('.classBtn').forEach(btn => {
   btn.addEventListener('click', () => start('player', btn.dataset.class));
 });
 function updateZombies(dt) {
+  // update projectiles
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx * dt;
+    p.z += p.vz * dt;
+    p.life -= dt;
+    if (p.hitTime > 0) p.hitTime -= dt;
+    let hit = false;
+    if (p.hitTime <= 0) {
+      for (const z of zombies) {
+        if (Math.hypot(z.x - p.x, z.z - p.z) < 0.8) {
+          if (p.type === 'fire') z.hp -= 15;
+          else if (p.type === 'ice') { z.frozen = 3; z.hp -= 5; }
+          z.hitTime = 0.3;
+          p.life = 0;
+          hit = true;
+          break;
+        }
+      }
+    }
+    if (p.life <= 0) projectiles.splice(i, 1);
+  }
   for (const z of zombies) {
-    const dx = player.x - z.x, dz = player.z - z.z;
-    const d = Math.hypot(dx, dz);
-    if (d > 0.8) {
-      z.yaw = Math.atan2(dx, dz);
+    // target nearest NPC (player is hidden in DM mode)
+    let bestT = null, bd = 1e9;
+    if (mode !== 'dm') {
+      const dToPlayer = Math.hypot(player.x - z.x, player.z - z.z);
+      if (dToPlayer < bd) { bd = dToPlayer; bestT = player; }
+    }
+    for (const n of npcs) {
+      const d = Math.hypot(n.x - z.x, n.z - z.z);
+      if (d < bd) { bd = d; bestT = n; }
+    }
+    if (!bestT) continue;
+    const dx = bestT.x - z.x, dz = bestT.z - z.z;
+    const d = bd;
+    z.yaw = Math.atan2(dx, dz);
+    if (d > 0.3) {
       const sp = 1.2;
       const nx = z.x + (dx/d) * sp * dt;
       const nz = z.z + (dz/d) * sp * dt;
@@ -458,10 +559,39 @@ function updateZombies(dt) {
       z.walkT += dt * 4;
     }
     if (z.hitTime > 0) z.hitTime -= dt;
+    // damage target if touching
+    if (d < 1.0) {
+      if (bestT === player && player.hitTime <= 0) {
+        player.hp -= 8;
+        player.hitTime = 0.5;
+        if (player.hp <= 0) {
+          player.hp = player.maxHp;
+          player.x = MW / 2; player.z = MH / 2;
+          player.hitTime = 1.0;
+        }
+      } else if (bestT.isNpc) {
+        bestT.hp = (bestT.hp || 30) - 1;
+        if (bestT.hp <= 0) {
+          const idx = npcs.indexOf(bestT);
+          if (idx >= 0) npcs.splice(idx, 1);
+        }
+      }
+    }
   }
+  if (player.hitTime > 0) player.hitTime -= dt;
   for (let i = zombies.length - 1; i >= 0; i--) {
     if (zombies[i].hp <= 0) zombies.splice(i, 1);
   }
+  const pct = Math.max(0, player.hp / player.maxHp) * 100;
+  const fill = document.getElementById('hpFill');
+  const txt = document.getElementById('hpText');
+  if (fill) {
+    fill.style.width = pct + '%';
+    if (pct > 60) fill.style.background = 'linear-gradient(90deg,#22c55e,#84cc16)';
+    else if (pct > 30) fill.style.background = 'linear-gradient(90deg,#eab308,#f59e0b)';
+    else fill.style.background = 'linear-gradient(90deg,#ef4444,#b91c1c)';
+  }
+  if (txt) txt.textContent = Math.ceil(player.hp) + ' / ' + player.maxHp;
 }
 function updateNpcs(dt) {
   for (const n of npcs) {
@@ -555,6 +685,13 @@ function frame(now){
   if (canMoveTo(player.x + stepX, player.z)) player.x += stepX; else player.vx = 0;
   if (canMoveTo(player.x, player.z + stepZ)) player.z += stepZ; else player.vz = 0;
   if (len) player.walkT += dt * 8; else player.walkT *= 0.9;
+  if (attackT > 0) attackT = Math.max(0, attackT - dt);
+  if (healT > 0) healT = Math.max(0, healT - dt);
+  // swing offsets for animation
+  const swingT = attackT > 0 ? (1 - attackT / 0.4) : 0;
+  const swingAngle = (playerClass === 'warrior') ? Math.sin(swingT * Math.PI) * 1.5 : 0;
+  const lunge = (playerClass === 'rogue') ? Math.sin(swingT * Math.PI) * 0.4 : 0;
+  const staffShake = (playerClass === 'mage') ? Math.sin(swingT * Math.PI) * 0.2 : 0;
   player.y = 0.45;
   if (len > 0.01) player.faceYaw = Math.atan2(dx, dz);
   // safety: if inside a wall, push out
@@ -639,30 +776,6 @@ function frame(now){
     drawMesh(npcLimbBuf, 36, mat4Multiply(nMat, mat4Translate(0.15, 0.35 - at, sw)));
   }
 
-  // sword in first person (attached to camera)
-  if (firstPerson) {
-    const rightX = Math.cos(player.yaw), rightZ = -Math.sin(player.yaw);
-    const fwdX = Math.sin(player.yaw), fwdZ = Math.cos(player.yaw);
-    // base = camera position (use 1st person eye pos)
-    const cx = player.x, cy = 1.6, cz = player.z;
-    // hilt at right 0.35, down 0.9, forward 0.5
-    const hx = cx + rightX * 0.35 + fwdX * 0.5;
-    const hz = cz + rightZ * 0.35 + fwdZ * 0.5;
-    const hy = cy - 0.9;
-    if (playerClass === 'warrior') {
-      drawMesh(swordHilt, 36, mat4Multiply(vp, mat4Translate(hx, hy, hz)));
-      drawMesh(swordGuard, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.25, hy, hz + fwdZ*0.25)));
-      drawMesh(swordBlade, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.95, hy, hz + fwdZ*0.95)));
-    } else if (playerClass === 'mage') {
-      drawMesh(staffShaft, 36, mat4Multiply(vp, mat4Translate(hx, hy + 0.3, hz)));
-      drawMesh(staffOrb, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.1, hy + 1.2, hz + fwdZ*0.1)));
-    } else if (playerClass === 'rogue') {
-      drawMesh(daggerHilt, 36, mat4Multiply(vp, mat4Translate(hx, hy, hz)));
-      drawMesh(daggerGuard, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.15, hy, hz + fwdZ*0.15)));
-      drawMesh(daggerBlade, 36, mat4Multiply(vp, mat4Translate(hx + fwdX*0.45, hy, hz + fwdZ*0.45)));
-    }
-  }
-
   if (!firstPerson) {
     const isMoving = len > 0.01;
     const walkPhase = player.walkT;
@@ -682,18 +795,67 @@ function frame(now){
     drawMesh(limbBuf, 36, mat4Multiply(charMat, mat4Translate(0.15, 0.35 - attachedTweak, swing)));
     // weapon in right hand
     if (playerClass === 'warrior') {
-      // sword in right hand, blade forward (+z)
-      drawMesh(swordHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing)));
-      drawMesh(swordGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.25)));
-      drawMesh(swordBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.95)));
+      // sword in right hand, blade forward (+z); swing down-forward
+      const pivotX = 0.35, pivotY = 1.2, pivotZ = 0;
+      const t1 = mat4Translate(pivotX, pivotY, pivotZ);
+      const r = mat4RotateX(-swingAngle);
+      const t2 = mat4Translate(-pivotX, -pivotY, -pivotZ);
+      const swingMat = mat4Multiply(t1, mat4Multiply(r, t2));
+      const wMat = mat4Multiply(charMat, swingMat);
+      drawMesh(swordHilt, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing)));
+      drawMesh(swordGuard, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.25)));
+      drawMesh(swordBlade, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.95)));
     } else if (playerClass === 'mage') {
-      drawMesh(staffShaft, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05 - attachedTweak, -swing)));
-      drawMesh(staffOrb, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.75 - attachedTweak, -swing)));
+      // staff shake on cast
+      const sx = Math.sin(performance.now() * 0.05) * staffShake;
+      drawMesh(staffShaft, 36, mat4Multiply(charMat, mat4Translate(0.35 + sx, 1.05 - attachedTweak, -swing)));
+      drawMesh(staffOrb, 36, mat4Multiply(charMat, mat4Translate(0.35 + sx, 1.75 - attachedTweak, -swing)));
     } else if (playerClass === 'rogue') {
-      drawMesh(daggerHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing)));
-      drawMesh(daggerGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.15)));
-      drawMesh(daggerBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.45)));
+      // dagger lunges forward
+      const lz = lunge;
+      drawMesh(daggerHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + lz)));
+      drawMesh(daggerGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.15 + lz)));
+      drawMesh(daggerBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.45 + lz)));
     }
+  }
+
+  // draw projectiles
+  for (const p of projectiles) {
+    const buf = p.type === 'fire' ? fireOrbBuf : iceOrbBuf;
+    const bob = Math.sin(performance.now() * 0.01) * 0.1;
+    drawMesh(buf, 36, mat4Multiply(vp, mat4Translate(p.x, p.y + bob, p.z)));
+  }
+
+  // heal particles
+  if (healT > 0) {
+    const plusBuf = createBuffer(createBox(0.15, 0.15, 0.15, 0.4, 1, 0.5));
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2 + performance.now() * 0.002;
+      const r = 0.8 + Math.sin(performance.now() * 0.005 + i) * 0.2;
+      const px = player.x + Math.cos(ang) * r;
+      const pz = player.z + Math.sin(ang) * r;
+      const py = 1.0 + Math.sin(performance.now() * 0.008 + i) * 0.3;
+      drawMesh(plusBuf, 36, mat4Multiply(vp, mat4Translate(px, py, pz)));
+    }
+  }
+
+  // low-health vignette (red border)
+  if (mode === 'player' && player.hp < player.maxHp * 0.35) {
+    const pulse = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
+    const alpha = pulse * 0.5;
+    // we use 2d canvas overlay via DOM
+    let v = document.getElementById('vignette');
+    if (!v) {
+      v = document.createElement('div');
+      v.id = 'vignette';
+      v.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 100px 30px rgba(255,0,0,0.6);';
+      document.body.appendChild(v);
+    }
+    v.style.boxShadow = `inset 0 0 ${100 + pulse * 50}px 30px rgba(255,0,0,${alpha})`;
+    v.style.display = 'block';
+  } else {
+    const v = document.getElementById('vignette');
+    if (v) v.style.display = 'none';
   }
 
   requestAnimationFrame(frame);
