@@ -52,6 +52,13 @@
   </div>
   <div id="hpText" style="position:absolute;left:0;right:0;top:0;font-size:11px;font-weight:bold;text-align:center;line-height:14px;text-shadow:0 1px 2px rgba(0,0,0,0.8);">100 / 100</div>
 </div>
+<div id="mana" style="position:fixed;bottom:90px;left:8px;z-index:10;pointer-events:none;font-family:monospace;color:#fff;display:none;">
+  <div style="font-size:11px;letter-spacing:2px;opacity:0.7;margin-bottom:2px;">MANA</div>
+  <div style="position:relative;width:220px;height:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.25);border-radius:7px;overflow:hidden;">
+    <div id="manaFill" style="position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#3b82f6,#06b6d4);transition:width 0.15s;"></div>
+  </div>
+  <div id="manaText" style="position:absolute;left:0;right:0;top:0;font-size:11px;font-weight:bold;text-align:center;line-height:14px;text-shadow:0 1px 2px rgba(0,0,0,0.8);">50</div>
+</div>
 <input id="dmCmd" placeholder="DM: type 'spawn zombie' or 'help' (T to focus)" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:60;font-family:monospace;font-size:14px;padding:8px 12px;width:480px;background:rgba(0,0,0,0.9);color:#ff8866;border:1px solid #8b2b2b;border-radius:4px;display:none;">
 <canvas id="dm" width="300" height="300" style="position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,0.6);border:2px solid #8b5a2b;display:none;image-rendering:pixelated;"></canvas>
 <div id="inv">
@@ -270,13 +277,13 @@ const eyeBuf = createBuffer(createBox(0.07, 0.07, 0.05, 0.13, 0.13, 0.13));
 // Weapon meshes
 const swordBlade = createBuffer(createBox(0.1, 0.12, 1.2, 0.85, 0.85, 0.95));
 const swordGuard = createBuffer(createBox(0.35, 0.08, 0.08, 0.6, 0.4, 0.15));
-const swordHilt  = createBuffer(createBox(0.12, 0.4, 0.12, 0.35, 0.2, 0.1));
+const swordHilt  = createBuffer(createBox(0.12, 0.12, 0.4, 0.35, 0.2, 0.1));
 const staffShaft = createBuffer(createBox(0.08, 1.6, 0.08, 0.45, 0.3, 0.15));
 const staffOrb   = createBuffer(createBox(0.22, 0.22, 0.22, 0.4, 0.6, 1.0));
 const daggerBlade = createBuffer(createBox(0.08, 0.08, 0.5, 0.7, 0.7, 0.8));
 const daggerGuard = createBuffer(createBox(0.18, 0.06, 0.06, 0.4, 0.25, 0.1));
-const daggerHilt  = createBuffer(createBox(0.1, 0.25, 0.1, 0.25, 0.15, 0.08));
-const player = { x: 24.5, y: 0.45, z: 24.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0, hp: 100, maxHp: 100, hitTime: 0 };
+const daggerHilt  = createBuffer(createBox(0.1, 0.1, 0.25, 0.25, 0.15, 0.08));
+const player = { x: 24.5, y: 0.45, z: 24.5, vx: 0, vz: 0, yaw: 0, walkT: 0, faceYaw: 0, hp: 100, maxHp: 100, hitTime: 0, mana: 50, maxMana: 50, manaRegenDelay: 0 };
 // Projectiles (mage spells)
 const projectiles = []; // {x, y, z, vx, vz, life, type, hitTime}
 // Spell meshes
@@ -289,6 +296,8 @@ const zombieHeadBuf = createBuffer(createBox(0.4, 0.4, 0.4, 0.55, 0.75, 0.45));
 const zombieLimbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.25, 0.4, 0.2));
 const zombieEyeBuf  = createBuffer(createBox(0.07, 0.07, 0.05, 0.85, 0.15, 0.15));
 const zombieHitBuf  = createBuffer(createBox(0.7, 1.8, 0.5, 1, 0.3, 0.3));
+const zombieFireBuf = createBuffer(createBox(0.5, 0.5, 0.5, 1, 0.4, 0));
+const critFlashBuf = createBuffer(createBox(0.3, 0.3, 0.3, 1, 1, 0));
 // NPC list (smart player-like characters)
 const npcs = []; // {x, y, z, yaw, walkT, isPlayer, wanderT, wanderAng}
 const npcBodyBuf = createBuffer(createBox(0.6, 0.8, 0.4, 0.3, 0.4, 0.7));
@@ -297,6 +306,11 @@ const npcLimbBuf = createBuffer(createBox(0.18, 0.5, 0.18, 0.2, 0.15, 0.4));
 const npcEyeBuf  = createBuffer(createBox(0.07, 0.07, 0.05, 0.1, 0.1, 0.1));
 const EYE = 1.6;
 const SPEED = 4.5;
+function classSpeed() {
+  if (playerClass === 'rogue') return SPEED * 1.6;
+  if (playerClass === 'mage') return SPEED * 1.2;
+  return SPEED; // warrior
+}
 const ACCEL = 30;
 const RADIUS = 0.25;
 let pitch = 0, firstPerson = false;
@@ -325,9 +339,21 @@ addEventListener('keydown', e => {
           const d = Math.hypot(z.x - player.x, z.z - player.z);
           if (d < 2.0 && d < bd) { bd = d; best = z; }
         }
-        if (best) { best.hp -= 10; best.hitTime = 0.2; }
+        if (best) {
+          let dmg = 8, crit = 0.1;
+          if (playerClass === 'warrior') { dmg = 18; crit = 0.25; }
+          else if (playerClass === 'rogue') { dmg = 12; crit = 0.40; }
+          let isCrit = Math.random() < crit;
+          if (isCrit) dmg *= 2;
+          best.hp -= dmg; best.hitTime = 0.2;
+          if (isCrit) best.critFlash = 0.3;
+        }
       } else if (playerClass === 'mage') {
         // cast spell — spawn projectile
+        const costs = [30, 25, 25]; // fire=most, ice=mid, heal=second most (also 25)
+        if (player.mana < costs[spell]) { console.log('Not enough mana'); return; }
+        player.mana -= costs[spell];
+        player.manaRegenDelay = 2.0;
         const speed = 8;
         const fx = Math.sin(player.yaw), fz = Math.cos(player.yaw);
         if (spell === 0) {
@@ -389,7 +415,12 @@ let playerClass = 'warrior';
 const dmInput = document.getElementById('dmCmd');
 function start(m, cls) {
   mode = m;
-  if (cls) playerClass = cls;
+  if (cls) {
+    playerClass = cls;
+    if (cls === 'warrior') { player.hp = 200; player.maxHp = 200; }
+    else if (cls === 'mage') { player.hp = 50; player.maxHp = 50; }
+    else if (cls === 'rogue') { player.hp = 100; player.maxHp = 100; }
+  }
   document.getElementById('classPick').style.display = 'none';
   document.getElementById('title').style.display = 'none';
   started = true;
@@ -519,8 +550,8 @@ function updateZombies(dt) {
     if (p.hitTime <= 0) {
       for (const z of zombies) {
         if (Math.hypot(z.x - p.x, z.z - p.z) < 0.8) {
-          if (p.type === 'fire') z.hp -= 15;
-          else if (p.type === 'ice') { z.frozen = 3; z.hp -= 5; }
+          if (p.type === 'fire') { z.hp -= 25; z.fireTime = 3; }
+          else if (p.type === 'ice') { z.frozen = 3; z.hp -= 8; }
           z.hitTime = 0.3;
           p.life = 0;
           hit = true;
@@ -546,7 +577,9 @@ function updateZombies(dt) {
     const d = bd;
     z.yaw = Math.atan2(dx, dz);
     if (d > 0.3) {
-      const sp = 1.2;
+      let sp = 1.2;
+      if (z.fireTime > 0) sp *= 0.6; // burning = slower
+      if (z.frozen > 0) sp *= 0.3; // frozen = much slower
       const nx = z.x + (dx/d) * sp * dt;
       const nz = z.z + (dz/d) * sp * dt;
       if (!wallBlocksAt(nx, nz, Math.floor(nx), Math.floor(nz)) &&
@@ -559,6 +592,12 @@ function updateZombies(dt) {
       z.walkT += dt * 4;
     }
     if (z.hitTime > 0) z.hitTime -= dt;
+    if (z.critFlash > 0) z.critFlash -= dt;
+    if (z.fireTime > 0) {
+      z.fireTime -= dt;
+      z.hp -= 5 * dt; // 5 dmg/sec for 3 sec = 15 total
+    }
+    if (z.frozen > 0) z.frozen -= dt;
     // damage target if touching
     if (d < 1.0) {
       if (bestT === player && player.hitTime <= 0) {
@@ -580,7 +619,13 @@ function updateZombies(dt) {
   }
   if (player.hitTime > 0) player.hitTime -= dt;
   for (let i = zombies.length - 1; i >= 0; i--) {
-    if (zombies[i].hp <= 0) zombies.splice(i, 1);
+    if (zombies[i].hp <= 0) {
+    zombies.splice(i, 1);
+    if (playerClass === 'mage') {
+      player.mana += 25; // regen fill
+      player.maxMana = (player.maxMana || 100) + 25; // permanent cap increase
+    }
+  }
   }
   const pct = Math.max(0, player.hp / player.maxHp) * 100;
   const fill = document.getElementById('hpFill');
@@ -591,7 +636,23 @@ function updateZombies(dt) {
     else if (pct > 30) fill.style.background = 'linear-gradient(90deg,#eab308,#f59e0b)';
     else fill.style.background = 'linear-gradient(90deg,#ef4444,#b91c1c)';
   }
+  // passive regen (only if no recent hit, max hp)
+  if (player.hitTime <= 0 && player.hp < player.maxHp) {
+    player.hp = Math.min(player.maxHp, player.hp + 2 * dt);
+  }
+  // mana regen (delayed after spell use)
+  if (player.manaRegenDelay > 0) player.manaRegenDelay -= dt;
+  else if (player.mana < (player.maxMana || 100)) {
+    player.mana = Math.min(player.maxMana || 100, player.mana + 5 * dt);
+  }
   if (txt) txt.textContent = Math.ceil(player.hp) + ' / ' + player.maxHp;
+  const manaEl = document.getElementById('mana');
+  if (manaEl) manaEl.style.display = (playerClass === 'mage') ? 'block' : 'none';
+  const manaFill = document.getElementById('manaFill');
+  const manaText = document.getElementById('manaText');
+  const manaCap = player.maxMana || 100;
+  if (manaFill) manaFill.style.width = Math.min(100, (player.mana / manaCap) * 100) + '%';
+  if (manaText) manaText.textContent = Math.floor(player.mana);
 }
 function updateNpcs(dt) {
   for (const n of npcs) {
@@ -678,7 +739,8 @@ function frame(now){
   if (keys['d']) { dx += -Math.cos(player.yaw); dz +=  Math.sin(player.yaw); }
   const len = Math.hypot(dx, dz);
   if (len) { dx /= len; dz /= len; }
-  const tvx = dx * SPEED, tvz = dz * SPEED;
+  const sp = classSpeed();
+  const tvx = dx * sp, tvz = dz * sp;
   player.vx += (tvx - player.vx) * Math.min(1, ACCEL * dt / SPEED);
   player.vz += (tvz - player.vz) * Math.min(1, ACCEL * dt / SPEED);
   const stepX = player.vx * dt, stepZ = player.vz * dt;
@@ -691,7 +753,7 @@ function frame(now){
   const swingT = attackT > 0 ? (1 - attackT / 0.4) : 0;
   const swingAngle = (playerClass === 'warrior') ? Math.sin(swingT * Math.PI) * 1.5 : 0;
   const lunge = (playerClass === 'rogue') ? Math.sin(swingT * Math.PI) * 0.4 : 0;
-  const staffShake = (playerClass === 'mage') ? Math.sin(swingT * Math.PI) * 0.2 : 0;
+  const staffShake = 0; // disabled (was mage cast vibration)
   player.y = 0.45;
   if (len > 0.01) player.faceYaw = Math.atan2(dx, dz);
   // safety: if inside a wall, push out
@@ -757,6 +819,13 @@ function frame(now){
     if (z.hitTime > 0) {
       drawMesh(zombieHitBuf, 36, mat4Multiply(zMat, mat4Translate(0, 0.9, 0)));
     }
+    if (z.critFlash > 0) {
+      drawMesh(critFlashBuf, 36, mat4Multiply(zMat, mat4Translate(0, 2.0, 0)));
+    }
+    if (z.fireTime > 0) {
+      const fo = z.fireTime / 3;
+      drawMesh(zombieFireBuf, 36, mat4Multiply(zMat, mat4Translate(0, 1.5 + Math.sin(performance.now()*0.01)*0.2, 0)));
+    }
   }
 
   for (const n of npcs) {
@@ -802,20 +871,18 @@ function frame(now){
       const t2 = mat4Translate(-pivotX, -pivotY, -pivotZ);
       const swingMat = mat4Multiply(t1, mat4Multiply(r, t2));
       const wMat = mat4Multiply(charMat, swingMat);
-      drawMesh(swordHilt, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing)));
-      drawMesh(swordGuard, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.25)));
-      drawMesh(swordBlade, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.95)));
+      drawMesh(swordHilt, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.2)));
+      drawMesh(swordGuard, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 0.45)));
+      drawMesh(swordBlade, 36, mat4Multiply(wMat, mat4Translate(0.35, 1.05, -swing + 1.05)));
     } else if (playerClass === 'mage') {
-      // staff shake on cast
-      const sx = Math.sin(performance.now() * 0.05) * staffShake;
-      drawMesh(staffShaft, 36, mat4Multiply(charMat, mat4Translate(0.35 + sx, 1.05 - attachedTweak, -swing)));
-      drawMesh(staffOrb, 36, mat4Multiply(charMat, mat4Translate(0.35 + sx, 1.75 - attachedTweak, -swing)));
+      drawMesh(staffShaft, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05 - attachedTweak, -swing)));
+      drawMesh(staffOrb, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.75 - attachedTweak, -swing)));
     } else if (playerClass === 'rogue') {
       // dagger lunges forward
       const lz = lunge;
-      drawMesh(daggerHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + lz)));
-      drawMesh(daggerGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.15 + lz)));
-      drawMesh(daggerBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.45 + lz)));
+      drawMesh(daggerHilt, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.12 + lz)));
+      drawMesh(daggerGuard, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.27 + lz)));
+      drawMesh(daggerBlade, 36, mat4Multiply(charMat, mat4Translate(0.35, 1.05, -swing + 0.57 + lz)));
     }
   }
 
